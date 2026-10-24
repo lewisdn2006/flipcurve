@@ -26,6 +26,7 @@ BLOCK_TITLES = ("pardon our interruption", "security measure", "captcha", "check
                 "access denied", "just a moment")
 _TITLE = re.compile(r"<title[^>]*>(.*?)</title>", re.I | re.S)
 CHALLENGE_URL = re.compile(r"splashui/challenge|/captcha|/challenge", re.I)
+SIGNIN_URL = re.compile(r"//signin\.ebay\.|/signin/", re.I)
 
 
 def looks_blocked(html: str) -> bool:
@@ -73,6 +74,8 @@ class Fetcher:
             self._last = time.monotonic()
         if status == 404:
             raise Blocked(f"HTTP 404 from {url}")  # callers treat 404 as 'gone'
+        if status == 401:
+            raise Blocked(f"sign-in required (run scripts/browser_login.py once) for {url}")
         if status != 200:
             raise Blocked(f"HTTP {status} from {url}")
         if looks_blocked(text):
@@ -98,6 +101,8 @@ class Fetcher:
                 self._page.wait_for_timeout(1000)
         if CHALLENGE_URL.search(self._page.url):
             return 403, text  # landed on a bot-check page: treat as a refusal
+        if SIGNIN_URL.search(self._page.url):
+            return 401, text  # redirected to sign-in: eBay's sold search needs a signed-in session
         return status, text
 
     def close(self):
