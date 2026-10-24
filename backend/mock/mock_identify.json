@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "item": {
+    "title": "Nike Air Force 1 '07 Low White",
+    "brand": "Nike",
+    "model_name": "Air Force 1 '07 Low",
+    "category": "Footwear / Trainers",
+    "size_or_storage": "UK 9",
+    "era_or_year": null,
+    "condition_tier": "good",
+    "condition_score": 7.4,
+    "detected_flaws": [
+      "Light creasing on toebox",
+      "Minor heel sole wear"
+    ],
+    "search_queries": {
+      "ebay": "nike air force 1 07 white uk 9",
+      "vinted": "air force 1 white 9"
+    },
+    "is_broken": false
+  },
+  "source": "vision",
+  "cleaned_image_url": "/static/mock/cleaned_item_01.png",
+  "confidence": 0.86,
+  "warnings": []
+}

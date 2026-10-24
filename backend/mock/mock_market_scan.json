@@ -1,0 +1,6558 @@
+{
+  "schema_version": "1.0",
+  "item_metadata": {
+    "title": "Nike Air Force 1 '07 Low White",
+    "brand": "Nike",
+    "model_name": "Air Force 1 '07 Low",
+    "category": "Footwear / Trainers",
+    "size_or_storage": "UK 9",
+    "era_or_year": null,
+    "condition_tier": "good",
+    "condition_score": 7.4,
+    "detected_flaws": [
+      "Light creasing on toebox",
+      "Minor heel sole wear"
+    ],
+    "search_queries": {
+      "ebay": "nike air force 1 07 white uk 9",
+      "vinted": "air force 1 white 9"
+    },
+    "is_broken": false
+  },
+  "cleaned_image_url": "/static/mock/cleaned_item_01.png",
+  "market_summary": {
+    "sample_size_sold": 38,
+    "sample_size_active": 44,
+    "sample_size_excluded": 7,
+    "active_median_gbp": 45.0,
+    "sold_median_gbp": 34.0,
+    "survivorship_bias_pct": 32.4,
+    "condition_buckets": {
+      "fair": {
+        "p25": 18.04,
+        "median": 22.0,
+        "p75": 25.96,
+        "avg_days": 6.9,
+        "n": 9
+      },
+      "good": {
+        "p25": 27.88,
+        "median": 34.0,
+        "p75": 40.12,
+        "avg_days": 4.9,
+        "n": 31
+      },
+      "very_good": {
+        "p25": 36.9,
+        "median": 45.0,
+        "p75": 53.1,
+        "avg_days": 3.5,
+        "n": 26
+      },
+      "mint": {
+        "p25": 53.3,
+        "median": 65.0,
+        "p75": 76.7,
+        "avg_days": 2.4,
+        "n": 16
+      }
+    },
+    "data_source": "mock",
+    "platforms_ok": [
+      "ebay",
+      "vinted",
+      "fb_marketplace"
+    ],
+    "fetched_at": "2026-10-24T19:00:00Z"
+  },
+  "model_fit": {
+    "k": 0.85,
+    "lambda0": 4.5,
+    "beta1": 2.4,
+    "beta2": 0.35,
+    "sigma_p": 12.0,
+    "anchor_gbp": {
+      "fair": 22.0,
+      "good": 34.0,
+      "very_good": 45.0,
+      "mint": 65.0
+    },
+    "platform_multiplier": {
+      "vinted": 0.85,
+      "ebay": 1.0,
+      "fb_marketplace": 0.7
+    },
+    "n_obs": 82,
+    "n_censored": 44,
+    "used_priors": false,
+    "log_likelihood": -187.4
+  },
+  "price_range": {
+    "min_gbp": 11.0,
+    "max_gbp": 87.75,
+    "step_gbp": 1.57
+  },
+  "price_curve_grid": {
+    "fair": [
+      {
+        "price_gbp": 11.0,
+        "prob_sell_24h": 0.739,
+        "prob_sell_7d": 0.999,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.8,
+        "median_days_to_sell": 0.5,
+        "ci_days_low": 0.0,
+        "ci_days_high": 2.6,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 12.64,
+            "net_payout_gbp": 11.0,
+            "expected_days": 0.7,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 11.46,
+            "net_payout_gbp": 11.0,
+            "expected_days": 0.8,
+            "prob_sell_7d": 0.999
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 12.94,
+            "net_payout_gbp": 11.0,
+            "expected_days": 1.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 12.57,
+        "prob_sell_24h": 0.642,
+        "prob_sell_7d": 0.995,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 1.1,
+        "median_days_to_sell": 0.6,
+        "ci_days_low": 0.0,
+        "ci_days_high": 3.5,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 14.45,
+            "net_payout_gbp": 12.57,
+            "expected_days": 0.9,
+            "prob_sell_7d": 0.998
+          },
+          "ebay": {
+            "list_price_gbp": 13.09,
+            "net_payout_gbp": 12.57,
+            "expected_days": 1.1,
+            "prob_sell_7d": 0.995
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 14.79,
+            "net_payout_gbp": 12.57,
+            "expected_days": 1.4,
+            "prob_sell_7d": 0.747
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 14.13,
+        "prob_sell_24h": 0.545,
+        "prob_sell_7d": 0.984,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 1.4,
+        "median_days_to_sell": 0.9,
+        "ci_days_low": 0.0,
+        "ci_days_high": 4.8,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 16.24,
+            "net_payout_gbp": 14.13,
+            "expected_days": 1.2,
+            "prob_sell_7d": 0.991
+          },
+          "ebay": {
+            "list_price_gbp": 14.72,
+            "net_payout_gbp": 14.13,
+            "expected_days": 1.4,
+            "prob_sell_7d": 0.984
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 16.62,
+            "net_payout_gbp": 14.13,
+            "expected_days": 2.0,
+            "prob_sell_7d": 0.737
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 15.7,
+        "prob_sell_24h": 0.453,
+        "prob_sell_7d": 0.957,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 2.0,
+        "median_days_to_sell": 1.2,
+        "ci_days_low": 0.1,
+        "ci_days_high": 6.6,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 18.05,
+            "net_payout_gbp": 15.7,
+            "expected_days": 1.7,
+            "prob_sell_7d": 0.973
+          },
+          "ebay": {
+            "list_price_gbp": 16.35,
+            "net_payout_gbp": 15.7,
+            "expected_days": 2.0,
+            "prob_sell_7d": 0.957
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 18.47,
+            "net_payout_gbp": 15.7,
+            "expected_days": 2.8,
+            "prob_sell_7d": 0.711
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 17.27,
+        "prob_sell_24h": 0.37,
+        "prob_sell_7d": 0.911,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 2.7,
+        "median_days_to_sell": 1.6,
+        "ci_days_low": 0.1,
+        "ci_days_high": 9.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 19.85,
+            "net_payout_gbp": 17.27,
+            "expected_days": 2.3,
+            "prob_sell_7d": 0.938
+          },
+          "ebay": {
+            "list_price_gbp": 17.99,
+            "net_payout_gbp": 17.27,
+            "expected_days": 2.7,
+            "prob_sell_7d": 0.911
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 20.32,
+            "net_payout_gbp": 17.27,
+            "expected_days": 4.0,
+            "prob_sell_7d": 0.666
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 18.83,
+        "prob_sell_24h": 0.298,
+        "prob_sell_7d": 0.843,
+        "prob_sell_30d": 0.998,
+        "expected_days_to_sell": 3.7,
+        "median_days_to_sell": 2.2,
+        "ci_days_low": 0.1,
+        "ci_days_high": 12.3,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 21.64,
+            "net_payout_gbp": 18.83,
+            "expected_days": 3.1,
+            "prob_sell_7d": 0.881
+          },
+          "ebay": {
+            "list_price_gbp": 19.61,
+            "net_payout_gbp": 18.83,
+            "expected_days": 3.7,
+            "prob_sell_7d": 0.843
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 22.15,
+            "net_payout_gbp": 18.83,
+            "expected_days": 5.7,
+            "prob_sell_7d": 0.602
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 20.4,
+        "prob_sell_24h": 0.238,
+        "prob_sell_7d": 0.758,
+        "prob_sell_30d": 0.992,
+        "expected_days_to_sell": 5.0,
+        "median_days_to_sell": 3.0,
+        "ci_days_low": 0.1,
+        "ci_days_high": 16.9,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 23.45,
+            "net_payout_gbp": 20.4,
+            "expected_days": 4.3,
+            "prob_sell_7d": 0.804
+          },
+          "ebay": {
+            "list_price_gbp": 21.25,
+            "net_payout_gbp": 20.4,
+            "expected_days": 5.0,
+            "prob_sell_7d": 0.758
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 24.0,
+            "net_payout_gbp": 20.4,
+            "expected_days": 8.2,
+            "prob_sell_7d": 0.524
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 21.96,
+        "prob_sell_24h": 0.188,
+        "prob_sell_7d": 0.663,
+        "prob_sell_30d": 0.976,
+        "expected_days_to_sell": 6.9,
+        "median_days_to_sell": 4.1,
+        "ci_days_low": 0.2,
+        "ci_days_high": 23.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 25.24,
+            "net_payout_gbp": 21.96,
+            "expected_days": 5.9,
+            "prob_sell_7d": 0.713
+          },
+          "ebay": {
+            "list_price_gbp": 22.88,
+            "net_payout_gbp": 21.96,
+            "expected_days": 6.9,
+            "prob_sell_7d": 0.663
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 25.84,
+            "net_payout_gbp": 21.96,
+            "expected_days": 11.7,
+            "prob_sell_7d": 0.441
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 23.53,
+        "prob_sell_24h": 0.147,
+        "prob_sell_7d": 0.566,
+        "prob_sell_30d": 0.943,
+        "expected_days_to_sell": 9.4,
+        "median_days_to_sell": 5.6,
+        "ci_days_low": 0.3,
+        "ci_days_high": 31.5,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 27.05,
+            "net_payout_gbp": 23.53,
+            "expected_days": 8.0,
+            "prob_sell_7d": 0.616
+          },
+          "ebay": {
+            "list_price_gbp": 24.51,
+            "net_payout_gbp": 23.53,
+            "expected_days": 9.4,
+            "prob_sell_7d": 0.566
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 27.68,
+            "net_payout_gbp": 23.53,
+            "expected_days": 16.7,
+            "prob_sell_7d": 0.36
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 25.1,
+        "prob_sell_24h": 0.115,
+        "prob_sell_7d": 0.472,
+        "prob_sell_30d": 0.889,
+        "expected_days_to_sell": 12.9,
+        "median_days_to_sell": 7.7,
+        "ci_days_low": 0.4,
+        "ci_days_high": 43.2,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 28.85,
+            "net_payout_gbp": 25.1,
+            "expected_days": 11.0,
+            "prob_sell_7d": 0.519
+          },
+          "ebay": {
+            "list_price_gbp": 26.15,
+            "net_payout_gbp": 25.1,
+            "expected_days": 12.9,
+            "prob_sell_7d": 0.472
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 29.53,
+            "net_payout_gbp": 25.1,
+            "expected_days": 23.9,
+            "prob_sell_7d": 0.287
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 26.66,
+        "prob_sell_24h": 0.089,
+        "prob_sell_7d": 0.387,
+        "prob_sell_30d": 0.815,
+        "expected_days_to_sell": 17.6,
+        "median_days_to_sell": 10.5,
+        "ci_days_low": 0.5,
+        "ci_days_high": 59.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 30.64,
+            "net_payout_gbp": 26.66,
+            "expected_days": 15.0,
+            "prob_sell_7d": 0.43
+          },
+          "ebay": {
+            "list_price_gbp": 27.77,
+            "net_payout_gbp": 26.66,
+            "expected_days": 17.6,
+            "prob_sell_7d": 0.387
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 31.36,
+            "net_payout_gbp": 26.66,
+            "expected_days": 34.1,
+            "prob_sell_7d": 0.225
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 28.23,
+        "prob_sell_24h": 0.069,
+        "prob_sell_7d": 0.313,
+        "prob_sell_30d": 0.725,
+        "expected_days_to_sell": 24.2,
+        "median_days_to_sell": 14.4,
+        "ci_days_low": 0.7,
+        "ci_days_high": 80.7,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 32.45,
+            "net_payout_gbp": 28.23,
+            "expected_days": 20.5,
+            "prob_sell_7d": 0.35
+          },
+          "ebay": {
+            "list_price_gbp": 29.41,
+            "net_payout_gbp": 28.23,
+            "expected_days": 24.2,
+            "prob_sell_7d": 0.313
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 33.21,
+            "net_payout_gbp": 28.23,
+            "expected_days": 48.7,
+            "prob_sell_7d": 0.174
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 29.8,
+        "prob_sell_24h": 0.053,
+        "prob_sell_7d": 0.25,
+        "prob_sell_30d": 0.628,
+        "expected_days_to_sell": 33.1,
+        "median_days_to_sell": 19.7,
+        "ci_days_low": 0.9,
+        "ci_days_high": 110.5,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 34.25,
+            "net_payout_gbp": 29.8,
+            "expected_days": 28.1,
+            "prob_sell_7d": 0.281
+          },
+          "ebay": {
+            "list_price_gbp": 31.04,
+            "net_payout_gbp": 29.8,
+            "expected_days": 33.1,
+            "prob_sell_7d": 0.25
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 35.06,
+            "net_payout_gbp": 29.8,
+            "expected_days": 69.6,
+            "prob_sell_7d": 0.133
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 31.36,
+        "prob_sell_24h": 0.041,
+        "prob_sell_7d": 0.198,
+        "prob_sell_30d": 0.532,
+        "expected_days_to_sell": 45.2,
+        "median_days_to_sell": 27.0,
+        "ci_days_low": 1.3,
+        "ci_days_high": 150.9,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 36.05,
+            "net_payout_gbp": 31.36,
+            "expected_days": 38.4,
+            "prob_sell_7d": 0.223
+          },
+          "ebay": {
+            "list_price_gbp": 32.67,
+            "net_payout_gbp": 31.36,
+            "expected_days": 45.2,
+            "prob_sell_7d": 0.198
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 36.89,
+            "net_payout_gbp": 31.36,
+            "expected_days": 99.2,
+            "prob_sell_7d": 0.101
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 32.93,
+        "prob_sell_24h": 0.032,
+        "prob_sell_7d": 0.155,
+        "prob_sell_30d": 0.441,
+        "expected_days_to_sell": 61.8,
+        "median_days_to_sell": 36.9,
+        "ci_days_low": 1.7,
+        "ci_days_high": 206.6,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 37.85,
+            "net_payout_gbp": 32.93,
+            "expected_days": 52.6,
+            "prob_sell_7d": 0.176
+          },
+          "ebay": {
+            "list_price_gbp": 34.3,
+            "net_payout_gbp": 32.93,
+            "expected_days": 61.8,
+            "prob_sell_7d": 0.155
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 38.74,
+            "net_payout_gbp": 32.93,
+            "expected_days": 141.7,
+            "prob_sell_7d": 0.076
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 34.49,
+        "prob_sell_24h": 0.024,
+        "prob_sell_7d": 0.121,
+        "prob_sell_30d": 0.36,
+        "expected_days_to_sell": 84.5,
+        "median_days_to_sell": 50.4,
+        "ci_days_low": 2.4,
+        "ci_days_high": 282.3,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 39.64,
+            "net_payout_gbp": 34.49,
+            "expected_days": 71.8,
+            "prob_sell_7d": 0.138
+          },
+          "ebay": {
+            "list_price_gbp": 35.93,
+            "net_payout_gbp": 34.49,
+            "expected_days": 84.5,
+            "prob_sell_7d": 0.121
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 40.58,
+            "net_payout_gbp": 34.49,
+            "expected_days": 202.0,
+            "prob_sell_7d": 0.057
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 36.06,
+        "prob_sell_24h": 0.019,
+        "prob_sell_7d": 0.094,
+        "prob_sell_30d": 0.289,
+        "expected_days_to_sell": 115.6,
+        "median_days_to_sell": 69.1,
+        "ci_days_low": 3.2,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 41.45,
+            "net_payout_gbp": 36.06,
+            "expected_days": 98.3,
+            "prob_sell_7d": 0.107
+          },
+          "ebay": {
+            "list_price_gbp": 37.56,
+            "net_payout_gbp": 36.06,
+            "expected_days": 115.6,
+            "prob_sell_7d": 0.094
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 42.42,
+            "net_payout_gbp": 36.06,
+            "expected_days": 288.5,
+            "prob_sell_7d": 0.042
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 37.63,
+        "prob_sell_24h": 0.014,
+        "prob_sell_7d": 0.073,
+        "prob_sell_30d": 0.23,
+        "expected_days_to_sell": 158.3,
+        "median_days_to_sell": 94.5,
+        "ci_days_low": 4.4,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 43.25,
+            "net_payout_gbp": 37.63,
+            "expected_days": 134.5,
+            "prob_sell_7d": 0.083
+          },
+          "ebay": {
+            "list_price_gbp": 39.2,
+            "net_payout_gbp": 37.63,
+            "expected_days": 158.3,
+            "prob_sell_7d": 0.073
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 44.27,
+            "net_payout_gbp": 37.63,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.032
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 39.19,
+        "prob_sell_24h": 0.011,
+        "prob_sell_7d": 0.057,
+        "prob_sell_30d": 0.182,
+        "expected_days_to_sell": 216.2,
+        "median_days_to_sell": 129.1,
+        "ci_days_low": 6.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 45.05,
+            "net_payout_gbp": 39.19,
+            "expected_days": 183.8,
+            "prob_sell_7d": 0.065
+          },
+          "ebay": {
+            "list_price_gbp": 40.82,
+            "net_payout_gbp": 39.19,
+            "expected_days": 216.2,
+            "prob_sell_7d": 0.057
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 46.11,
+            "net_payout_gbp": 39.19,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.023
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 40.76,
+        "prob_sell_24h": 0.008,
+        "prob_sell_7d": 0.044,
+        "prob_sell_30d": 0.142,
+        "expected_days_to_sell": 296.0,
+        "median_days_to_sell": 176.8,
+        "ci_days_low": 8.3,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 46.85,
+            "net_payout_gbp": 40.76,
+            "expected_days": 251.6,
+            "prob_sell_7d": 0.05
+          },
+          "ebay": {
+            "list_price_gbp": 42.46,
+            "net_payout_gbp": 40.76,
+            "expected_days": 296.0,
+            "prob_sell_7d": 0.044
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 47.95,
+            "net_payout_gbp": 40.76,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.017
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 42.33,
+        "prob_sell_24h": 0.007,
+        "prob_sell_7d": 0.034,
+        "prob_sell_30d": 0.111,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 242.0,
+        "ci_days_low": 11.3,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 48.66,
+            "net_payout_gbp": 42.33,
+            "expected_days": 344.4,
+            "prob_sell_7d": 0.038
+          },
+          "ebay": {
+            "list_price_gbp": 44.09,
+            "net_payout_gbp": 42.33,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.034
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 49.8,
+            "net_payout_gbp": 42.33,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.013
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 43.89,
+        "prob_sell_24h": 0.005,
+        "prob_sell_7d": 0.026,
+        "prob_sell_30d": 0.086,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 330.6,
+        "ci_days_low": 15.5,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 50.45,
+            "net_payout_gbp": 43.89,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.03
+          },
+          "ebay": {
+            "list_price_gbp": 45.72,
+            "net_payout_gbp": 43.89,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.026
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 51.64,
+            "net_payout_gbp": 43.89,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.01
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 45.46,
+        "prob_sell_24h": 0.004,
+        "prob_sell_7d": 0.02,
+        "prob_sell_30d": 0.067,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 21.2,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 52.25,
+            "net_payout_gbp": 45.46,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.023
+          },
+          "ebay": {
+            "list_price_gbp": 47.35,
+            "net_payout_gbp": 45.46,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.02
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 53.48,
+            "net_payout_gbp": 45.46,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.007
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 47.03,
+        "prob_sell_24h": 0.003,
+        "prob_sell_7d": 0.015,
+        "prob_sell_30d": 0.051,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 29.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 54.06,
+            "net_payout_gbp": 47.03,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.017
+          },
+          "ebay": {
+            "list_price_gbp": 48.99,
+            "net_payout_gbp": 47.03,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.015
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 55.33,
+            "net_payout_gbp": 47.03,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.005
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 48.59,
+        "prob_sell_24h": 0.002,
+        "prob_sell_7d": 0.012,
+        "prob_sell_30d": 0.04,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 39.6,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 55.85,
+            "net_payout_gbp": 48.59,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.013
+          },
+          "ebay": {
+            "list_price_gbp": 50.61,
+            "net_payout_gbp": 48.59,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.012
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 57.16,
+            "net_payout_gbp": 48.59,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.004
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 50.16,
+        "prob_sell_24h": 0.002,
+        "prob_sell_7d": 0.009,
+        "prob_sell_30d": 0.031,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 54.1,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 57.66,
+            "net_payout_gbp": 50.16,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.01
+          },
+          "ebay": {
+            "list_price_gbp": 52.25,
+            "net_payout_gbp": 50.16,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.009
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 59.01,
+            "net_payout_gbp": 50.16,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.003
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 51.72,
+        "prob_sell_24h": 0.001,
+        "prob_sell_7d": 0.007,
+        "prob_sell_30d": 0.024,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 74.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 59.45,
+            "net_payout_gbp": 51.72,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.008
+          },
+          "ebay": {
+            "list_price_gbp": 53.88,
+            "net_payout_gbp": 51.72,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.007
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 60.85,
+            "net_payout_gbp": 51.72,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.002
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 53.29,
+        "prob_sell_24h": 0.001,
+        "prob_sell_7d": 0.005,
+        "prob_sell_30d": 0.018,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 101.3,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 61.25,
+            "net_payout_gbp": 53.29,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.006
+          },
+          "ebay": {
+            "list_price_gbp": 55.51,
+            "net_payout_gbp": 53.29,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.005
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 62.69,
+            "net_payout_gbp": 53.29,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.002
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 54.86,
+        "prob_sell_24h": 0.001,
+        "prob_sell_7d": 0.004,
+        "prob_sell_30d": 0.014,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 138.6,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 63.06,
+            "net_payout_gbp": 54.86,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.005
+          },
+          "ebay": {
+            "list_price_gbp": 57.15,
+            "net_payout_gbp": 54.86,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.004
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 64.54,
+            "net_payout_gbp": 54.86,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 56.42,
+        "prob_sell_24h": 0.001,
+        "prob_sell_7d": 0.003,
+        "prob_sell_30d": 0.011,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 189.4,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 64.85,
+            "net_payout_gbp": 56.42,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.004
+          },
+          "ebay": {
+            "list_price_gbp": 58.77,
+            "net_payout_gbp": 56.42,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.003
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 66.38,
+            "net_payout_gbp": 56.42,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 57.99,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.002,
+        "prob_sell_30d": 0.008,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 259.2,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 66.66,
+            "net_payout_gbp": 57.99,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.003
+          },
+          "ebay": {
+            "list_price_gbp": 60.41,
+            "net_payout_gbp": 57.99,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.002
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 68.22,
+            "net_payout_gbp": 57.99,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 59.56,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.002,
+        "prob_sell_30d": 0.006,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 354.9,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 68.46,
+            "net_payout_gbp": 59.56,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.002
+          },
+          "ebay": {
+            "list_price_gbp": 62.04,
+            "net_payout_gbp": 59.56,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.002
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 70.07,
+            "net_payout_gbp": 59.56,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 61.12,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.001,
+        "prob_sell_30d": 0.005,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 70.25,
+            "net_payout_gbp": 61.12,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.002
+          },
+          "ebay": {
+            "list_price_gbp": 63.67,
+            "net_payout_gbp": 61.12,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 71.91,
+            "net_payout_gbp": 61.12,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 62.69,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.001,
+        "prob_sell_30d": 0.004,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 72.06,
+            "net_payout_gbp": 62.69,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          },
+          "ebay": {
+            "list_price_gbp": 65.3,
+            "net_payout_gbp": 62.69,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 73.75,
+            "net_payout_gbp": 62.69,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 64.26,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.001,
+        "prob_sell_30d": 0.003,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 73.86,
+            "net_payout_gbp": 64.26,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          },
+          "ebay": {
+            "list_price_gbp": 66.94,
+            "net_payout_gbp": 64.26,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 75.6,
+            "net_payout_gbp": 64.26,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 65.82,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.001,
+        "prob_sell_30d": 0.002,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 75.66,
+            "net_payout_gbp": 65.82,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          },
+          "ebay": {
+            "list_price_gbp": 68.56,
+            "net_payout_gbp": 65.82,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 77.44,
+            "net_payout_gbp": 65.82,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 67.39,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.0,
+        "prob_sell_30d": 0.002,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 77.46,
+            "net_payout_gbp": 67.39,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          },
+          "ebay": {
+            "list_price_gbp": 70.2,
+            "net_payout_gbp": 67.39,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 79.28,
+            "net_payout_gbp": 67.39,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 68.95,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.0,
+        "prob_sell_30d": 0.001,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 79.25,
+            "net_payout_gbp": 68.95,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "ebay": {
+            "list_price_gbp": 71.82,
+            "net_payout_gbp": 68.95,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 81.12,
+            "net_payout_gbp": 68.95,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 70.52,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.0,
+        "prob_sell_30d": 0.001,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 81.06,
+            "net_payout_gbp": 70.52,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "ebay": {
+            "list_price_gbp": 73.46,
+            "net_payout_gbp": 70.52,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 82.96,
+            "net_payout_gbp": 70.52,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 72.09,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.0,
+        "prob_sell_30d": 0.001,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 82.86,
+            "net_payout_gbp": 72.09,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "ebay": {
+            "list_price_gbp": 75.09,
+            "net_payout_gbp": 72.09,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 84.81,
+            "net_payout_gbp": 72.09,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 73.65,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.0,
+        "prob_sell_30d": 0.001,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 84.66,
+            "net_payout_gbp": 73.65,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "ebay": {
+            "list_price_gbp": 76.72,
+            "net_payout_gbp": 73.65,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 86.65,
+            "net_payout_gbp": 73.65,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 75.22,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.0,
+        "prob_sell_30d": 0.0,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 86.46,
+            "net_payout_gbp": 75.22,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "ebay": {
+            "list_price_gbp": 78.35,
+            "net_payout_gbp": 75.22,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 88.49,
+            "net_payout_gbp": 75.22,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 76.79,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.0,
+        "prob_sell_30d": 0.0,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 88.26,
+            "net_payout_gbp": 76.79,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "ebay": {
+            "list_price_gbp": 79.99,
+            "net_payout_gbp": 76.79,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 90.34,
+            "net_payout_gbp": 76.79,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 78.35,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.0,
+        "prob_sell_30d": 0.0,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 90.06,
+            "net_payout_gbp": 78.35,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "ebay": {
+            "list_price_gbp": 81.61,
+            "net_payout_gbp": 78.35,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 92.18,
+            "net_payout_gbp": 78.35,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 79.92,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.0,
+        "prob_sell_30d": 0.0,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 91.86,
+            "net_payout_gbp": 79.92,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "ebay": {
+            "list_price_gbp": 83.25,
+            "net_payout_gbp": 79.92,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 94.02,
+            "net_payout_gbp": 79.92,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 81.48,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.0,
+        "prob_sell_30d": 0.0,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 93.66,
+            "net_payout_gbp": 81.48,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "ebay": {
+            "list_price_gbp": 84.88,
+            "net_payout_gbp": 81.48,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 95.86,
+            "net_payout_gbp": 81.48,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 83.05,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.0,
+        "prob_sell_30d": 0.0,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 95.46,
+            "net_payout_gbp": 83.05,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "ebay": {
+            "list_price_gbp": 86.51,
+            "net_payout_gbp": 83.05,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 97.71,
+            "net_payout_gbp": 83.05,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 84.62,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.0,
+        "prob_sell_30d": 0.0,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 97.26,
+            "net_payout_gbp": 84.62,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "ebay": {
+            "list_price_gbp": 88.15,
+            "net_payout_gbp": 84.62,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 99.55,
+            "net_payout_gbp": 84.62,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 86.18,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.0,
+        "prob_sell_30d": 0.0,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 99.06,
+            "net_payout_gbp": 86.18,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "ebay": {
+            "list_price_gbp": 89.77,
+            "net_payout_gbp": 86.18,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 101.39,
+            "net_payout_gbp": 86.18,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 87.75,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.0,
+        "prob_sell_30d": 0.0,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 100.86,
+            "net_payout_gbp": 87.75,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "ebay": {
+            "list_price_gbp": 91.41,
+            "net_payout_gbp": 87.75,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 103.24,
+            "net_payout_gbp": 87.75,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      }
+    ],
+    "good": [
+      {
+        "price_gbp": 11.0,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.2,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 12.64,
+            "net_payout_gbp": 11.0,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 11.46,
+            "net_payout_gbp": 11.0,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 12.94,
+            "net_payout_gbp": 11.0,
+            "expected_days": 0.1,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 12.57,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.1,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.2,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 14.45,
+            "net_payout_gbp": 12.57,
+            "expected_days": 0.1,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 13.09,
+            "net_payout_gbp": 12.57,
+            "expected_days": 0.1,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 14.79,
+            "net_payout_gbp": 12.57,
+            "expected_days": 0.1,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 14.13,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.1,
+        "median_days_to_sell": 0.1,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.3,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 16.24,
+            "net_payout_gbp": 14.13,
+            "expected_days": 0.1,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 14.72,
+            "net_payout_gbp": 14.13,
+            "expected_days": 0.1,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 16.62,
+            "net_payout_gbp": 14.13,
+            "expected_days": 0.1,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 15.7,
+        "prob_sell_24h": 0.998,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.1,
+        "median_days_to_sell": 0.1,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.4,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 18.05,
+            "net_payout_gbp": 15.7,
+            "expected_days": 0.1,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 16.35,
+            "net_payout_gbp": 15.7,
+            "expected_days": 0.1,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 18.47,
+            "net_payout_gbp": 15.7,
+            "expected_days": 0.2,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 17.27,
+        "prob_sell_24h": 0.992,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.2,
+        "median_days_to_sell": 0.1,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.6,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 19.85,
+            "net_payout_gbp": 17.27,
+            "expected_days": 0.1,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 17.99,
+            "net_payout_gbp": 17.27,
+            "expected_days": 0.2,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 20.32,
+            "net_payout_gbp": 17.27,
+            "expected_days": 0.3,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 18.83,
+        "prob_sell_24h": 0.975,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.2,
+        "median_days_to_sell": 0.1,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.8,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 21.64,
+            "net_payout_gbp": 18.83,
+            "expected_days": 0.2,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 19.61,
+            "net_payout_gbp": 18.83,
+            "expected_days": 0.2,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 22.15,
+            "net_payout_gbp": 18.83,
+            "expected_days": 0.4,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 20.4,
+        "prob_sell_24h": 0.94,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.3,
+        "median_days_to_sell": 0.2,
+        "ci_days_low": 0.0,
+        "ci_days_high": 1.1,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 23.45,
+            "net_payout_gbp": 20.4,
+            "expected_days": 0.3,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 21.25,
+            "net_payout_gbp": 20.4,
+            "expected_days": 0.3,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 24.0,
+            "net_payout_gbp": 20.4,
+            "expected_days": 0.5,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 21.96,
+        "prob_sell_24h": 0.884,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.4,
+        "median_days_to_sell": 0.3,
+        "ci_days_low": 0.0,
+        "ci_days_high": 1.5,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 25.24,
+            "net_payout_gbp": 21.96,
+            "expected_days": 0.4,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 22.88,
+            "net_payout_gbp": 21.96,
+            "expected_days": 0.4,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 25.84,
+            "net_payout_gbp": 21.96,
+            "expected_days": 0.7,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 23.53,
+        "prob_sell_24h": 0.808,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.6,
+        "median_days_to_sell": 0.4,
+        "ci_days_low": 0.0,
+        "ci_days_high": 2.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 27.05,
+            "net_payout_gbp": 23.53,
+            "expected_days": 0.5,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 24.51,
+            "net_payout_gbp": 23.53,
+            "expected_days": 0.6,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 27.68,
+            "net_payout_gbp": 23.53,
+            "expected_days": 1.1,
+            "prob_sell_7d": 0.749
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 25.1,
+        "prob_sell_24h": 0.718,
+        "prob_sell_7d": 0.999,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.8,
+        "median_days_to_sell": 0.5,
+        "ci_days_low": 0.0,
+        "ci_days_high": 2.8,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 28.85,
+            "net_payout_gbp": 25.1,
+            "expected_days": 0.7,
+            "prob_sell_7d": 0.999
+          },
+          "ebay": {
+            "list_price_gbp": 26.15,
+            "net_payout_gbp": 25.1,
+            "expected_days": 0.8,
+            "prob_sell_7d": 0.999
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 29.53,
+            "net_payout_gbp": 25.1,
+            "expected_days": 1.5,
+            "prob_sell_7d": 0.745
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 26.66,
+        "prob_sell_24h": 0.621,
+        "prob_sell_7d": 0.994,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 1.1,
+        "median_days_to_sell": 0.7,
+        "ci_days_low": 0.0,
+        "ci_days_high": 3.8,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 30.64,
+            "net_payout_gbp": 26.66,
+            "expected_days": 1.0,
+            "prob_sell_7d": 0.997
+          },
+          "ebay": {
+            "list_price_gbp": 27.77,
+            "net_payout_gbp": 26.66,
+            "expected_days": 1.1,
+            "prob_sell_7d": 0.994
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 31.36,
+            "net_payout_gbp": 26.66,
+            "expected_days": 2.2,
+            "prob_sell_7d": 0.731
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 28.23,
+        "prob_sell_24h": 0.524,
+        "prob_sell_7d": 0.979,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 1.5,
+        "median_days_to_sell": 0.9,
+        "ci_days_low": 0.0,
+        "ci_days_high": 5.2,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 32.45,
+            "net_payout_gbp": 28.23,
+            "expected_days": 1.3,
+            "prob_sell_7d": 0.988
+          },
+          "ebay": {
+            "list_price_gbp": 29.41,
+            "net_payout_gbp": 28.23,
+            "expected_days": 1.5,
+            "prob_sell_7d": 0.979
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 33.21,
+            "net_payout_gbp": 28.23,
+            "expected_days": 3.1,
+            "prob_sell_7d": 0.701
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 29.8,
+        "prob_sell_24h": 0.434,
+        "prob_sell_7d": 0.949,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 2.1,
+        "median_days_to_sell": 1.3,
+        "ci_days_low": 0.1,
+        "ci_days_high": 7.1,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 34.25,
+            "net_payout_gbp": 29.8,
+            "expected_days": 1.8,
+            "prob_sell_7d": 0.967
+          },
+          "ebay": {
+            "list_price_gbp": 31.04,
+            "net_payout_gbp": 29.8,
+            "expected_days": 2.1,
+            "prob_sell_7d": 0.949
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 35.06,
+            "net_payout_gbp": 29.8,
+            "expected_days": 4.4,
+            "prob_sell_7d": 0.65
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 31.36,
+        "prob_sell_24h": 0.354,
+        "prob_sell_7d": 0.898,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 2.9,
+        "median_days_to_sell": 1.7,
+        "ci_days_low": 0.1,
+        "ci_days_high": 9.6,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 36.05,
+            "net_payout_gbp": 31.36,
+            "expected_days": 2.5,
+            "prob_sell_7d": 0.927
+          },
+          "ebay": {
+            "list_price_gbp": 32.67,
+            "net_payout_gbp": 31.36,
+            "expected_days": 2.9,
+            "prob_sell_7d": 0.898
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 36.89,
+            "net_payout_gbp": 31.36,
+            "expected_days": 6.3,
+            "prob_sell_7d": 0.581
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 32.93,
+        "prob_sell_24h": 0.284,
+        "prob_sell_7d": 0.826,
+        "prob_sell_30d": 0.998,
+        "expected_days_to_sell": 4.0,
+        "median_days_to_sell": 2.4,
+        "ci_days_low": 0.1,
+        "ci_days_high": 13.2,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 37.85,
+            "net_payout_gbp": 32.93,
+            "expected_days": 3.4,
+            "prob_sell_7d": 0.865
+          },
+          "ebay": {
+            "list_price_gbp": 34.3,
+            "net_payout_gbp": 32.93,
+            "expected_days": 4.0,
+            "prob_sell_7d": 0.826
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 38.74,
+            "net_payout_gbp": 32.93,
+            "expected_days": 9.1,
+            "prob_sell_7d": 0.501
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 34.49,
+        "prob_sell_24h": 0.226,
+        "prob_sell_7d": 0.738,
+        "prob_sell_30d": 0.99,
+        "expected_days_to_sell": 5.4,
+        "median_days_to_sell": 3.2,
+        "ci_days_low": 0.2,
+        "ci_days_high": 18.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 39.64,
+            "net_payout_gbp": 34.49,
+            "expected_days": 4.6,
+            "prob_sell_7d": 0.785
+          },
+          "ebay": {
+            "list_price_gbp": 35.93,
+            "net_payout_gbp": 34.49,
+            "expected_days": 5.4,
+            "prob_sell_7d": 0.738
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 40.58,
+            "net_payout_gbp": 34.49,
+            "expected_days": 12.9,
+            "prob_sell_7d": 0.418
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 36.06,
+        "prob_sell_24h": 0.178,
+        "prob_sell_7d": 0.641,
+        "prob_sell_30d": 0.971,
+        "expected_days_to_sell": 7.4,
+        "median_days_to_sell": 4.4,
+        "ci_days_low": 0.2,
+        "ci_days_high": 24.7,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 41.45,
+            "net_payout_gbp": 36.06,
+            "expected_days": 6.3,
+            "prob_sell_7d": 0.692
+          },
+          "ebay": {
+            "list_price_gbp": 37.56,
+            "net_payout_gbp": 36.06,
+            "expected_days": 7.4,
+            "prob_sell_7d": 0.641
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 42.42,
+            "net_payout_gbp": 36.06,
+            "expected_days": 18.4,
+            "prob_sell_7d": 0.339
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 37.63,
+        "prob_sell_24h": 0.139,
+        "prob_sell_7d": 0.544,
+        "prob_sell_30d": 0.933,
+        "expected_days_to_sell": 10.1,
+        "median_days_to_sell": 6.0,
+        "ci_days_low": 0.3,
+        "ci_days_high": 33.8,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 43.25,
+            "net_payout_gbp": 37.63,
+            "expected_days": 8.6,
+            "prob_sell_7d": 0.594
+          },
+          "ebay": {
+            "list_price_gbp": 39.2,
+            "net_payout_gbp": 37.63,
+            "expected_days": 10.1,
+            "prob_sell_7d": 0.544
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 44.27,
+            "net_payout_gbp": 37.63,
+            "expected_days": 26.4,
+            "prob_sell_7d": 0.269
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 39.19,
+        "prob_sell_24h": 0.109,
+        "prob_sell_7d": 0.453,
+        "prob_sell_30d": 0.875,
+        "expected_days_to_sell": 13.8,
+        "median_days_to_sell": 8.3,
+        "ci_days_low": 0.4,
+        "ci_days_high": 46.2,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 45.05,
+            "net_payout_gbp": 39.19,
+            "expected_days": 11.8,
+            "prob_sell_7d": 0.499
+          },
+          "ebay": {
+            "list_price_gbp": 40.82,
+            "net_payout_gbp": 39.19,
+            "expected_days": 13.8,
+            "prob_sell_7d": 0.453
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 46.11,
+            "net_payout_gbp": 39.19,
+            "expected_days": 37.6,
+            "prob_sell_7d": 0.21
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 40.76,
+        "prob_sell_24h": 0.084,
+        "prob_sell_7d": 0.37,
+        "prob_sell_30d": 0.796,
+        "expected_days_to_sell": 18.9,
+        "median_days_to_sell": 11.3,
+        "ci_days_low": 0.5,
+        "ci_days_high": 63.2,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 46.85,
+            "net_payout_gbp": 40.76,
+            "expected_days": 16.1,
+            "prob_sell_7d": 0.411
+          },
+          "ebay": {
+            "list_price_gbp": 42.46,
+            "net_payout_gbp": 40.76,
+            "expected_days": 18.9,
+            "prob_sell_7d": 0.37
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 47.95,
+            "net_payout_gbp": 40.76,
+            "expected_days": 53.7,
+            "prob_sell_7d": 0.162
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 42.33,
+        "prob_sell_24h": 0.065,
+        "prob_sell_7d": 0.298,
+        "prob_sell_30d": 0.704,
+        "expected_days_to_sell": 25.9,
+        "median_days_to_sell": 15.5,
+        "ci_days_low": 0.7,
+        "ci_days_high": 86.6,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 48.66,
+            "net_payout_gbp": 42.33,
+            "expected_days": 22.0,
+            "prob_sell_7d": 0.333
+          },
+          "ebay": {
+            "list_price_gbp": 44.09,
+            "net_payout_gbp": 42.33,
+            "expected_days": 25.9,
+            "prob_sell_7d": 0.298
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 49.8,
+            "net_payout_gbp": 42.33,
+            "expected_days": 76.7,
+            "prob_sell_7d": 0.123
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 43.89,
+        "prob_sell_24h": 0.051,
+        "prob_sell_7d": 0.237,
+        "prob_sell_30d": 0.607,
+        "expected_days_to_sell": 35.4,
+        "median_days_to_sell": 21.1,
+        "ci_days_low": 1.0,
+        "ci_days_high": 118.3,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 50.45,
+            "net_payout_gbp": 43.89,
+            "expected_days": 30.1,
+            "prob_sell_7d": 0.267
+          },
+          "ebay": {
+            "list_price_gbp": 45.72,
+            "net_payout_gbp": 43.89,
+            "expected_days": 35.4,
+            "prob_sell_7d": 0.237
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 51.64,
+            "net_payout_gbp": 43.89,
+            "expected_days": 109.3,
+            "prob_sell_7d": 0.093
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 45.46,
+        "prob_sell_24h": 0.039,
+        "prob_sell_7d": 0.187,
+        "prob_sell_30d": 0.511,
+        "expected_days_to_sell": 48.4,
+        "median_days_to_sell": 28.9,
+        "ci_days_low": 1.4,
+        "ci_days_high": 161.9,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 52.25,
+            "net_payout_gbp": 45.46,
+            "expected_days": 41.2,
+            "prob_sell_7d": 0.212
+          },
+          "ebay": {
+            "list_price_gbp": 47.35,
+            "net_payout_gbp": 45.46,
+            "expected_days": 48.4,
+            "prob_sell_7d": 0.187
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 53.48,
+            "net_payout_gbp": 45.46,
+            "expected_days": 156.2,
+            "prob_sell_7d": 0.07
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 47.03,
+        "prob_sell_24h": 0.03,
+        "prob_sell_7d": 0.147,
+        "prob_sell_30d": 0.422,
+        "expected_days_to_sell": 66.3,
+        "median_days_to_sell": 39.6,
+        "ci_days_low": 1.9,
+        "ci_days_high": 221.6,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 54.06,
+            "net_payout_gbp": 47.03,
+            "expected_days": 56.4,
+            "prob_sell_7d": 0.167
+          },
+          "ebay": {
+            "list_price_gbp": 48.99,
+            "net_payout_gbp": 47.03,
+            "expected_days": 66.3,
+            "prob_sell_7d": 0.147
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 55.33,
+            "net_payout_gbp": 47.03,
+            "expected_days": 223.2,
+            "prob_sell_7d": 0.052
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 48.59,
+        "prob_sell_24h": 0.023,
+        "prob_sell_7d": 0.115,
+        "prob_sell_30d": 0.343,
+        "expected_days_to_sell": 90.6,
+        "median_days_to_sell": 54.1,
+        "ci_days_low": 2.5,
+        "ci_days_high": 302.7,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 55.85,
+            "net_payout_gbp": 48.59,
+            "expected_days": 77.0,
+            "prob_sell_7d": 0.131
+          },
+          "ebay": {
+            "list_price_gbp": 50.61,
+            "net_payout_gbp": 48.59,
+            "expected_days": 90.6,
+            "prob_sell_7d": 0.115
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 57.16,
+            "net_payout_gbp": 48.59,
+            "expected_days": 318.2,
+            "prob_sell_7d": 0.039
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 50.16,
+        "prob_sell_24h": 0.018,
+        "prob_sell_7d": 0.089,
+        "prob_sell_30d": 0.275,
+        "expected_days_to_sell": 124.0,
+        "median_days_to_sell": 74.1,
+        "ci_days_low": 3.5,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 57.66,
+            "net_payout_gbp": 50.16,
+            "expected_days": 105.4,
+            "prob_sell_7d": 0.102
+          },
+          "ebay": {
+            "list_price_gbp": 52.25,
+            "net_payout_gbp": 50.16,
+            "expected_days": 124.0,
+            "prob_sell_7d": 0.089
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 59.01,
+            "net_payout_gbp": 50.16,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.029
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 51.72,
+        "prob_sell_24h": 0.014,
+        "prob_sell_7d": 0.069,
+        "prob_sell_30d": 0.219,
+        "expected_days_to_sell": 169.4,
+        "median_days_to_sell": 101.2,
+        "ci_days_low": 4.7,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 59.45,
+            "net_payout_gbp": 51.72,
+            "expected_days": 144.0,
+            "prob_sell_7d": 0.079
+          },
+          "ebay": {
+            "list_price_gbp": 53.88,
+            "net_payout_gbp": 51.72,
+            "expected_days": 169.4,
+            "prob_sell_7d": 0.069
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 60.85,
+            "net_payout_gbp": 51.72,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.022
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 53.29,
+        "prob_sell_24h": 0.01,
+        "prob_sell_7d": 0.053,
+        "prob_sell_30d": 0.172,
+        "expected_days_to_sell": 231.9,
+        "median_days_to_sell": 138.5,
+        "ci_days_low": 6.5,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 61.25,
+            "net_payout_gbp": 53.29,
+            "expected_days": 197.1,
+            "prob_sell_7d": 0.061
+          },
+          "ebay": {
+            "list_price_gbp": 55.51,
+            "net_payout_gbp": 53.29,
+            "expected_days": 231.9,
+            "prob_sell_7d": 0.053
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 62.69,
+            "net_payout_gbp": 53.29,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.016
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 54.86,
+        "prob_sell_24h": 0.008,
+        "prob_sell_7d": 0.041,
+        "prob_sell_30d": 0.135,
+        "expected_days_to_sell": 317.5,
+        "median_days_to_sell": 189.6,
+        "ci_days_low": 8.9,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 63.06,
+            "net_payout_gbp": 54.86,
+            "expected_days": 269.8,
+            "prob_sell_7d": 0.047
+          },
+          "ebay": {
+            "list_price_gbp": 57.15,
+            "net_payout_gbp": 54.86,
+            "expected_days": 317.5,
+            "prob_sell_7d": 0.041
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 64.54,
+            "net_payout_gbp": 54.86,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.012
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 56.42,
+        "prob_sell_24h": 0.006,
+        "prob_sell_7d": 0.032,
+        "prob_sell_30d": 0.105,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 259.0,
+        "ci_days_low": 12.1,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 64.85,
+            "net_payout_gbp": 56.42,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.036
+          },
+          "ebay": {
+            "list_price_gbp": 58.77,
+            "net_payout_gbp": 56.42,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.032
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 66.38,
+            "net_payout_gbp": 56.42,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.009
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 57.99,
+        "prob_sell_24h": 0.005,
+        "prob_sell_7d": 0.024,
+        "prob_sell_30d": 0.081,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 354.6,
+        "ci_days_low": 16.6,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 66.66,
+            "net_payout_gbp": 57.99,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.028
+          },
+          "ebay": {
+            "list_price_gbp": 60.41,
+            "net_payout_gbp": 57.99,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.024
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 68.22,
+            "net_payout_gbp": 57.99,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.007
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 59.56,
+        "prob_sell_24h": 0.004,
+        "prob_sell_7d": 0.019,
+        "prob_sell_30d": 0.063,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 22.7,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 68.46,
+            "net_payout_gbp": 59.56,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.021
+          },
+          "ebay": {
+            "list_price_gbp": 62.04,
+            "net_payout_gbp": 59.56,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.019
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 70.07,
+            "net_payout_gbp": 59.56,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.005
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 61.12,
+        "prob_sell_24h": 0.003,
+        "prob_sell_7d": 0.014,
+        "prob_sell_30d": 0.049,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 31.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 70.25,
+            "net_payout_gbp": 61.12,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.016
+          },
+          "ebay": {
+            "list_price_gbp": 63.67,
+            "net_payout_gbp": 61.12,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.014
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 71.91,
+            "net_payout_gbp": 61.12,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.004
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 62.69,
+        "prob_sell_24h": 0.002,
+        "prob_sell_7d": 0.011,
+        "prob_sell_30d": 0.037,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 42.4,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 72.06,
+            "net_payout_gbp": 62.69,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.013
+          },
+          "ebay": {
+            "list_price_gbp": 65.3,
+            "net_payout_gbp": 62.69,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.011
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 73.75,
+            "net_payout_gbp": 62.69,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.003
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 64.26,
+        "prob_sell_24h": 0.002,
+        "prob_sell_7d": 0.008,
+        "prob_sell_30d": 0.029,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 58.1,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 73.86,
+            "net_payout_gbp": 64.26,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.01
+          },
+          "ebay": {
+            "list_price_gbp": 66.94,
+            "net_payout_gbp": 64.26,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.008
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 75.6,
+            "net_payout_gbp": 64.26,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.002
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 65.82,
+        "prob_sell_24h": 0.001,
+        "prob_sell_7d": 0.006,
+        "prob_sell_30d": 0.022,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 79.3,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 75.66,
+            "net_payout_gbp": 65.82,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.007
+          },
+          "ebay": {
+            "list_price_gbp": 68.56,
+            "net_payout_gbp": 65.82,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.006
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 77.44,
+            "net_payout_gbp": 65.82,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 67.39,
+        "prob_sell_24h": 0.001,
+        "prob_sell_7d": 0.005,
+        "prob_sell_30d": 0.017,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 108.6,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 77.46,
+            "net_payout_gbp": 67.39,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.006
+          },
+          "ebay": {
+            "list_price_gbp": 70.2,
+            "net_payout_gbp": 67.39,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.005
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 79.28,
+            "net_payout_gbp": 67.39,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 68.95,
+        "prob_sell_24h": 0.001,
+        "prob_sell_7d": 0.004,
+        "prob_sell_30d": 0.013,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 148.4,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 79.25,
+            "net_payout_gbp": 68.95,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.004
+          },
+          "ebay": {
+            "list_price_gbp": 71.82,
+            "net_payout_gbp": 68.95,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.004
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 81.12,
+            "net_payout_gbp": 68.95,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 70.52,
+        "prob_sell_24h": 0.001,
+        "prob_sell_7d": 0.003,
+        "prob_sell_30d": 0.01,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 203.1,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 81.06,
+            "net_payout_gbp": 70.52,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.003
+          },
+          "ebay": {
+            "list_price_gbp": 73.46,
+            "net_payout_gbp": 70.52,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.003
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 82.96,
+            "net_payout_gbp": 70.52,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 72.09,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.002,
+        "prob_sell_30d": 0.008,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 278.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 82.86,
+            "net_payout_gbp": 72.09,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.003
+          },
+          "ebay": {
+            "list_price_gbp": 75.09,
+            "net_payout_gbp": 72.09,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.002
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 84.81,
+            "net_payout_gbp": 72.09,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 73.65,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.002,
+        "prob_sell_30d": 0.006,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 84.66,
+            "net_payout_gbp": 73.65,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.002
+          },
+          "ebay": {
+            "list_price_gbp": 76.72,
+            "net_payout_gbp": 73.65,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.002
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 86.65,
+            "net_payout_gbp": 73.65,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 75.22,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.001,
+        "prob_sell_30d": 0.005,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 86.46,
+            "net_payout_gbp": 75.22,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.002
+          },
+          "ebay": {
+            "list_price_gbp": 78.35,
+            "net_payout_gbp": 75.22,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 88.49,
+            "net_payout_gbp": 75.22,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 76.79,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.001,
+        "prob_sell_30d": 0.003,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 88.26,
+            "net_payout_gbp": 76.79,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          },
+          "ebay": {
+            "list_price_gbp": 79.99,
+            "net_payout_gbp": 76.79,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 90.34,
+            "net_payout_gbp": 76.79,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 78.35,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.001,
+        "prob_sell_30d": 0.003,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 90.06,
+            "net_payout_gbp": 78.35,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          },
+          "ebay": {
+            "list_price_gbp": 81.61,
+            "net_payout_gbp": 78.35,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 92.18,
+            "net_payout_gbp": 78.35,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 79.92,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.001,
+        "prob_sell_30d": 0.002,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 91.86,
+            "net_payout_gbp": 79.92,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          },
+          "ebay": {
+            "list_price_gbp": 83.25,
+            "net_payout_gbp": 79.92,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 94.02,
+            "net_payout_gbp": 79.92,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 81.48,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.0,
+        "prob_sell_30d": 0.002,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 93.66,
+            "net_payout_gbp": 81.48,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          },
+          "ebay": {
+            "list_price_gbp": 84.88,
+            "net_payout_gbp": 81.48,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 95.86,
+            "net_payout_gbp": 81.48,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 83.05,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.0,
+        "prob_sell_30d": 0.001,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 95.46,
+            "net_payout_gbp": 83.05,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "ebay": {
+            "list_price_gbp": 86.51,
+            "net_payout_gbp": 83.05,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 97.71,
+            "net_payout_gbp": 83.05,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 84.62,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.0,
+        "prob_sell_30d": 0.001,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 97.26,
+            "net_payout_gbp": 84.62,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "ebay": {
+            "list_price_gbp": 88.15,
+            "net_payout_gbp": 84.62,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 99.55,
+            "net_payout_gbp": 84.62,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 86.18,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.0,
+        "prob_sell_30d": 0.001,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 99.06,
+            "net_payout_gbp": 86.18,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "ebay": {
+            "list_price_gbp": 89.77,
+            "net_payout_gbp": 86.18,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 101.39,
+            "net_payout_gbp": 86.18,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 87.75,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.0,
+        "prob_sell_30d": 0.001,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 100.86,
+            "net_payout_gbp": 87.75,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "ebay": {
+            "list_price_gbp": 91.41,
+            "net_payout_gbp": 87.75,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 103.24,
+            "net_payout_gbp": 87.75,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      }
+    ],
+    "very_good": [
+      {
+        "price_gbp": 11.0,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 12.64,
+            "net_payout_gbp": 11.0,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 11.46,
+            "net_payout_gbp": 11.0,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 12.94,
+            "net_payout_gbp": 11.0,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 12.57,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 14.45,
+            "net_payout_gbp": 12.57,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 13.09,
+            "net_payout_gbp": 12.57,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 14.79,
+            "net_payout_gbp": 12.57,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 14.13,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 16.24,
+            "net_payout_gbp": 14.13,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 14.72,
+            "net_payout_gbp": 14.13,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 16.62,
+            "net_payout_gbp": 14.13,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 15.7,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 18.05,
+            "net_payout_gbp": 15.7,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 16.35,
+            "net_payout_gbp": 15.7,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 18.47,
+            "net_payout_gbp": 15.7,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 17.27,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 19.85,
+            "net_payout_gbp": 17.27,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 17.99,
+            "net_payout_gbp": 17.27,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 20.32,
+            "net_payout_gbp": 17.27,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 18.83,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.1,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 21.64,
+            "net_payout_gbp": 18.83,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 19.61,
+            "net_payout_gbp": 18.83,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 22.15,
+            "net_payout_gbp": 18.83,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 20.4,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.1,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 23.45,
+            "net_payout_gbp": 20.4,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 21.25,
+            "net_payout_gbp": 20.4,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 24.0,
+            "net_payout_gbp": 20.4,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 21.96,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.1,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 25.24,
+            "net_payout_gbp": 21.96,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 22.88,
+            "net_payout_gbp": 21.96,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 25.84,
+            "net_payout_gbp": 21.96,
+            "expected_days": 0.1,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 23.53,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.2,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 27.05,
+            "net_payout_gbp": 23.53,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 24.51,
+            "net_payout_gbp": 23.53,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 27.68,
+            "net_payout_gbp": 23.53,
+            "expected_days": 0.1,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 25.1,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.1,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.2,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 28.85,
+            "net_payout_gbp": 25.1,
+            "expected_days": 0.1,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 26.15,
+            "net_payout_gbp": 25.1,
+            "expected_days": 0.1,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 29.53,
+            "net_payout_gbp": 25.1,
+            "expected_days": 0.1,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 26.66,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.1,
+        "median_days_to_sell": 0.1,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.3,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 30.64,
+            "net_payout_gbp": 26.66,
+            "expected_days": 0.1,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 27.77,
+            "net_payout_gbp": 26.66,
+            "expected_days": 0.1,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 31.36,
+            "net_payout_gbp": 26.66,
+            "expected_days": 0.2,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 28.23,
+        "prob_sell_24h": 0.998,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.1,
+        "median_days_to_sell": 0.1,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.4,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 32.45,
+            "net_payout_gbp": 28.23,
+            "expected_days": 0.1,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 29.41,
+            "net_payout_gbp": 28.23,
+            "expected_days": 0.1,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 33.21,
+            "net_payout_gbp": 28.23,
+            "expected_days": 0.2,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 29.8,
+        "prob_sell_24h": 0.993,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.2,
+        "median_days_to_sell": 0.1,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.6,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 34.25,
+            "net_payout_gbp": 29.8,
+            "expected_days": 0.1,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 31.04,
+            "net_payout_gbp": 29.8,
+            "expected_days": 0.2,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 35.06,
+            "net_payout_gbp": 29.8,
+            "expected_days": 0.3,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 31.36,
+        "prob_sell_24h": 0.978,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.2,
+        "median_days_to_sell": 0.1,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.8,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 36.05,
+            "net_payout_gbp": 31.36,
+            "expected_days": 0.2,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 32.67,
+            "net_payout_gbp": 31.36,
+            "expected_days": 0.2,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 36.89,
+            "net_payout_gbp": 31.36,
+            "expected_days": 0.5,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 32.93,
+        "prob_sell_24h": 0.946,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.3,
+        "median_days_to_sell": 0.2,
+        "ci_days_low": 0.0,
+        "ci_days_high": 1.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 37.85,
+            "net_payout_gbp": 32.93,
+            "expected_days": 0.3,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 34.3,
+            "net_payout_gbp": 32.93,
+            "expected_days": 0.3,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 38.74,
+            "net_payout_gbp": 32.93,
+            "expected_days": 0.7,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 34.49,
+        "prob_sell_24h": 0.893,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.4,
+        "median_days_to_sell": 0.3,
+        "ci_days_low": 0.0,
+        "ci_days_high": 1.4,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 39.64,
+            "net_payout_gbp": 34.49,
+            "expected_days": 0.4,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 35.93,
+            "net_payout_gbp": 34.49,
+            "expected_days": 0.4,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 40.58,
+            "net_payout_gbp": 34.49,
+            "expected_days": 1.0,
+            "prob_sell_7d": 0.749
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 36.06,
+        "prob_sell_24h": 0.82,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.6,
+        "median_days_to_sell": 0.3,
+        "ci_days_low": 0.0,
+        "ci_days_high": 1.9,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 41.45,
+            "net_payout_gbp": 36.06,
+            "expected_days": 0.5,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 37.56,
+            "net_payout_gbp": 36.06,
+            "expected_days": 0.6,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 42.42,
+            "net_payout_gbp": 36.06,
+            "expected_days": 1.4,
+            "prob_sell_7d": 0.746
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 37.63,
+        "prob_sell_24h": 0.731,
+        "prob_sell_7d": 0.999,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.8,
+        "median_days_to_sell": 0.5,
+        "ci_days_low": 0.0,
+        "ci_days_high": 2.6,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 43.25,
+            "net_payout_gbp": 37.63,
+            "expected_days": 0.7,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 39.2,
+            "net_payout_gbp": 37.63,
+            "expected_days": 0.8,
+            "prob_sell_7d": 0.999
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 44.27,
+            "net_payout_gbp": 37.63,
+            "expected_days": 2.1,
+            "prob_sell_7d": 0.735
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 39.19,
+        "prob_sell_24h": 0.635,
+        "prob_sell_7d": 0.995,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 1.1,
+        "median_days_to_sell": 0.6,
+        "ci_days_low": 0.0,
+        "ci_days_high": 3.6,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 45.05,
+            "net_payout_gbp": 39.19,
+            "expected_days": 0.9,
+            "prob_sell_7d": 0.998
+          },
+          "ebay": {
+            "list_price_gbp": 40.82,
+            "net_payout_gbp": 39.19,
+            "expected_days": 1.1,
+            "prob_sell_7d": 0.995
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 46.11,
+            "net_payout_gbp": 39.19,
+            "expected_days": 2.9,
+            "prob_sell_7d": 0.708
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 40.76,
+        "prob_sell_24h": 0.537,
+        "prob_sell_7d": 0.982,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 1.5,
+        "median_days_to_sell": 0.9,
+        "ci_days_low": 0.0,
+        "ci_days_high": 4.9,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 46.85,
+            "net_payout_gbp": 40.76,
+            "expected_days": 1.3,
+            "prob_sell_7d": 0.99
+          },
+          "ebay": {
+            "list_price_gbp": 42.46,
+            "net_payout_gbp": 40.76,
+            "expected_days": 1.5,
+            "prob_sell_7d": 0.982
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 47.95,
+            "net_payout_gbp": 40.76,
+            "expected_days": 4.2,
+            "prob_sell_7d": 0.66
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 42.33,
+        "prob_sell_24h": 0.446,
+        "prob_sell_7d": 0.954,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 2.0,
+        "median_days_to_sell": 1.2,
+        "ci_days_low": 0.1,
+        "ci_days_high": 6.8,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 48.66,
+            "net_payout_gbp": 42.33,
+            "expected_days": 1.7,
+            "prob_sell_7d": 0.971
+          },
+          "ebay": {
+            "list_price_gbp": 44.09,
+            "net_payout_gbp": 42.33,
+            "expected_days": 2.0,
+            "prob_sell_7d": 0.954
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 49.8,
+            "net_payout_gbp": 42.33,
+            "expected_days": 6.0,
+            "prob_sell_7d": 0.593
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 43.89,
+        "prob_sell_24h": 0.364,
+        "prob_sell_7d": 0.906,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 2.8,
+        "median_days_to_sell": 1.7,
+        "ci_days_low": 0.1,
+        "ci_days_high": 9.2,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 50.45,
+            "net_payout_gbp": 43.89,
+            "expected_days": 2.3,
+            "prob_sell_7d": 0.934
+          },
+          "ebay": {
+            "list_price_gbp": 45.72,
+            "net_payout_gbp": 43.89,
+            "expected_days": 2.8,
+            "prob_sell_7d": 0.906
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 51.64,
+            "net_payout_gbp": 43.89,
+            "expected_days": 8.5,
+            "prob_sell_7d": 0.515
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 45.46,
+        "prob_sell_24h": 0.293,
+        "prob_sell_7d": 0.837,
+        "prob_sell_30d": 0.998,
+        "expected_days_to_sell": 3.8,
+        "median_days_to_sell": 2.3,
+        "ci_days_low": 0.1,
+        "ci_days_high": 12.6,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 52.25,
+            "net_payout_gbp": 45.46,
+            "expected_days": 3.2,
+            "prob_sell_7d": 0.875
+          },
+          "ebay": {
+            "list_price_gbp": 47.35,
+            "net_payout_gbp": 45.46,
+            "expected_days": 3.8,
+            "prob_sell_7d": 0.837
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 53.48,
+            "net_payout_gbp": 45.46,
+            "expected_days": 12.2,
+            "prob_sell_7d": 0.431
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 47.03,
+        "prob_sell_24h": 0.233,
+        "prob_sell_7d": 0.75,
+        "prob_sell_30d": 0.992,
+        "expected_days_to_sell": 5.2,
+        "median_days_to_sell": 3.1,
+        "ci_days_low": 0.1,
+        "ci_days_high": 17.3,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 54.06,
+            "net_payout_gbp": 47.03,
+            "expected_days": 4.4,
+            "prob_sell_7d": 0.797
+          },
+          "ebay": {
+            "list_price_gbp": 48.99,
+            "net_payout_gbp": 47.03,
+            "expected_days": 5.2,
+            "prob_sell_7d": 0.75
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 55.33,
+            "net_payout_gbp": 47.03,
+            "expected_days": 17.4,
+            "prob_sell_7d": 0.351
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 48.59,
+        "prob_sell_24h": 0.184,
+        "prob_sell_7d": 0.655,
+        "prob_sell_30d": 0.974,
+        "expected_days_to_sell": 7.1,
+        "median_days_to_sell": 4.2,
+        "ci_days_low": 0.2,
+        "ci_days_high": 23.6,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 55.85,
+            "net_payout_gbp": 48.59,
+            "expected_days": 6.0,
+            "prob_sell_7d": 0.706
+          },
+          "ebay": {
+            "list_price_gbp": 50.61,
+            "net_payout_gbp": 48.59,
+            "expected_days": 7.1,
+            "prob_sell_7d": 0.655
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 57.16,
+            "net_payout_gbp": 48.59,
+            "expected_days": 24.8,
+            "prob_sell_7d": 0.28
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 50.16,
+        "prob_sell_24h": 0.144,
+        "prob_sell_7d": 0.558,
+        "prob_sell_30d": 0.94,
+        "expected_days_to_sell": 9.7,
+        "median_days_to_sell": 5.8,
+        "ci_days_low": 0.3,
+        "ci_days_high": 32.4,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 57.66,
+            "net_payout_gbp": 50.16,
+            "expected_days": 8.2,
+            "prob_sell_7d": 0.608
+          },
+          "ebay": {
+            "list_price_gbp": 52.25,
+            "net_payout_gbp": 50.16,
+            "expected_days": 9.7,
+            "prob_sell_7d": 0.558
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 59.01,
+            "net_payout_gbp": 50.16,
+            "expected_days": 35.5,
+            "prob_sell_7d": 0.219
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 51.72,
+        "prob_sell_24h": 0.113,
+        "prob_sell_7d": 0.465,
+        "prob_sell_30d": 0.884,
+        "expected_days_to_sell": 13.2,
+        "median_days_to_sell": 7.9,
+        "ci_days_low": 0.4,
+        "ci_days_high": 44.2,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 59.45,
+            "net_payout_gbp": 51.72,
+            "expected_days": 11.2,
+            "prob_sell_7d": 0.512
+          },
+          "ebay": {
+            "list_price_gbp": 53.88,
+            "net_payout_gbp": 51.72,
+            "expected_days": 13.2,
+            "prob_sell_7d": 0.465
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 60.85,
+            "net_payout_gbp": 51.72,
+            "expected_days": 50.6,
+            "prob_sell_7d": 0.169
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 53.29,
+        "prob_sell_24h": 0.088,
+        "prob_sell_7d": 0.381,
+        "prob_sell_30d": 0.808,
+        "expected_days_to_sell": 18.1,
+        "median_days_to_sell": 10.8,
+        "ci_days_low": 0.5,
+        "ci_days_high": 60.5,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 61.25,
+            "net_payout_gbp": 53.29,
+            "expected_days": 15.4,
+            "prob_sell_7d": 0.423
+          },
+          "ebay": {
+            "list_price_gbp": 55.51,
+            "net_payout_gbp": 53.29,
+            "expected_days": 18.1,
+            "prob_sell_7d": 0.381
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 62.69,
+            "net_payout_gbp": 53.29,
+            "expected_days": 72.3,
+            "prob_sell_7d": 0.129
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 54.86,
+        "prob_sell_24h": 0.068,
+        "prob_sell_7d": 0.307,
+        "prob_sell_30d": 0.717,
+        "expected_days_to_sell": 24.8,
+        "median_days_to_sell": 14.8,
+        "ci_days_low": 0.7,
+        "ci_days_high": 82.8,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 63.06,
+            "net_payout_gbp": 54.86,
+            "expected_days": 21.1,
+            "prob_sell_7d": 0.344
+          },
+          "ebay": {
+            "list_price_gbp": 57.15,
+            "net_payout_gbp": 54.86,
+            "expected_days": 24.8,
+            "prob_sell_7d": 0.307
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 64.54,
+            "net_payout_gbp": 54.86,
+            "expected_days": 103.3,
+            "prob_sell_7d": 0.097
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 56.42,
+        "prob_sell_24h": 0.052,
+        "prob_sell_7d": 0.245,
+        "prob_sell_30d": 0.621,
+        "expected_days_to_sell": 33.9,
+        "median_days_to_sell": 20.2,
+        "ci_days_low": 0.9,
+        "ci_days_high": 113.2,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 64.85,
+            "net_payout_gbp": 56.42,
+            "expected_days": 28.8,
+            "prob_sell_7d": 0.276
+          },
+          "ebay": {
+            "list_price_gbp": 58.77,
+            "net_payout_gbp": 56.42,
+            "expected_days": 33.9,
+            "prob_sell_7d": 0.245
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 66.38,
+            "net_payout_gbp": 56.42,
+            "expected_days": 147.2,
+            "prob_sell_7d": 0.073
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 57.99,
+        "prob_sell_24h": 0.04,
+        "prob_sell_7d": 0.194,
+        "prob_sell_30d": 0.524,
+        "expected_days_to_sell": 46.4,
+        "median_days_to_sell": 27.7,
+        "ci_days_low": 1.3,
+        "ci_days_high": 154.9,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 66.66,
+            "net_payout_gbp": 57.99,
+            "expected_days": 39.4,
+            "prob_sell_7d": 0.219
+          },
+          "ebay": {
+            "list_price_gbp": 60.41,
+            "net_payout_gbp": 57.99,
+            "expected_days": 46.4,
+            "prob_sell_7d": 0.194
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 68.22,
+            "net_payout_gbp": 57.99,
+            "expected_days": 210.4,
+            "prob_sell_7d": 0.055
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 59.56,
+        "prob_sell_24h": 0.031,
+        "prob_sell_7d": 0.152,
+        "prob_sell_30d": 0.433,
+        "expected_days_to_sell": 63.5,
+        "median_days_to_sell": 37.9,
+        "ci_days_low": 1.8,
+        "ci_days_high": 212.1,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 68.46,
+            "net_payout_gbp": 59.56,
+            "expected_days": 53.9,
+            "prob_sell_7d": 0.173
+          },
+          "ebay": {
+            "list_price_gbp": 62.04,
+            "net_payout_gbp": 59.56,
+            "expected_days": 63.5,
+            "prob_sell_7d": 0.152
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 70.07,
+            "net_payout_gbp": 59.56,
+            "expected_days": 300.6,
+            "prob_sell_7d": 0.041
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 61.12,
+        "prob_sell_24h": 0.024,
+        "prob_sell_7d": 0.119,
+        "prob_sell_30d": 0.353,
+        "expected_days_to_sell": 86.7,
+        "median_days_to_sell": 51.8,
+        "ci_days_low": 2.4,
+        "ci_days_high": 289.7,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 70.25,
+            "net_payout_gbp": 61.12,
+            "expected_days": 73.7,
+            "prob_sell_7d": 0.135
+          },
+          "ebay": {
+            "list_price_gbp": 63.67,
+            "net_payout_gbp": 61.12,
+            "expected_days": 86.7,
+            "prob_sell_7d": 0.119
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 71.91,
+            "net_payout_gbp": 61.12,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.031
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 62.69,
+        "prob_sell_24h": 0.018,
+        "prob_sell_7d": 0.092,
+        "prob_sell_30d": 0.284,
+        "expected_days_to_sell": 118.7,
+        "median_days_to_sell": 70.9,
+        "ci_days_low": 3.3,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 72.06,
+            "net_payout_gbp": 62.69,
+            "expected_days": 100.9,
+            "prob_sell_7d": 0.105
+          },
+          "ebay": {
+            "list_price_gbp": 65.3,
+            "net_payout_gbp": 62.69,
+            "expected_days": 118.7,
+            "prob_sell_7d": 0.092
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 73.75,
+            "net_payout_gbp": 62.69,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.023
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 64.26,
+        "prob_sell_24h": 0.014,
+        "prob_sell_7d": 0.072,
+        "prob_sell_30d": 0.226,
+        "expected_days_to_sell": 162.5,
+        "median_days_to_sell": 97.0,
+        "ci_days_low": 4.5,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 73.86,
+            "net_payout_gbp": 64.26,
+            "expected_days": 138.1,
+            "prob_sell_7d": 0.082
+          },
+          "ebay": {
+            "list_price_gbp": 66.94,
+            "net_payout_gbp": 64.26,
+            "expected_days": 162.5,
+            "prob_sell_7d": 0.072
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 75.6,
+            "net_payout_gbp": 64.26,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.017
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 65.82,
+        "prob_sell_24h": 0.011,
+        "prob_sell_7d": 0.055,
+        "prob_sell_30d": 0.178,
+        "expected_days_to_sell": 221.9,
+        "median_days_to_sell": 132.5,
+        "ci_days_low": 6.2,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 75.66,
+            "net_payout_gbp": 65.82,
+            "expected_days": 188.6,
+            "prob_sell_7d": 0.063
+          },
+          "ebay": {
+            "list_price_gbp": 68.56,
+            "net_payout_gbp": 65.82,
+            "expected_days": 221.9,
+            "prob_sell_7d": 0.055
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 77.44,
+            "net_payout_gbp": 65.82,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.012
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 67.39,
+        "prob_sell_24h": 0.008,
+        "prob_sell_7d": 0.043,
+        "prob_sell_30d": 0.139,
+        "expected_days_to_sell": 303.8,
+        "median_days_to_sell": 181.4,
+        "ci_days_low": 8.5,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 77.46,
+            "net_payout_gbp": 67.39,
+            "expected_days": 258.2,
+            "prob_sell_7d": 0.049
+          },
+          "ebay": {
+            "list_price_gbp": 70.2,
+            "net_payout_gbp": 67.39,
+            "expected_days": 303.8,
+            "prob_sell_7d": 0.043
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 79.28,
+            "net_payout_gbp": 67.39,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.009
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 68.95,
+        "prob_sell_24h": 0.006,
+        "prob_sell_7d": 0.033,
+        "prob_sell_30d": 0.109,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 247.9,
+        "ci_days_low": 11.6,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 79.25,
+            "net_payout_gbp": 68.95,
+            "expected_days": 352.8,
+            "prob_sell_7d": 0.038
+          },
+          "ebay": {
+            "list_price_gbp": 71.82,
+            "net_payout_gbp": 68.95,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.033
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 81.12,
+            "net_payout_gbp": 68.95,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.007
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 70.52,
+        "prob_sell_24h": 0.005,
+        "prob_sell_7d": 0.025,
+        "prob_sell_30d": 0.084,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 339.3,
+        "ci_days_low": 15.9,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 81.06,
+            "net_payout_gbp": 70.52,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.029
+          },
+          "ebay": {
+            "list_price_gbp": 73.46,
+            "net_payout_gbp": 70.52,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.025
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 82.96,
+            "net_payout_gbp": 70.52,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.005
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 72.09,
+        "prob_sell_24h": 0.004,
+        "prob_sell_7d": 0.019,
+        "prob_sell_30d": 0.065,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 21.7,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 82.86,
+            "net_payout_gbp": 72.09,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.022
+          },
+          "ebay": {
+            "list_price_gbp": 75.09,
+            "net_payout_gbp": 72.09,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.019
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 84.81,
+            "net_payout_gbp": 72.09,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.004
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 73.65,
+        "prob_sell_24h": 0.003,
+        "prob_sell_7d": 0.015,
+        "prob_sell_30d": 0.05,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 29.7,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 84.66,
+            "net_payout_gbp": 73.65,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.017
+          },
+          "ebay": {
+            "list_price_gbp": 76.72,
+            "net_payout_gbp": 73.65,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.015
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 86.65,
+            "net_payout_gbp": 73.65,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.003
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 75.22,
+        "prob_sell_24h": 0.002,
+        "prob_sell_7d": 0.011,
+        "prob_sell_30d": 0.039,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 40.6,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 86.46,
+            "net_payout_gbp": 75.22,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.013
+          },
+          "ebay": {
+            "list_price_gbp": 78.35,
+            "net_payout_gbp": 75.22,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.011
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 88.49,
+            "net_payout_gbp": 75.22,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.002
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 76.79,
+        "prob_sell_24h": 0.002,
+        "prob_sell_7d": 0.009,
+        "prob_sell_30d": 0.03,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 55.6,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 88.26,
+            "net_payout_gbp": 76.79,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.01
+          },
+          "ebay": {
+            "list_price_gbp": 79.99,
+            "net_payout_gbp": 76.79,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.009
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 90.34,
+            "net_payout_gbp": 76.79,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.002
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 78.35,
+        "prob_sell_24h": 0.001,
+        "prob_sell_7d": 0.007,
+        "prob_sell_30d": 0.023,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 75.9,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 90.06,
+            "net_payout_gbp": 78.35,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.008
+          },
+          "ebay": {
+            "list_price_gbp": 81.61,
+            "net_payout_gbp": 78.35,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.007
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 92.18,
+            "net_payout_gbp": 78.35,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 79.92,
+        "prob_sell_24h": 0.001,
+        "prob_sell_7d": 0.005,
+        "prob_sell_30d": 0.018,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 103.9,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 91.86,
+            "net_payout_gbp": 79.92,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.006
+          },
+          "ebay": {
+            "list_price_gbp": 83.25,
+            "net_payout_gbp": 79.92,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.005
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 94.02,
+            "net_payout_gbp": 79.92,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 81.48,
+        "prob_sell_24h": 0.001,
+        "prob_sell_7d": 0.004,
+        "prob_sell_30d": 0.014,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 142.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 93.66,
+            "net_payout_gbp": 81.48,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.005
+          },
+          "ebay": {
+            "list_price_gbp": 84.88,
+            "net_payout_gbp": 81.48,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.004
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 95.86,
+            "net_payout_gbp": 81.48,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 83.05,
+        "prob_sell_24h": 0.001,
+        "prob_sell_7d": 0.003,
+        "prob_sell_30d": 0.01,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 194.4,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 95.46,
+            "net_payout_gbp": 83.05,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.003
+          },
+          "ebay": {
+            "list_price_gbp": 86.51,
+            "net_payout_gbp": 83.05,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.003
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 97.71,
+            "net_payout_gbp": 83.05,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 84.62,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.002,
+        "prob_sell_30d": 0.008,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 266.1,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 97.26,
+            "net_payout_gbp": 84.62,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.003
+          },
+          "ebay": {
+            "list_price_gbp": 88.15,
+            "net_payout_gbp": 84.62,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.002
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 99.55,
+            "net_payout_gbp": 84.62,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 86.18,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.002,
+        "prob_sell_30d": 0.006,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 363.5,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 99.06,
+            "net_payout_gbp": 86.18,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.002
+          },
+          "ebay": {
+            "list_price_gbp": 89.77,
+            "net_payout_gbp": 86.18,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.002
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 101.39,
+            "net_payout_gbp": 86.18,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 87.75,
+        "prob_sell_24h": 0.0,
+        "prob_sell_7d": 0.001,
+        "prob_sell_30d": 0.005,
+        "expected_days_to_sell": 365.0,
+        "median_days_to_sell": 365.0,
+        "ci_days_low": 365.0,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 100.86,
+            "net_payout_gbp": 87.75,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.002
+          },
+          "ebay": {
+            "list_price_gbp": 91.41,
+            "net_payout_gbp": 87.75,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.001
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 103.24,
+            "net_payout_gbp": 87.75,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.0
+          }
+        },
+        "best_platform": "vinted"
+      }
+    ],
+    "mint": [
+      {
+        "price_gbp": 11.0,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 12.64,
+            "net_payout_gbp": 11.0,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 11.46,
+            "net_payout_gbp": 11.0,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 12.94,
+            "net_payout_gbp": 11.0,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 12.57,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 14.45,
+            "net_payout_gbp": 12.57,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 13.09,
+            "net_payout_gbp": 12.57,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 14.79,
+            "net_payout_gbp": 12.57,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 14.13,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 16.24,
+            "net_payout_gbp": 14.13,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 14.72,
+            "net_payout_gbp": 14.13,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 16.62,
+            "net_payout_gbp": 14.13,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 15.7,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 18.05,
+            "net_payout_gbp": 15.7,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 16.35,
+            "net_payout_gbp": 15.7,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 18.47,
+            "net_payout_gbp": 15.7,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 17.27,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 19.85,
+            "net_payout_gbp": 17.27,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 17.99,
+            "net_payout_gbp": 17.27,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 20.32,
+            "net_payout_gbp": 17.27,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 18.83,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 21.64,
+            "net_payout_gbp": 18.83,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 19.61,
+            "net_payout_gbp": 18.83,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 22.15,
+            "net_payout_gbp": 18.83,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 20.4,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 23.45,
+            "net_payout_gbp": 20.4,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 21.25,
+            "net_payout_gbp": 20.4,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 24.0,
+            "net_payout_gbp": 20.4,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 21.96,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 25.24,
+            "net_payout_gbp": 21.96,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 22.88,
+            "net_payout_gbp": 21.96,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 25.84,
+            "net_payout_gbp": 21.96,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 23.53,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 27.05,
+            "net_payout_gbp": 23.53,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 24.51,
+            "net_payout_gbp": 23.53,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 27.68,
+            "net_payout_gbp": 23.53,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 25.1,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 28.85,
+            "net_payout_gbp": 25.1,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 26.15,
+            "net_payout_gbp": 25.1,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 29.53,
+            "net_payout_gbp": 25.1,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 26.66,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 30.64,
+            "net_payout_gbp": 26.66,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 27.77,
+            "net_payout_gbp": 26.66,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 31.36,
+            "net_payout_gbp": 26.66,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 28.23,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 32.45,
+            "net_payout_gbp": 28.23,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 29.41,
+            "net_payout_gbp": 28.23,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 33.21,
+            "net_payout_gbp": 28.23,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 29.8,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 34.25,
+            "net_payout_gbp": 29.8,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 31.04,
+            "net_payout_gbp": 29.8,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 35.06,
+            "net_payout_gbp": 29.8,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 31.36,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 36.05,
+            "net_payout_gbp": 31.36,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 32.67,
+            "net_payout_gbp": 31.36,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 36.89,
+            "net_payout_gbp": 31.36,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 32.93,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 37.85,
+            "net_payout_gbp": 32.93,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 34.3,
+            "net_payout_gbp": 32.93,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 38.74,
+            "net_payout_gbp": 32.93,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 34.49,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 39.64,
+            "net_payout_gbp": 34.49,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 35.93,
+            "net_payout_gbp": 34.49,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 40.58,
+            "net_payout_gbp": 34.49,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 36.06,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 41.45,
+            "net_payout_gbp": 36.06,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 37.56,
+            "net_payout_gbp": 36.06,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 42.42,
+            "net_payout_gbp": 36.06,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 37.63,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 43.25,
+            "net_payout_gbp": 37.63,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 39.2,
+            "net_payout_gbp": 37.63,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 44.27,
+            "net_payout_gbp": 37.63,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 39.19,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 45.05,
+            "net_payout_gbp": 39.19,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 40.82,
+            "net_payout_gbp": 39.19,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 46.11,
+            "net_payout_gbp": 39.19,
+            "expected_days": 0.0,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 40.76,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.1,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 46.85,
+            "net_payout_gbp": 40.76,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 42.46,
+            "net_payout_gbp": 40.76,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 47.95,
+            "net_payout_gbp": 40.76,
+            "expected_days": 0.1,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 42.33,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.1,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 48.66,
+            "net_payout_gbp": 42.33,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 44.09,
+            "net_payout_gbp": 42.33,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 49.8,
+            "net_payout_gbp": 42.33,
+            "expected_days": 0.1,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 43.89,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.1,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 50.45,
+            "net_payout_gbp": 43.89,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 45.72,
+            "net_payout_gbp": 43.89,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 51.64,
+            "net_payout_gbp": 43.89,
+            "expected_days": 0.1,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 45.46,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.0,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.2,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 52.25,
+            "net_payout_gbp": 45.46,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 47.35,
+            "net_payout_gbp": 45.46,
+            "expected_days": 0.0,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 53.48,
+            "net_payout_gbp": 45.46,
+            "expected_days": 0.2,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 47.03,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.1,
+        "median_days_to_sell": 0.0,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.2,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 54.06,
+            "net_payout_gbp": 47.03,
+            "expected_days": 0.1,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 48.99,
+            "net_payout_gbp": 47.03,
+            "expected_days": 0.1,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 55.33,
+            "net_payout_gbp": 47.03,
+            "expected_days": 0.2,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 48.59,
+        "prob_sell_24h": 1.0,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.1,
+        "median_days_to_sell": 0.1,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.3,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 55.85,
+            "net_payout_gbp": 48.59,
+            "expected_days": 0.1,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 50.61,
+            "net_payout_gbp": 48.59,
+            "expected_days": 0.1,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 57.16,
+            "net_payout_gbp": 48.59,
+            "expected_days": 0.3,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 50.16,
+        "prob_sell_24h": 0.998,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.1,
+        "median_days_to_sell": 0.1,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.4,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 57.66,
+            "net_payout_gbp": 50.16,
+            "expected_days": 0.1,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 52.25,
+            "net_payout_gbp": 50.16,
+            "expected_days": 0.1,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 59.01,
+            "net_payout_gbp": 50.16,
+            "expected_days": 0.5,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 51.72,
+        "prob_sell_24h": 0.992,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.2,
+        "median_days_to_sell": 0.1,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.6,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 59.45,
+            "net_payout_gbp": 51.72,
+            "expected_days": 0.1,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 53.88,
+            "net_payout_gbp": 51.72,
+            "expected_days": 0.2,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 60.85,
+            "net_payout_gbp": 51.72,
+            "expected_days": 0.7,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 53.29,
+        "prob_sell_24h": 0.975,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.2,
+        "median_days_to_sell": 0.1,
+        "ci_days_low": 0.0,
+        "ci_days_high": 0.8,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 61.25,
+            "net_payout_gbp": 53.29,
+            "expected_days": 0.2,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 55.51,
+            "net_payout_gbp": 53.29,
+            "expected_days": 0.2,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 62.69,
+            "net_payout_gbp": 53.29,
+            "expected_days": 0.9,
+            "prob_sell_7d": 0.75
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 54.86,
+        "prob_sell_24h": 0.941,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.3,
+        "median_days_to_sell": 0.2,
+        "ci_days_low": 0.0,
+        "ci_days_high": 1.1,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 63.06,
+            "net_payout_gbp": 54.86,
+            "expected_days": 0.3,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 57.15,
+            "net_payout_gbp": 54.86,
+            "expected_days": 0.3,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 64.54,
+            "net_payout_gbp": 54.86,
+            "expected_days": 1.3,
+            "prob_sell_7d": 0.747
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 56.42,
+        "prob_sell_24h": 0.886,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.4,
+        "median_days_to_sell": 0.3,
+        "ci_days_low": 0.0,
+        "ci_days_high": 1.5,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 64.85,
+            "net_payout_gbp": 56.42,
+            "expected_days": 0.4,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 58.77,
+            "net_payout_gbp": 56.42,
+            "expected_days": 0.4,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 66.38,
+            "net_payout_gbp": 56.42,
+            "expected_days": 1.9,
+            "prob_sell_7d": 0.738
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 57.99,
+        "prob_sell_24h": 0.81,
+        "prob_sell_7d": 1.0,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.6,
+        "median_days_to_sell": 0.4,
+        "ci_days_low": 0.0,
+        "ci_days_high": 2.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 66.66,
+            "net_payout_gbp": 57.99,
+            "expected_days": 0.5,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 60.41,
+            "net_payout_gbp": 57.99,
+            "expected_days": 0.6,
+            "prob_sell_7d": 1.0
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 68.22,
+            "net_payout_gbp": 57.99,
+            "expected_days": 2.7,
+            "prob_sell_7d": 0.715
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 59.56,
+        "prob_sell_24h": 0.72,
+        "prob_sell_7d": 0.999,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 0.8,
+        "median_days_to_sell": 0.5,
+        "ci_days_low": 0.0,
+        "ci_days_high": 2.7,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 68.46,
+            "net_payout_gbp": 59.56,
+            "expected_days": 0.7,
+            "prob_sell_7d": 1.0
+          },
+          "ebay": {
+            "list_price_gbp": 62.04,
+            "net_payout_gbp": 59.56,
+            "expected_days": 0.8,
+            "prob_sell_7d": 0.999
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 70.07,
+            "net_payout_gbp": 59.56,
+            "expected_days": 3.9,
+            "prob_sell_7d": 0.672
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 61.12,
+        "prob_sell_24h": 0.623,
+        "prob_sell_7d": 0.994,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 1.1,
+        "median_days_to_sell": 0.7,
+        "ci_days_low": 0.0,
+        "ci_days_high": 3.7,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 70.25,
+            "net_payout_gbp": 61.12,
+            "expected_days": 1.0,
+            "prob_sell_7d": 0.997
+          },
+          "ebay": {
+            "list_price_gbp": 63.67,
+            "net_payout_gbp": 61.12,
+            "expected_days": 1.1,
+            "prob_sell_7d": 0.994
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 71.91,
+            "net_payout_gbp": 61.12,
+            "expected_days": 5.5,
+            "prob_sell_7d": 0.61
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 62.69,
+        "prob_sell_24h": 0.527,
+        "prob_sell_7d": 0.98,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 1.5,
+        "median_days_to_sell": 0.9,
+        "ci_days_low": 0.0,
+        "ci_days_high": 5.1,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 72.06,
+            "net_payout_gbp": 62.69,
+            "expected_days": 1.3,
+            "prob_sell_7d": 0.989
+          },
+          "ebay": {
+            "list_price_gbp": 65.3,
+            "net_payout_gbp": 62.69,
+            "expected_days": 1.5,
+            "prob_sell_7d": 0.98
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 73.75,
+            "net_payout_gbp": 62.69,
+            "expected_days": 7.9,
+            "prob_sell_7d": 0.532
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 64.26,
+        "prob_sell_24h": 0.436,
+        "prob_sell_7d": 0.95,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 2.1,
+        "median_days_to_sell": 1.3,
+        "ci_days_low": 0.1,
+        "ci_days_high": 7.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 73.86,
+            "net_payout_gbp": 64.26,
+            "expected_days": 1.8,
+            "prob_sell_7d": 0.968
+          },
+          "ebay": {
+            "list_price_gbp": 66.94,
+            "net_payout_gbp": 64.26,
+            "expected_days": 2.1,
+            "prob_sell_7d": 0.95
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 75.6,
+            "net_payout_gbp": 64.26,
+            "expected_days": 11.3,
+            "prob_sell_7d": 0.449
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 65.82,
+        "prob_sell_24h": 0.355,
+        "prob_sell_7d": 0.899,
+        "prob_sell_30d": 1.0,
+        "expected_days_to_sell": 2.9,
+        "median_days_to_sell": 1.7,
+        "ci_days_low": 0.1,
+        "ci_days_high": 9.6,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 75.66,
+            "net_payout_gbp": 65.82,
+            "expected_days": 2.4,
+            "prob_sell_7d": 0.928
+          },
+          "ebay": {
+            "list_price_gbp": 68.56,
+            "net_payout_gbp": 65.82,
+            "expected_days": 2.9,
+            "prob_sell_7d": 0.899
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 77.44,
+            "net_payout_gbp": 65.82,
+            "expected_days": 16.1,
+            "prob_sell_7d": 0.369
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 67.39,
+        "prob_sell_24h": 0.286,
+        "prob_sell_7d": 0.828,
+        "prob_sell_30d": 0.998,
+        "expected_days_to_sell": 3.9,
+        "median_days_to_sell": 2.3,
+        "ci_days_low": 0.1,
+        "ci_days_high": 13.1,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 77.46,
+            "net_payout_gbp": 67.39,
+            "expected_days": 3.3,
+            "prob_sell_7d": 0.867
+          },
+          "ebay": {
+            "list_price_gbp": 70.2,
+            "net_payout_gbp": 67.39,
+            "expected_days": 3.9,
+            "prob_sell_7d": 0.828
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 79.28,
+            "net_payout_gbp": 67.39,
+            "expected_days": 23.0,
+            "prob_sell_7d": 0.295
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 68.95,
+        "prob_sell_24h": 0.227,
+        "prob_sell_7d": 0.74,
+        "prob_sell_30d": 0.99,
+        "expected_days_to_sell": 5.4,
+        "median_days_to_sell": 3.2,
+        "ci_days_low": 0.1,
+        "ci_days_high": 17.9,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 79.25,
+            "net_payout_gbp": 68.95,
+            "expected_days": 4.6,
+            "prob_sell_7d": 0.787
+          },
+          "ebay": {
+            "list_price_gbp": 71.82,
+            "net_payout_gbp": 68.95,
+            "expected_days": 5.4,
+            "prob_sell_7d": 0.74
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 81.12,
+            "net_payout_gbp": 68.95,
+            "expected_days": 32.8,
+            "prob_sell_7d": 0.232
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 70.52,
+        "prob_sell_24h": 0.179,
+        "prob_sell_7d": 0.644,
+        "prob_sell_30d": 0.971,
+        "expected_days_to_sell": 7.3,
+        "median_days_to_sell": 4.4,
+        "ci_days_low": 0.2,
+        "ci_days_high": 24.5,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 81.06,
+            "net_payout_gbp": 70.52,
+            "expected_days": 6.2,
+            "prob_sell_7d": 0.694
+          },
+          "ebay": {
+            "list_price_gbp": 73.46,
+            "net_payout_gbp": 70.52,
+            "expected_days": 7.3,
+            "prob_sell_7d": 0.644
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 82.96,
+            "net_payout_gbp": 70.52,
+            "expected_days": 46.8,
+            "prob_sell_7d": 0.179
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 72.09,
+        "prob_sell_24h": 0.14,
+        "prob_sell_7d": 0.547,
+        "prob_sell_30d": 0.934,
+        "expected_days_to_sell": 10.0,
+        "median_days_to_sell": 6.0,
+        "ci_days_low": 0.3,
+        "ci_days_high": 33.5,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 82.86,
+            "net_payout_gbp": 72.09,
+            "expected_days": 8.5,
+            "prob_sell_7d": 0.597
+          },
+          "ebay": {
+            "list_price_gbp": 75.09,
+            "net_payout_gbp": 72.09,
+            "expected_days": 10.0,
+            "prob_sell_7d": 0.547
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 84.81,
+            "net_payout_gbp": 72.09,
+            "expected_days": 66.9,
+            "prob_sell_7d": 0.137
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 73.65,
+        "prob_sell_24h": 0.11,
+        "prob_sell_7d": 0.455,
+        "prob_sell_30d": 0.876,
+        "expected_days_to_sell": 13.7,
+        "median_days_to_sell": 8.2,
+        "ci_days_low": 0.4,
+        "ci_days_high": 45.8,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 84.66,
+            "net_payout_gbp": 73.65,
+            "expected_days": 11.7,
+            "prob_sell_7d": 0.502
+          },
+          "ebay": {
+            "list_price_gbp": 76.72,
+            "net_payout_gbp": 73.65,
+            "expected_days": 13.7,
+            "prob_sell_7d": 0.455
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 86.65,
+            "net_payout_gbp": 73.65,
+            "expected_days": 95.4,
+            "prob_sell_7d": 0.104
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 75.22,
+        "prob_sell_24h": 0.085,
+        "prob_sell_7d": 0.372,
+        "prob_sell_30d": 0.798,
+        "expected_days_to_sell": 18.8,
+        "median_days_to_sell": 11.2,
+        "ci_days_low": 0.5,
+        "ci_days_high": 62.7,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 86.46,
+            "net_payout_gbp": 75.22,
+            "expected_days": 16.0,
+            "prob_sell_7d": 0.413
+          },
+          "ebay": {
+            "list_price_gbp": 78.35,
+            "net_payout_gbp": 75.22,
+            "expected_days": 18.8,
+            "prob_sell_7d": 0.372
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 88.49,
+            "net_payout_gbp": 75.22,
+            "expected_days": 136.3,
+            "prob_sell_7d": 0.078
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 76.79,
+        "prob_sell_24h": 0.066,
+        "prob_sell_7d": 0.299,
+        "prob_sell_30d": 0.706,
+        "expected_days_to_sell": 25.7,
+        "median_days_to_sell": 15.3,
+        "ci_days_low": 0.7,
+        "ci_days_high": 85.9,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 88.26,
+            "net_payout_gbp": 76.79,
+            "expected_days": 21.8,
+            "prob_sell_7d": 0.335
+          },
+          "ebay": {
+            "list_price_gbp": 79.99,
+            "net_payout_gbp": 76.79,
+            "expected_days": 25.7,
+            "prob_sell_7d": 0.299
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 90.34,
+            "net_payout_gbp": 76.79,
+            "expected_days": 194.7,
+            "prob_sell_7d": 0.059
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 78.35,
+        "prob_sell_24h": 0.051,
+        "prob_sell_7d": 0.239,
+        "prob_sell_30d": 0.609,
+        "expected_days_to_sell": 35.1,
+        "median_days_to_sell": 21.0,
+        "ci_days_low": 1.0,
+        "ci_days_high": 117.3,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 90.06,
+            "net_payout_gbp": 78.35,
+            "expected_days": 29.8,
+            "prob_sell_7d": 0.269
+          },
+          "ebay": {
+            "list_price_gbp": 81.61,
+            "net_payout_gbp": 78.35,
+            "expected_days": 35.1,
+            "prob_sell_7d": 0.239
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 92.18,
+            "net_payout_gbp": 78.35,
+            "expected_days": 277.6,
+            "prob_sell_7d": 0.044
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 79.92,
+        "prob_sell_24h": 0.039,
+        "prob_sell_7d": 0.189,
+        "prob_sell_30d": 0.513,
+        "expected_days_to_sell": 48.1,
+        "median_days_to_sell": 28.7,
+        "ci_days_low": 1.3,
+        "ci_days_high": 160.6,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 91.86,
+            "net_payout_gbp": 79.92,
+            "expected_days": 40.8,
+            "prob_sell_7d": 0.213
+          },
+          "ebay": {
+            "list_price_gbp": 83.25,
+            "net_payout_gbp": 79.92,
+            "expected_days": 48.1,
+            "prob_sell_7d": 0.189
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 94.02,
+            "net_payout_gbp": 79.92,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.033
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 81.48,
+        "prob_sell_24h": 0.03,
+        "prob_sell_7d": 0.148,
+        "prob_sell_30d": 0.424,
+        "expected_days_to_sell": 65.7,
+        "median_days_to_sell": 39.2,
+        "ci_days_low": 1.8,
+        "ci_days_high": 219.4,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 93.66,
+            "net_payout_gbp": 81.48,
+            "expected_days": 55.8,
+            "prob_sell_7d": 0.168
+          },
+          "ebay": {
+            "list_price_gbp": 84.88,
+            "net_payout_gbp": 81.48,
+            "expected_days": 65.7,
+            "prob_sell_7d": 0.148
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 95.86,
+            "net_payout_gbp": 81.48,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.024
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 83.05,
+        "prob_sell_24h": 0.023,
+        "prob_sell_7d": 0.115,
+        "prob_sell_30d": 0.345,
+        "expected_days_to_sell": 89.9,
+        "median_days_to_sell": 53.7,
+        "ci_days_low": 2.5,
+        "ci_days_high": 300.3,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 95.46,
+            "net_payout_gbp": 83.05,
+            "expected_days": 76.4,
+            "prob_sell_7d": 0.131
+          },
+          "ebay": {
+            "list_price_gbp": 86.51,
+            "net_payout_gbp": 83.05,
+            "expected_days": 89.9,
+            "prob_sell_7d": 0.115
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 97.71,
+            "net_payout_gbp": 83.05,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.018
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 84.62,
+        "prob_sell_24h": 0.018,
+        "prob_sell_7d": 0.09,
+        "prob_sell_30d": 0.277,
+        "expected_days_to_sell": 123.0,
+        "median_days_to_sell": 73.5,
+        "ci_days_low": 3.4,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 97.26,
+            "net_payout_gbp": 84.62,
+            "expected_days": 104.6,
+            "prob_sell_7d": 0.102
+          },
+          "ebay": {
+            "list_price_gbp": 88.15,
+            "net_payout_gbp": 84.62,
+            "expected_days": 123.0,
+            "prob_sell_7d": 0.09
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 99.55,
+            "net_payout_gbp": 84.62,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.013
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 86.18,
+        "prob_sell_24h": 0.014,
+        "prob_sell_7d": 0.07,
+        "prob_sell_30d": 0.22,
+        "expected_days_to_sell": 168.1,
+        "median_days_to_sell": 100.4,
+        "ci_days_low": 4.7,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 99.06,
+            "net_payout_gbp": 86.18,
+            "expected_days": 142.9,
+            "prob_sell_7d": 0.079
+          },
+          "ebay": {
+            "list_price_gbp": 89.77,
+            "net_payout_gbp": 86.18,
+            "expected_days": 168.1,
+            "prob_sell_7d": 0.07
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 101.39,
+            "net_payout_gbp": 86.18,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.01
+          }
+        },
+        "best_platform": "vinted"
+      },
+      {
+        "price_gbp": 87.75,
+        "prob_sell_24h": 0.011,
+        "prob_sell_7d": 0.054,
+        "prob_sell_30d": 0.173,
+        "expected_days_to_sell": 230.1,
+        "median_days_to_sell": 137.4,
+        "ci_days_low": 6.4,
+        "ci_days_high": 365.0,
+        "platforms": {
+          "vinted": {
+            "list_price_gbp": 100.86,
+            "net_payout_gbp": 87.75,
+            "expected_days": 195.6,
+            "prob_sell_7d": 0.061
+          },
+          "ebay": {
+            "list_price_gbp": 91.41,
+            "net_payout_gbp": 87.75,
+            "expected_days": 230.1,
+            "prob_sell_7d": 0.054
+          },
+          "fb_marketplace": {
+            "list_price_gbp": 103.24,
+            "net_payout_gbp": 87.75,
+            "expected_days": 365.0,
+            "prob_sell_7d": 0.007
+          }
+        },
+        "best_platform": "vinted"
+      }
+    ]
+  },
+  "presets": {
+    "fair": {
+      "sell_24h_gbp": 14.13,
+      "best_ev_gbp": 21.96,
+      "patient_gbp": 26.66,
+      "gamma_per_day": 0.05
+    },
+    "good": {
+      "sell_24h_gbp": 28.23,
+      "best_ev_gbp": 32.93,
+      "patient_gbp": 39.19,
+      "gamma_per_day": 0.05
+    },
+    "very_good": {
+      "sell_24h_gbp": 40.76,
+      "best_ev_gbp": 43.89,
+      "patient_gbp": 53.29,
+      "gamma_per_day": 0.05
+    },
+    "mint": {
+      "sell_24h_gbp": 62.69,
+      "best_ev_gbp": 64.26,
+      "patient_gbp": 73.65,
+      "gamma_per_day": 0.05
+    }
+  },
+  "platform_recommendations": {
+    "vinted": {
+      "recommended_list_gbp": 37.85,
+      "expected_strike_gbp": 32.93,
+      "net_payout_gbp": 32.93,
+      "expected_days": 3.4,
+      "offer_buffer_pct": 13.0,
+      "fit_score": 100,
+      "flake_risk_pct": null,
+      "notes": []
+    },
+    "ebay": {
+      "recommended_list_gbp": 34.3,
+      "expected_strike_gbp": 32.93,
+      "net_payout_gbp": 32.93,
+      "expected_days": 4.0,
+      "offer_buffer_pct": 4.0,
+      "fit_score": 85,
+      "flake_risk_pct": null,
+      "notes": []
+    },
+    "fb_marketplace": {
+      "recommended_list_gbp": 38.74,
+      "expected_strike_gbp": 32.93,
+      "net_payout_gbp": 32.93,
+      "expected_days": 9.1,
+      "offer_buffer_pct": 15.0,
+      "fit_score": 28,
+      "flake_risk_pct": 25.0,
+      "notes": [
+        "Local pickup only; ask for a deposit to cut flake risk"
+      ]
+    }
+  },
+  "markdown_schedule": [
+    {
+      "day": 0,
+      "list_price_gbp": 37.85,
+      "platform": "vinted",
+      "action": "List Sunday evening at £37.85 (includes 13% offer buffer)"
+    },
+    {
+      "day": 4,
+      "list_price_gbp": 32.45,
+      "platform": "vinted",
+      "action": "If unsold, drop to £32.45 so favouriters get a price-drop alert"
+    },
+    {
+      "day": 10,
+      "list_price_gbp": 27.05,
+      "platform": "vinted",
+      "action": "Floor: £27.05 (>90% chance of selling within 48h)"
+    }
+  ],
+  "comparable_listings": [
+    {
+      "listing_id": "eb1",
+      "platform": "ebay",
+      "title": "Nike Air Force 1 07 White UK 9 - worn twice",
+      "url": null,
+      "price_gbp": 36.0,
+      "shipping_gbp": 4.0,
+      "buyer_fee_gbp": 0.0,
+      "total_buyer_price_gbp": 40.0,
+      "condition_tier": "good",
+      "condition_raw": null,
+      "obs_type": "sold_unknown_time",
+      "t_days": null,
+      "t_upper_days": null,
+      "listed_at": null,
+      "sold_at": null,
+      "observed_at": "2026-10-24T19:00:00Z",
+      "favourite_count": null,
+      "is_outlier": false,
+      "outlier_reason": null
+    },
+    {
+      "listing_id": "eb2",
+      "platform": "ebay",
+      "title": "Mens Nike AF1 Low Triple White Size 9",
+      "url": null,
+      "price_gbp": 31.0,
+      "shipping_gbp": 3.5,
+      "buyer_fee_gbp": 0.0,
+      "total_buyer_price_gbp": 34.5,
+      "condition_tier": "good",
+      "condition_raw": null,
+      "obs_type": "sold_unknown_time",
+      "t_days": null,
+      "t_upper_days": null,
+      "listed_at": null,
+      "sold_at": null,
+      "observed_at": "2026-10-24T19:00:00Z",
+      "favourite_count": null,
+      "is_outlier": false,
+      "outlier_reason": null
+    },
+    {
+      "listing_id": "eb3",
+      "platform": "ebay",
+      "title": "Nike Air Force 1 '07 UK9 Boxed VGC",
+      "url": null,
+      "price_gbp": 44.0,
+      "shipping_gbp": 0.0,
+      "buyer_fee_gbp": 0.0,
+      "total_buyer_price_gbp": 44.0,
+      "condition_tier": "very_good",
+      "condition_raw": null,
+      "obs_type": "sold_unknown_time",
+      "t_days": null,
+      "t_upper_days": null,
+      "listed_at": null,
+      "sold_at": null,
+      "observed_at": "2026-10-24T19:00:00Z",
+      "favourite_count": null,
+      "is_outlier": false,
+      "outlier_reason": null
+    },
+    {
+      "listing_id": "vi1",
+      "platform": "vinted",
+      "title": "Air force 1 blanches 9",
+      "url": null,
+      "price_gbp": 45.0,
+      "shipping_gbp": 3.2,
+      "buyer_fee_gbp": 2.95,
+      "total_buyer_price_gbp": 51.15,
+      "condition_tier": "good",
+      "condition_raw": null,
+      "obs_type": "active",
+      "t_days": 16.0,
+      "t_upper_days": null,
+      "listed_at": null,
+      "sold_at": null,
+      "observed_at": "2026-10-24T19:00:00Z",
+      "favourite_count": 3,
+      "is_outlier": false,
+      "outlier_reason": null
+    },
+    {
+      "listing_id": "vi2",
+      "platform": "vinted",
+      "title": "Nike AF1 white uk 9 good condition",
+      "url": null,
+      "price_gbp": 30.0,
+      "shipping_gbp": 3.2,
+      "buyer_fee_gbp": 2.2,
+      "total_buyer_price_gbp": 35.4,
+      "condition_tier": "good",
+      "condition_raw": null,
+      "obs_type": "sold_interval",
+      "t_days": 2.0,
+      "t_upper_days": 2.9,
+      "listed_at": null,
+      "sold_at": null,
+      "observed_at": "2026-10-24T19:00:00Z",
+      "favourite_count": 11,
+      "is_outlier": false,
+      "outlier_reason": null
+    },
+    {
+      "listing_id": "vi3",
+      "platform": "vinted",
+      "title": "AF1 '07 triple white size 9",
+      "url": null,
+      "price_gbp": 52.0,
+      "shipping_gbp": 3.2,
+      "buyer_fee_gbp": 3.3,
+      "total_buyer_price_gbp": 58.5,
+      "condition_tier": "very_good",
+      "condition_raw": null,
+      "obs_type": "active",
+      "t_days": 23.5,
+      "t_upper_days": null,
+      "listed_at": null,
+      "sold_at": null,
+      "observed_at": "2026-10-24T19:00:00Z",
+      "favourite_count": 1,
+      "is_outlier": false,
+      "outlier_reason": null
+    },
+    {
+      "listing_id": "vi4",
+      "platform": "vinted",
+      "title": "air forces 1 uk9 creased",
+      "url": null,
+      "price_gbp": 24.0,
+      "shipping_gbp": 3.2,
+      "buyer_fee_gbp": 1.9,
+      "total_buyer_price_gbp": 29.1,
+      "condition_tier": "fair",
+      "condition_raw": null,
+      "obs_type": "sold_interval",
+      "t_days": 0.6,
+      "t_upper_days": 1.4,
+      "listed_at": null,
+      "sold_at": null,
+      "observed_at": "2026-10-24T19:00:00Z",
+      "favourite_count": 9,
+      "is_outlier": false,
+      "outlier_reason": null
+    },
+    {
+      "listing_id": "eb4",
+      "platform": "ebay",
+      "title": "Nike Air Force 1 White UK 9",
+      "url": null,
+      "price_gbp": 48.0,
+      "shipping_gbp": 4.5,
+      "buyer_fee_gbp": 0.0,
+      "total_buyer_price_gbp": 52.5,
+      "condition_tier": "good",
+      "condition_raw": null,
+      "obs_type": "active",
+      "t_days": 21.0,
+      "t_upper_days": null,
+      "listed_at": null,
+      "sold_at": null,
+      "observed_at": "2026-10-24T19:00:00Z",
+      "favourite_count": null,
+      "is_outlier": false,
+      "outlier_reason": null
+    }
+  ],
+  "warnings": [
+    "MOCK DATA: generated by scripts/make_mock.py, not from real listings"
+  ]
+}

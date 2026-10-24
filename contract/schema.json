@@ -1,0 +1,1095 @@
+{
+  "$defs": {
+    "ConditionBucket": {
+      "additionalProperties": false,
+      "properties": {
+        "p25": {
+          "title": "P25",
+          "type": "number"
+        },
+        "median": {
+          "title": "Median",
+          "type": "number"
+        },
+        "p75": {
+          "title": "P75",
+          "type": "number"
+        },
+        "avg_days": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Avg Days"
+        },
+        "n": {
+          "default": 0,
+          "title": "N",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "p25",
+        "median",
+        "p75"
+      ],
+      "title": "ConditionBucket",
+      "type": "object"
+    },
+    "ConditionTier": {
+      "enum": [
+        "fair",
+        "good",
+        "very_good",
+        "mint"
+      ],
+      "title": "ConditionTier",
+      "type": "string"
+    },
+    "CurvePoint": {
+      "additionalProperties": false,
+      "properties": {
+        "price_gbp": {
+          "description": "Strike price",
+          "title": "Price Gbp",
+          "type": "number"
+        },
+        "prob_sell_24h": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Prob Sell 24H",
+          "type": "number"
+        },
+        "prob_sell_7d": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Prob Sell 7D",
+          "type": "number"
+        },
+        "prob_sell_30d": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Prob Sell 30D",
+          "type": "number"
+        },
+        "expected_days_to_sell": {
+          "maximum": 365.0,
+          "minimum": 0,
+          "title": "Expected Days To Sell",
+          "type": "number"
+        },
+        "median_days_to_sell": {
+          "maximum": 365.0,
+          "minimum": 0,
+          "title": "Median Days To Sell",
+          "type": "number"
+        },
+        "ci_days_low": {
+          "description": "5th percentile of time-to-sell (90% range)",
+          "maximum": 365.0,
+          "minimum": 0,
+          "title": "Ci Days Low",
+          "type": "number"
+        },
+        "ci_days_high": {
+          "description": "95th percentile of time-to-sell",
+          "maximum": 365.0,
+          "minimum": 0,
+          "title": "Ci Days High",
+          "type": "number"
+        },
+        "platforms": {
+          "additionalProperties": {
+            "$ref": "#/$defs/PlatformPoint"
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/Platform"
+          },
+          "title": "Platforms",
+          "type": "object"
+        },
+        "best_platform": {
+          "$ref": "#/$defs/Platform",
+          "description": "Highest net payout, ties -> fewest expected days"
+        }
+      },
+      "required": [
+        "price_gbp",
+        "prob_sell_24h",
+        "prob_sell_7d",
+        "prob_sell_30d",
+        "expected_days_to_sell",
+        "median_days_to_sell",
+        "ci_days_low",
+        "ci_days_high",
+        "platforms",
+        "best_platform"
+      ],
+      "title": "CurvePoint",
+      "type": "object"
+    },
+    "ErrorResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "title": "Error",
+          "type": "string"
+        },
+        "detail": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Detail"
+        },
+        "retryable": {
+          "default": false,
+          "title": "Retryable",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "title": "ErrorResponse",
+      "type": "object"
+    },
+    "IdentifyResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "item": {
+          "$ref": "#/$defs/ItemSpec"
+        },
+        "source": {
+          "enum": [
+            "vision",
+            "text"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "cleaned_image_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cleaned Image Url"
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "item",
+        "source"
+      ],
+      "title": "IdentifyResponse",
+      "type": "object"
+    },
+    "IdentifyTextRequest": {
+      "additionalProperties": false,
+      "description": "JSON body for the text-search fallback (photos go as multipart/form-data instead).",
+      "properties": {
+        "query": {
+          "minLength": 2,
+          "title": "Query",
+          "type": "string"
+        },
+        "condition_tier": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ConditionTier"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "title": "IdentifyTextRequest",
+      "type": "object"
+    },
+    "ItemSpec": {
+      "additionalProperties": false,
+      "description": "Output of /identify and input to /market-scan. Every field is user-editable in the UI.",
+      "properties": {
+        "title": {
+          "description": "Human display title, e.g. \"Nike Air Force 1 '07 Low White\"",
+          "title": "Title",
+          "type": "string"
+        },
+        "brand": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Brand"
+        },
+        "model_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Name"
+        },
+        "category": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Category"
+        },
+        "size_or_storage": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Size Or Storage"
+        },
+        "era_or_year": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Era Or Year"
+        },
+        "condition_tier": {
+          "$ref": "#/$defs/ConditionTier"
+        },
+        "condition_score": {
+          "description": "Vision score 0-10; c in [0.1,1] = score/10",
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Condition Score",
+          "type": "number"
+        },
+        "detected_flaws": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Detected Flaws",
+          "type": "array"
+        },
+        "search_queries": {
+          "$ref": "#/$defs/SearchQueries"
+        },
+        "is_broken": {
+          "default": false,
+          "description": "If true, the outlier filter keeps 'spares/repairs' listings",
+          "title": "Is Broken",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "title",
+        "condition_tier",
+        "condition_score",
+        "search_queries"
+      ],
+      "title": "ItemSpec",
+      "type": "object"
+    },
+    "ListingRow": {
+      "additionalProperties": false,
+      "description": "One normalised marketplace listing. Scrapers emit these; the engine consumes them.",
+      "properties": {
+        "listing_id": {
+          "title": "Listing Id",
+          "type": "string"
+        },
+        "platform": {
+          "$ref": "#/$defs/Platform"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        },
+        "price_gbp": {
+          "description": "Item price as listed / sold",
+          "exclusiveMinimum": 0,
+          "title": "Price Gbp",
+          "type": "number"
+        },
+        "shipping_gbp": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Shipping Gbp",
+          "type": "number"
+        },
+        "buyer_fee_gbp": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Buyer Fee Gbp",
+          "type": "number"
+        },
+        "total_buyer_price_gbp": {
+          "exclusiveMinimum": 0,
+          "title": "Total Buyer Price Gbp",
+          "type": "number"
+        },
+        "condition_tier": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ConditionTier"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "condition_raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Platform's own condition text",
+          "title": "Condition Raw"
+        },
+        "obs_type": {
+          "$ref": "#/$defs/ObsType"
+        },
+        "t_days": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Duration (sold_exact), age (active) or lower bound (sold_interval)",
+          "title": "T Days"
+        },
+        "t_upper_days": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Upper bound, sold_interval only",
+          "title": "T Upper Days"
+        },
+        "listed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Listed At"
+        },
+        "sold_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sold At"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "favourite_count": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Favourite Count"
+        },
+        "is_outlier": {
+          "default": false,
+          "title": "Is Outlier",
+          "type": "boolean"
+        },
+        "outlier_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Outlier Reason"
+        }
+      },
+      "required": [
+        "listing_id",
+        "platform",
+        "title",
+        "price_gbp",
+        "total_buyer_price_gbp",
+        "obs_type",
+        "observed_at"
+      ],
+      "title": "ListingRow",
+      "type": "object"
+    },
+    "MarkdownStep": {
+      "additionalProperties": false,
+      "properties": {
+        "day": {
+          "minimum": 0,
+          "title": "Day",
+          "type": "integer"
+        },
+        "list_price_gbp": {
+          "title": "List Price Gbp",
+          "type": "number"
+        },
+        "platform": {
+          "$ref": "#/$defs/Platform"
+        },
+        "action": {
+          "title": "Action",
+          "type": "string"
+        }
+      },
+      "required": [
+        "day",
+        "list_price_gbp",
+        "platform",
+        "action"
+      ],
+      "title": "MarkdownStep",
+      "type": "object"
+    },
+    "MarketScanRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "item": {
+          "$ref": "#/$defs/ItemSpec"
+        },
+        "platforms": {
+          "items": {
+            "$ref": "#/$defs/Platform"
+          },
+          "title": "Platforms",
+          "type": "array"
+        },
+        "allow_live": {
+          "default": true,
+          "description": "False = cache/seed only",
+          "title": "Allow Live",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "item"
+      ],
+      "title": "MarketScanRequest",
+      "type": "object"
+    },
+    "MarketScanResponse": {
+      "additionalProperties": false,
+      "description": "Everything the frontend needs, in one payload. The slider never calls the backend.",
+      "properties": {
+        "schema_version": {
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "item_metadata": {
+          "$ref": "#/$defs/ItemSpec"
+        },
+        "cleaned_image_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cleaned Image Url"
+        },
+        "market_summary": {
+          "$ref": "#/$defs/MarketSummary"
+        },
+        "model_fit": {
+          "$ref": "#/$defs/ModelFit"
+        },
+        "price_range": {
+          "$ref": "#/$defs/PriceRange"
+        },
+        "price_curve_grid": {
+          "additionalProperties": {
+            "items": {
+              "$ref": "#/$defs/CurvePoint"
+            },
+            "type": "array"
+          },
+          "description": "GRID_POINTS points per tier, all tiers share the same price axis",
+          "propertyNames": {
+            "$ref": "#/$defs/ConditionTier"
+          },
+          "title": "Price Curve Grid",
+          "type": "object"
+        },
+        "presets": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Presets"
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/ConditionTier"
+          },
+          "title": "Presets",
+          "type": "object"
+        },
+        "platform_recommendations": {
+          "additionalProperties": {
+            "$ref": "#/$defs/PlatformRecommendation"
+          },
+          "description": "At presets[item.condition_tier].best_ev_gbp; cards re-read the grid as the slider moves",
+          "propertyNames": {
+            "$ref": "#/$defs/Platform"
+          },
+          "title": "Platform Recommendations",
+          "type": "object"
+        },
+        "markdown_schedule": {
+          "items": {
+            "$ref": "#/$defs/MarkdownStep"
+          },
+          "title": "Markdown Schedule",
+          "type": "array"
+        },
+        "comparable_listings": {
+          "description": "5-10 rows for the evidence drawer",
+          "items": {
+            "$ref": "#/$defs/ListingRow"
+          },
+          "title": "Comparable Listings",
+          "type": "array"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "item_metadata",
+        "market_summary",
+        "model_fit",
+        "price_range",
+        "price_curve_grid",
+        "presets",
+        "platform_recommendations",
+        "markdown_schedule"
+      ],
+      "title": "MarketScanResponse",
+      "type": "object"
+    },
+    "MarketSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "sample_size_sold": {
+          "title": "Sample Size Sold",
+          "type": "integer"
+        },
+        "sample_size_active": {
+          "title": "Sample Size Active",
+          "type": "integer"
+        },
+        "sample_size_excluded": {
+          "default": 0,
+          "title": "Sample Size Excluded",
+          "type": "integer"
+        },
+        "active_median_gbp": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Active Median Gbp"
+        },
+        "sold_median_gbp": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sold Median Gbp"
+        },
+        "survivorship_bias_pct": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "(active_median - sold_median) / sold_median * 100",
+          "title": "Survivorship Bias Pct"
+        },
+        "condition_buckets": {
+          "additionalProperties": {
+            "$ref": "#/$defs/ConditionBucket"
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/ConditionTier"
+          },
+          "title": "Condition Buckets",
+          "type": "object"
+        },
+        "data_source": {
+          "enum": [
+            "live",
+            "db_cache",
+            "seed",
+            "mock"
+          ],
+          "title": "Data Source",
+          "type": "string"
+        },
+        "platforms_ok": {
+          "items": {
+            "$ref": "#/$defs/Platform"
+          },
+          "title": "Platforms Ok",
+          "type": "array"
+        },
+        "fetched_at": {
+          "format": "date-time",
+          "title": "Fetched At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sample_size_sold",
+        "sample_size_active",
+        "condition_buckets",
+        "data_source",
+        "platforms_ok",
+        "fetched_at"
+      ],
+      "title": "MarketSummary",
+      "type": "object"
+    },
+    "ModelFit": {
+      "additionalProperties": false,
+      "description": "Fitted Weibull AFT parameters, shown in a 'how this works' drawer for judges.",
+      "properties": {
+        "k": {
+          "exclusiveMinimum": 0,
+          "title": "K",
+          "type": "number"
+        },
+        "lambda0": {
+          "exclusiveMinimum": 0,
+          "title": "Lambda0",
+          "type": "number"
+        },
+        "beta1": {
+          "title": "Beta1",
+          "type": "number"
+        },
+        "beta2": {
+          "title": "Beta2",
+          "type": "number"
+        },
+        "sigma_p": {
+          "exclusiveMinimum": 0,
+          "title": "Sigma P",
+          "type": "number"
+        },
+        "anchor_gbp": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "M(c)",
+          "propertyNames": {
+            "$ref": "#/$defs/ConditionTier"
+          },
+          "title": "Anchor Gbp",
+          "type": "object"
+        },
+        "platform_multiplier": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "lambda_platform = lambda * m",
+          "propertyNames": {
+            "$ref": "#/$defs/Platform"
+          },
+          "title": "Platform Multiplier",
+          "type": "object"
+        },
+        "n_obs": {
+          "title": "N Obs",
+          "type": "integer"
+        },
+        "n_censored": {
+          "title": "N Censored",
+          "type": "integer"
+        },
+        "used_priors": {
+          "title": "Used Priors",
+          "type": "boolean"
+        },
+        "log_likelihood": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Log Likelihood"
+        }
+      },
+      "required": [
+        "k",
+        "lambda0",
+        "beta1",
+        "beta2",
+        "sigma_p",
+        "anchor_gbp",
+        "platform_multiplier",
+        "n_obs",
+        "n_censored",
+        "used_priors"
+      ],
+      "title": "ModelFit",
+      "type": "object"
+    },
+    "ObsType": {
+      "description": "How a listing enters the survival likelihood.\n\nsold_exact        sold, time-to-sale known            -> ln f(t)\nactive            still unsold after t days           -> ln S(t)\nsold_interval     vanished between two snapshots, so  -> ln[S(t) - S(t_upper)]\n                  sold somewhere in (t, t_upper]\nsold_unknown_time sold, duration unknown (typical      -> price/condition anchors only,\n                  eBay sold result)                       NOT in the hazard likelihood",
+      "enum": [
+        "sold_exact",
+        "active",
+        "sold_interval",
+        "sold_unknown_time"
+      ],
+      "title": "ObsType",
+      "type": "string"
+    },
+    "Platform": {
+      "enum": [
+        "ebay",
+        "vinted",
+        "fb_marketplace"
+      ],
+      "title": "Platform",
+      "type": "string"
+    },
+    "PlatformPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "list_price_gbp": {
+          "title": "List Price Gbp",
+          "type": "number"
+        },
+        "net_payout_gbp": {
+          "title": "Net Payout Gbp",
+          "type": "number"
+        },
+        "expected_days": {
+          "maximum": 365.0,
+          "minimum": 0,
+          "title": "Expected Days",
+          "type": "number"
+        },
+        "prob_sell_7d": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Prob Sell 7D",
+          "type": "number"
+        }
+      },
+      "required": [
+        "list_price_gbp",
+        "net_payout_gbp",
+        "expected_days",
+        "prob_sell_7d"
+      ],
+      "title": "PlatformPoint",
+      "type": "object"
+    },
+    "PlatformRecommendation": {
+      "additionalProperties": false,
+      "properties": {
+        "recommended_list_gbp": {
+          "title": "Recommended List Gbp",
+          "type": "number"
+        },
+        "expected_strike_gbp": {
+          "title": "Expected Strike Gbp",
+          "type": "number"
+        },
+        "net_payout_gbp": {
+          "title": "Net Payout Gbp",
+          "type": "number"
+        },
+        "expected_days": {
+          "title": "Expected Days",
+          "type": "number"
+        },
+        "offer_buffer_pct": {
+          "title": "Offer Buffer Pct",
+          "type": "number"
+        },
+        "fit_score": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Fit Score",
+          "type": "integer"
+        },
+        "flake_risk_pct": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Flake Risk Pct"
+        },
+        "notes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Notes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "recommended_list_gbp",
+        "expected_strike_gbp",
+        "net_payout_gbp",
+        "expected_days",
+        "offer_buffer_pct",
+        "fit_score"
+      ],
+      "title": "PlatformRecommendation",
+      "type": "object"
+    },
+    "Presets": {
+      "additionalProperties": false,
+      "description": "Strike prices the quick-preset buttons snap the slider to (per condition tier).",
+      "properties": {
+        "sell_24h_gbp": {
+          "description": "Highest price with P(sell <= 24h) >= 0.5",
+          "title": "Sell 24H Gbp",
+          "type": "number"
+        },
+        "best_ev_gbp": {
+          "description": "p*(gamma) at default urgency",
+          "title": "Best Ev Gbp",
+          "type": "number"
+        },
+        "patient_gbp": {
+          "description": "Highest price with P(sell <= 30d) >= 0.8",
+          "title": "Patient Gbp",
+          "type": "number"
+        },
+        "gamma_per_day": {
+          "description": "Discount rate used for best_ev",
+          "title": "Gamma Per Day",
+          "type": "number"
+        }
+      },
+      "required": [
+        "sell_24h_gbp",
+        "best_ev_gbp",
+        "patient_gbp",
+        "gamma_per_day"
+      ],
+      "title": "Presets",
+      "type": "object"
+    },
+    "PriceRange": {
+      "additionalProperties": false,
+      "properties": {
+        "min_gbp": {
+          "title": "Min Gbp",
+          "type": "number"
+        },
+        "max_gbp": {
+          "title": "Max Gbp",
+          "type": "number"
+        },
+        "step_gbp": {
+          "title": "Step Gbp",
+          "type": "number"
+        }
+      },
+      "required": [
+        "min_gbp",
+        "max_gbp",
+        "step_gbp"
+      ],
+      "title": "PriceRange",
+      "type": "object"
+    },
+    "SearchQueries": {
+      "additionalProperties": false,
+      "properties": {
+        "ebay": {
+          "title": "Ebay",
+          "type": "string"
+        },
+        "vinted": {
+          "title": "Vinted",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ebay",
+        "vinted"
+      ],
+      "title": "SearchQueries",
+      "type": "object"
+    }
+  },
+  "title": "FlipCurveApi",
+  "type": "object",
+  "properties": {
+    "IdentifyResponse": {
+      "$ref": "#/$defs/IdentifyResponse"
+    },
+    "MarketScanResponse": {
+      "$ref": "#/$defs/MarketScanResponse"
+    },
+    "MarketScanRequest": {
+      "$ref": "#/$defs/MarketScanRequest"
+    },
+    "IdentifyTextRequest": {
+      "$ref": "#/$defs/IdentifyTextRequest"
+    },
+    "ErrorResponse": {
+      "$ref": "#/$defs/ErrorResponse"
+    }
+  }
+}
