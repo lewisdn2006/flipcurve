@@ -30,7 +30,7 @@ about it, and treat high-favourite vanished items as more likely to be sales.
 
 `price_curve_grid` holds all four tiers (4 × 50 points), and **all tiers share one price axis**
 (`price_range`). Switching tier swaps which array the frontend reads, with no refetch and no
-jump in the slider. The payload is ~185 KB of JSON, which gzips to a fraction of that.
+jump in the slider. The payload is ~185 KB of JSON, about 14 KB gzipped.
 
 ## D3. Per-platform expected days — multiplier on λ
 
