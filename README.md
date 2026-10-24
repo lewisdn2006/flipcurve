@@ -1,8 +1,7 @@
 # FlipCurve
 
 Photograph a secondhand item and get a price-to-time-to-sell curve. The curve is corrected for
-survivorship bias with a right-censored Weibull survival model and compared across eBay, Vinted and
-FB Marketplace. Built at OxHack 2026.
+survivorship bias with a censored Weibull survival model and compared across eBay and Vinted. Built at OxHack 2026.
 
 ## Quick start
 
@@ -16,7 +15,7 @@ uvicorn backend.main:app --reload --port 8000
 pytest                             # contract tests, keep green
 ```
 
-The API currently serves **mock data** (`backend/mock/`) so the frontend can build straight away.
+The API currently serves **mock data** (`backend/mock/`, contract v1.1) so the frontend can build straight away.
 
 ## Read first
 

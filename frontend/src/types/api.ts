@@ -21,7 +21,7 @@ export type EraOrYear = string | null;
  */
 export type ConditionTier = "fair" | "good" | "very_good" | "mint";
 /**
- * Vision score 0-10; c in [0.1,1] = score/10
+ * Vision score 0-10
  */
 export type ConditionScore = number;
 export type DetectedFlaws = string[];
@@ -56,23 +56,36 @@ export type DataSource = "live" | "db_cache" | "seed" | "mock";
  * This interface was referenced by `FlipCurveApi`'s JSON-Schema
  * via the `definition` "Platform".
  */
-export type Platform = "ebay" | "vinted" | "fb_marketplace";
+export type Platform = "ebay" | "vinted";
 export type PlatformsOk = Platform[];
 export type FetchedAt = string;
 export type K = number;
+/**
+ * Days, Good condition, typical price, average platform
+ */
 export type Lambda0 = number;
+/**
+ * Price effect per spread of markup
+ */
 export type Beta1 = number;
+/**
+ * Condition effect
+ */
 export type Beta2 = number;
 export type SigmaP = number;
 export type NObs = number;
 export type NCensored = number;
+export type NInterval = number;
+/**
+ * True when thin data left the fit close to the priors
+ */
 export type UsedPriors = boolean;
 export type LogLikelihood = number | null;
 export type MinGbp = number;
 export type MaxGbp = number;
 export type StepGbp = number;
 /**
- * Strike price
+ * List price
  */
 export type PriceGbp = number;
 export type ProbSell24H = number;
@@ -81,54 +94,81 @@ export type ProbSell30D = number;
 export type ExpectedDaysToSell = number;
 export type MedianDaysToSell = number;
 /**
- * 5th percentile of time-to-sell (90% range)
+ * 5th percentile of one item's time-to-sell
  */
 export type CiDaysLow = number;
 /**
- * 95th percentile of time-to-sell
+ * 95th percentile of one item's time-to-sell
  */
 export type CiDaysHigh = number;
-export type ListPriceGbp = number;
+export type ExpectedSalePriceGbp = number;
 export type NetPayoutGbp = number;
-export type ExpectedDays = number;
 export type ProbSell7D1 = number;
+export type ExpectedDays = number;
 /**
- * Highest net payout, ties -> fewest expected days
+ * 90% confidence range on the average wait
  */
-export type Platform1 = "ebay" | "vinted" | "fb_marketplace";
+export type ExpectedDaysLow = number;
+export type ExpectedDaysHigh = number;
 /**
- * Highest price with P(sell <= 24h) >= 0.5
+ * Highest net payout x E[exp(-gamma T)]
  */
-export type Sell24HGbp = number;
+export type Platform1 = "ebay" | "vinted";
 /**
- * p*(gamma) at default urgency
+ * @minItems 2
  */
-export type BestEvGbp = number;
+export type Days = [number, number, ...number[]];
 /**
- * Highest price with P(sell <= 30d) >= 0.8
+ * prob[i][j]: i over the shared price axis, j over days
+ */
+export type Prob = number[][];
+/**
+ * Highest list price with P(sell <= 24h) >= 0.5
+ */
+export type FastSaleGbp = number;
+/**
+ * Best list price on the best platform at default urgency
+ */
+export type BestValueGbp = number;
+/**
+ * Highest list price with P(sell <= 30d) >= 0.8
  */
 export type PatientGbp = number;
 /**
- * Discount rate used for best_ev
+ * Urgency used for best_value
  */
 export type GammaPerDay = number;
+/**
+ * Platform recommended for the item's condition
+ */
+export type Platform2 = "ebay" | "vinted";
+/**
+ * Best list price on this platform for the item's condition
+ */
 export type RecommendedListGbp = number;
-export type ExpectedStrikeGbp = number;
+export type ExpectedSalePriceGbp1 = number;
 export type NetPayoutGbp1 = number;
+export type ProbSell7D2 = number;
 export type ExpectedDays1 = number;
+export type ExpectedDaysLow1 = number;
+export type ExpectedDaysHigh1 = number;
 export type OfferBufferPct = number;
-export type FitScore = number;
-export type FlakeRiskPct = number | null;
+export type NListings = number;
+/**
+ * Observed sales behind this platform's speed estimate
+ */
+export type NSales = number;
+export type Confidence1 = "high" | "medium" | "low" | "estimated";
 export type Notes = string[];
 export type Day = number;
-export type ListPriceGbp1 = number;
+export type ListPriceGbp = number;
 export type Action = string;
 export type MarkdownSchedule = MarkdownStep[];
 export type ListingId = string;
 export type Title1 = string;
 export type Url = string | null;
 /**
- * Item price as listed / sold
+ * Price shown on the listing (sold price for sold rows)
  */
 export type PriceGbp1 = number;
 export type ShippingGbp = number;
@@ -139,14 +179,15 @@ export type TotalBuyerPriceGbp = number;
  */
 export type ConditionRaw = string | null;
 /**
- * How a listing enters the survival likelihood.
+ * How a listing enters the survival likelihood (maths doc, section 5).
  *
- * sold_exact        sold, time-to-sale known            -> ln f(t)
- * active            still unsold after t days           -> ln S(t)
- * sold_interval     vanished between two snapshots, so  -> ln[S(t) - S(t_upper)]
- *                   sold somewhere in (t, t_upper]
- * sold_unknown_time sold, duration unknown (typical      -> price/condition anchors only,
- *                   eBay sold result)                       NOT in the hazard likelihood
+ * sold_exact        sold, time-to-sale known                  -> ln f(t)
+ * active            still unsold after t days                 -> ln S(t)
+ * sold_interval     sold somewhere in (t, t_upper] days       -> ln[S(t) - S(t_upper)]
+ *                   e.g. eBay sold item whose start date came from item-number
+ *                   calibration (sold date is day-only), or a Vinted item seen sold
+ *                   with t = 0 and t_upper = its age when we checked
+ * sold_unknown_time sold, no duration at all                  -> price anchors M(c) only
  *
  * This interface was referenced by `FlipCurveApi`'s JSON-Schema
  * via the `definition` "ObsType".
@@ -160,14 +201,24 @@ export type TDays = number | null;
  * Upper bound, sold_interval only
  */
 export type TUpperDays = number | null;
+/**
+ * How we know when it was listed
+ */
+export type StartSource = "exact" | "id_calibration" | "upload_text" | "unknown";
 export type ListedAt = string | null;
 export type SoldAt = string | null;
 export type ObservedAt = string;
 export type FavouriteCount = number | null;
+/**
+ * eBay: true means the real sale price was below price_gbp
+ */
+export type BestOfferAccepted = boolean | null;
 export type IsOutlier = boolean;
 export type OutlierReason = string | null;
 /**
- * 5-10 rows for the evidence drawer
+ * Cleaned listings for the evidence scatter
+ *
+ * @maxItems 500
  */
 export type ComparableListings = ListingRow[];
 export type Warnings1 = string[];
@@ -229,7 +280,7 @@ export interface SearchQueries {
   vinted: Vinted;
 }
 /**
- * Everything the frontend needs, in one payload. The slider never calls the backend.
+ * Everything the frontend needs, in one payload; charts are drawn from it with no refetch.
  *
  * This interface was referenced by `FlipCurveApi`'s JSON-Schema
  * via the `definition` "MarketScanResponse".
@@ -242,7 +293,9 @@ export interface MarketScanResponse {
   model_fit: ModelFit;
   price_range: PriceRange;
   price_curve_grid: PriceCurveGrid;
-  presets: Presets;
+  sale_surface: SaleSurface;
+  price_markers: PriceMarkers;
+  best_platform: Platform2;
   platform_recommendations: PlatformRecommendations;
   markdown_schedule: MarkdownSchedule;
   comparable_listings?: ComparableListings;
@@ -279,7 +332,7 @@ export interface ConditionBucket {
   n?: N;
 }
 /**
- * Fitted Weibull AFT parameters, shown in a 'how this works' drawer for judges.
+ * Fitted Weibull AFT parameters (maths doc, sections 4-6), for the 'how it works' drawer.
  *
  * This interface was referenced by `FlipCurveApi`'s JSON-Schema
  * via the `definition` "ModelFit".
@@ -291,22 +344,30 @@ export interface ModelFit {
   beta2: Beta2;
   sigma_p: SigmaP;
   anchor_gbp: AnchorGbp;
-  platform_multiplier: PlatformMultiplier;
+  platform_theta: PlatformTheta;
+  platform_n_sales: PlatformNSales;
   n_obs: NObs;
   n_censored: NCensored;
+  n_interval?: NInterval;
   used_priors: UsedPriors;
   log_likelihood?: LogLikelihood;
 }
 /**
- * M(c)
+ * M(c), median sold price per condition
  */
 export interface AnchorGbp {
   [k: string]: number;
 }
 /**
- * lambda_platform = lambda * m
+ * Speed term; lambda multiplied by exp(theta)
  */
-export interface PlatformMultiplier {
+export interface PlatformTheta {
+  [k: string]: number;
+}
+/**
+ * Observed sales (exact + interval) per platform
+ */
+export interface PlatformNSales {
   [k: string]: number;
 }
 /**
@@ -325,6 +386,8 @@ export interface PriceCurveGrid {
   [k: string]: CurvePoint[];
 }
 /**
+ * Pooled across platforms (theta = 0) unless read from `platforms`.
+ *
  * This interface was referenced by `FlipCurveApi`'s JSON-Schema
  * via the `definition` "CurvePoint".
  */
@@ -344,32 +407,49 @@ export interface Platforms {
   [k: string]: PlatformPoint;
 }
 /**
+ * One platform at one list price.
+ *
  * This interface was referenced by `FlipCurveApi`'s JSON-Schema
  * via the `definition` "PlatformPoint".
  */
 export interface PlatformPoint {
-  list_price_gbp: ListPriceGbp;
+  expected_sale_price_gbp: ExpectedSalePriceGbp;
   net_payout_gbp: NetPayoutGbp;
-  expected_days: ExpectedDays;
   prob_sell_7d: ProbSell7D1;
+  expected_days: ExpectedDays;
+  expected_days_low: ExpectedDaysLow;
+  expected_days_high: ExpectedDaysHigh;
 }
-export interface Presets {
-  [k: string]: Presets1;
+export interface SaleSurface {
+  [k: string]: SaleSurface1;
 }
 /**
- * Strike prices the quick-preset buttons snap the slider to (per condition tier).
+ * P(sold within days[j] | price_axis[i]) for the price x time heatmap, pooled across platforms.
  *
  * This interface was referenced by `FlipCurveApi`'s JSON-Schema
- * via the `definition` "Presets".
+ * via the `definition` "SaleSurface".
  */
-export interface Presets1 {
-  sell_24h_gbp: Sell24HGbp;
-  best_ev_gbp: BestEvGbp;
+export interface SaleSurface1 {
+  days: Days;
+  prob: Prob;
+}
+export interface PriceMarkers {
+  [k: string]: PriceMarkers1;
+}
+/**
+ * List prices to mark on the charts (per condition tier).
+ *
+ * This interface was referenced by `FlipCurveApi`'s JSON-Schema
+ * via the `definition` "PriceMarkers".
+ */
+export interface PriceMarkers1 {
+  fast_sale_gbp: FastSaleGbp;
+  best_value_gbp: BestValueGbp;
   patient_gbp: PatientGbp;
   gamma_per_day: GammaPerDay;
 }
 /**
- * At presets[item.condition_tier].best_ev_gbp; cards re-read the grid as the slider moves
+ * For the item's condition tier
  */
 export interface PlatformRecommendations {
   [k: string]: PlatformRecommendation;
@@ -380,12 +460,16 @@ export interface PlatformRecommendations {
  */
 export interface PlatformRecommendation {
   recommended_list_gbp: RecommendedListGbp;
-  expected_strike_gbp: ExpectedStrikeGbp;
+  expected_sale_price_gbp: ExpectedSalePriceGbp1;
   net_payout_gbp: NetPayoutGbp1;
+  prob_sell_7d: ProbSell7D2;
   expected_days: ExpectedDays1;
+  expected_days_low: ExpectedDaysLow1;
+  expected_days_high: ExpectedDaysHigh1;
   offer_buffer_pct: OfferBufferPct;
-  fit_score: FitScore;
-  flake_risk_pct?: FlakeRiskPct;
+  n_listings: NListings;
+  n_sales: NSales;
+  confidence: Confidence1;
   notes?: Notes;
 }
 /**
@@ -394,12 +478,13 @@ export interface PlatformRecommendation {
  */
 export interface MarkdownStep {
   day: Day;
-  list_price_gbp: ListPriceGbp1;
+  list_price_gbp: ListPriceGbp;
   platform: Platform;
   action: Action;
 }
 /**
- * One normalised marketplace listing. Scrapers emit these; the engine consumes them.
+ * One normalised marketplace listing. Scrapers emit these; the engine consumes them;
+ * the evidence scatter draws them.
  *
  * This interface was referenced by `FlipCurveApi`'s JSON-Schema
  * via the `definition` "ListingRow".
@@ -418,10 +503,12 @@ export interface ListingRow {
   obs_type: ObsType;
   t_days?: TDays;
   t_upper_days?: TUpperDays;
+  start_source?: StartSource;
   listed_at?: ListedAt;
   sold_at?: SoldAt;
   observed_at: ObservedAt;
   favourite_count?: FavouriteCount;
+  best_offer_accepted?: BestOfferAccepted;
   is_outlier?: IsOutlier;
   outlier_reason?: OutlierReason;
 }

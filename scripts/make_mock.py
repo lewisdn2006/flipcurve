@@ -1,8 +1,9 @@
-"""Generate the frozen mock payloads in backend/mock/ and the JSON Schema in contract/.
+"""Generate the mock payloads in backend/mock/ and the JSON Schema in contract/ (contract v1.1).
 
-The mock uses the real closed-form survival maths with hand-picked parameters, so curves are
-internally consistent (monotone, sensible ranges) and the frontend can build against
-realistic numbers before the engine exists.
+The mock uses the real closed-form survival maths with known parameters, and its evidence
+listings come from engine/simulate.py, so every chart the frontend draws is internally
+consistent. The confidence ranges use a simple approximation (maths doc, section 6:
+SE of theta_j ~ 1 / (k * sqrt(n_sales + d0))) until the real fitter produces a Hessian.
 
 Run from repo root:  python scripts/make_mock.py
 """
@@ -10,7 +11,7 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -18,10 +19,11 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from backend.engine import survival_model as sm  # noqa: E402
-from backend.engine.platform_config import DEFAULT_GAMMA_PER_DAY, PLATFORMS  # noqa: E402
 from pydantic.json_schema import models_json_schema  # noqa: E402
 
+from backend.engine import survival_model as sm  # noqa: E402
+from backend.engine.platform_config import DEFAULT_GAMMA_PER_DAY, PLATFORMS, SURFACE_DAYS, TAU  # noqa: E402
+from backend.engine.simulate import TrueParams, simulate_listings  # noqa: E402
 from backend.models.schemas import (  # noqa: E402
     GRID_POINTS,
     MAX_DAYS,
@@ -33,15 +35,17 @@ from backend.models.schemas import (  # noqa: E402
     MarketScanResponse,
 )
 
-NOW = datetime(2026, 10, 24, 19, 0, tzinfo=timezone.utc)
+NOW = datetime(2026, 10, 25, 12, 0, tzinfo=timezone.utc)
 TIERS = [t.value for t in ConditionTier]
 CIDX = {t.value: t.index for t in ConditionTier}
+P = TrueParams()
+K = P.k
+Z90 = 1.645
+# pretend sales counts behind each platform's speed estimate (drives the confidence badges)
+N_SALES = {"ebay": 41, "vinted": 9}
+D0 = 1.0 / (K ** 2 * TAU ** 2)
 
-# ---- hand-picked "fitted" parameters for a pair of Nike AF1 '07, UK 9
-FIT = dict(k=0.85, lambda0=4.5, beta1=2.4, beta2=0.35, sigma_p=12.0)
-ANCHOR = {"fair": 22.0, "good": 34.0, "very_good": 45.0, "mint": 65.0}
-# shared axis for all tiers: half the Fair anchor up to 1.35x the Mint anchor
-PRICES = np.round(np.linspace(0.5 * ANCHOR['fair'], 1.35 * ANCHOR['mint'], GRID_POINTS), 2)
+PRICES = np.round(np.linspace(0.5 * P.anchor["fair"], 1.35 * P.anchor["mint"], GRID_POINTS), 2)
 
 ITEM = {
     "title": "Nike Air Force 1 '07 Low White",
@@ -67,178 +71,180 @@ def d(x):
     return r(min(float(x), MAX_DAYS), 1)
 
 
-def lam_for(tier, prices, platform=None):
-    p = np.asarray(prices, dtype=float)
-    m = 1.0
-    if platform:
-        cfg = PLATFORMS[platform]
-        m = cfg["speed_multiplier"]
-        p = p / (1.0 - cfg["local_discount"])  # local buyers compare to shipped prices
-    lam = sm.scale(p, ANCHOR[tier], FIT["sigma_p"], CIDX[tier], FIT["lambda0"], FIT["beta1"], FIT["beta2"])
-    return lam * m
+def lam_pooled(tier, prices):
+    z = (np.asarray(prices, float) - P.anchor[tier]) / P.sigma_p
+    return P.lambda0 * np.exp(P.beta1 * z - P.beta2 * (CIDX[tier] - 2))
 
 
-def platform_point(platform, price, tier):
+def lam_platform(tier, prices, platform):
+    return lam_pooled(tier, prices) * np.exp(P.theta[platform])
+
+
+def se_log_days(platform, z):
+    """Approximate SE of ln E[T]: platform term from its sales count, plus price-effect uncertainty."""
+    se_theta = 1.0 / (K * np.sqrt(N_SALES[platform] + D0))
+    return float(np.sqrt(se_theta ** 2 + 0.02 + (0.12 * z) ** 2))
+
+
+def platform_point(platform, tier, price):
     cfg = PLATFORMS[platform]
-    lam = float(lam_for(tier, [price], platform)[0])
-    days = sm.expected_days(lam, FIT["k"]) / (1.0 - cfg["flake_prob"])  # flakes restart the clock
-    net = price * (1 - cfg["seller_fee_pct"]) - cfg["seller_fixed_gbp"]
+    lam = float(lam_platform(tier, [price], platform)[0])
+    mean = sm.expected_days(lam, K)
+    z = (price - P.anchor[tier]) / P.sigma_p
+    se = se_log_days(platform, z)
+    sale = price * (1 - cfg["offer_buffer"])
+    net = sale * (1 - cfg["seller_fee_pct"]) - cfg["seller_fixed_gbp"]
     return {
-        "list_price_gbp": r(price / (1 - cfg["offer_buffer"])),
+        "expected_sale_price_gbp": r(sale),
         "net_payout_gbp": r(net),
-        "expected_days": d(days),
-        "prob_sell_7d": r(sm.cdf(7, lam, FIT["k"]) * (1 - cfg["flake_prob"]), 3),
+        "prob_sell_7d": r(sm.cdf(7, lam, K), 3),
+        "expected_days": d(mean),
+        "expected_days_low": d(mean * np.exp(-Z90 * se)),
+        "expected_days_high": d(mean * np.exp(Z90 * se)),
     }
 
 
-def best_platform(pp):
-    return max(pp, key=lambda k: (pp[k]["net_payout_gbp"], -pp[k]["expected_days"]))
+def value(platform, tier, price, net):
+    """net payout x E[exp(-gamma T)]: what 'best' means everywhere in the payload."""
+    lam = float(lam_platform(tier, [price], platform)[0])
+    return net * float(sm.discounted_sale_value(lam, K, DEFAULT_GAMMA_PER_DAY)[0])
 
 
 def grid_for(tier):
-    lam = lam_for(tier, PRICES)
-    k = FIT["k"]
+    lam = lam_pooled(tier, PRICES)
     pts = []
     for i, p in enumerate(PRICES):
-        pp = {pl: platform_point(pl, p, tier) for pl in PLATFORMS}
+        pp = {pl: platform_point(pl, tier, p) for pl in PLATFORMS}
+        best = max(pp, key=lambda pl: value(pl, tier, p, pp[pl]["net_payout_gbp"]))
         pts.append({
             "price_gbp": r(p),
-            "prob_sell_24h": r(sm.cdf(1, lam[i], k), 3),
-            "prob_sell_7d": r(sm.cdf(7, lam[i], k), 3),
-            "prob_sell_30d": r(sm.cdf(30, lam[i], k), 3),
-            "expected_days_to_sell": d(sm.expected_days(lam[i], k)),
-            "median_days_to_sell": d(sm.quantile_days(0.5, lam[i], k)),
-            "ci_days_low": d(sm.quantile_days(0.05, lam[i], k)),
-            "ci_days_high": d(sm.quantile_days(0.95, lam[i], k)),
+            "prob_sell_24h": r(sm.cdf(1, lam[i], K), 3),
+            "prob_sell_7d": r(sm.cdf(7, lam[i], K), 3),
+            "prob_sell_30d": r(sm.cdf(30, lam[i], K), 3),
+            "expected_days_to_sell": d(sm.expected_days(lam[i], K)),
+            "median_days_to_sell": d(sm.quantile_days(0.5, lam[i], K)),
+            "ci_days_low": d(sm.quantile_days(0.05, lam[i], K)),
+            "ci_days_high": d(sm.quantile_days(0.95, lam[i], K)),
             "platforms": pp,
-            "best_platform": best_platform(pp),
+            "best_platform": best,
         })
     return pts
 
 
-def presets_for(tier, grid):
+def surface_for(tier):
+    lam = lam_pooled(tier, PRICES)
+    return {"days": [float(x) for x in SURFACE_DAYS],
+            "prob": [[r(sm.cdf(t, l, K), 3) for t in SURFACE_DAYS] for l in lam]}
+
+
+def best_list_price(tier, platform, grid):
+    vals = [value(platform, tier, g["price_gbp"], g["platforms"][platform]["net_payout_gbp"]) for g in grid]
+    return grid[int(np.argmax(vals))], max(vals)
+
+
+def markers_for(tier, grid):
     p24 = [g["price_gbp"] for g in grid if g["prob_sell_24h"] >= 0.5]
     p30 = [g["price_gbp"] for g in grid if g["prob_sell_30d"] >= 0.8]
-    # p*(gamma): maximise net * E[exp(-gamma T)] on the best platform at each price
-    vals = []
-    for g in grid:
-        pl = g["best_platform"]
-        lam = float(lam_for(tier, [g["price_gbp"]], pl)[0])
-        disc = float(sm.discounted_sale_value(lam, FIT["k"], DEFAULT_GAMMA_PER_DAY)[0])
-        vals.append(g["platforms"][pl]["net_payout_gbp"] * disc * (1 - PLATFORMS[pl]["flake_prob"]))
-    best = grid[int(np.argmax(vals))]["price_gbp"]
+    best = max((best_list_price(tier, pl, grid) for pl in PLATFORMS), key=lambda x: x[1])[0]
     return {
-        "sell_24h_gbp": max(p24) if p24 else grid[0]["price_gbp"],
-        "best_ev_gbp": best,
+        "fast_sale_gbp": max(p24) if p24 else grid[0]["price_gbp"],
+        "best_value_gbp": best["price_gbp"],
         "patient_gbp": max(p30) if p30 else grid[0]["price_gbp"],
         "gamma_per_day": DEFAULT_GAMMA_PER_DAY,
     }
 
 
-def nearest(grid, price):
-    return min(grid, key=lambda g: abs(g["price_gbp"] - price))
+def confidence(n_sales, low, high):
+    if n_sales >= 30 and high < 2 * low:
+        return "high"
+    if n_sales >= 10:
+        return "medium"
+    return "low"
 
 
-def recommendations(grid, strike):
-    g = nearest(grid, strike)
-    days = {pl: v["expected_days"] for pl, v in g["platforms"].items()}
-    fastest = min(days.values())
+def recommendations(tier, grid, listings):
     recs = {}
-    for pl, v in g["platforms"].items():
-        cfg = PLATFORMS[pl]
+    for pl in PLATFORMS:
+        g, _ = best_list_price(tier, pl, grid)
+        v = g["platforms"][pl]
+        n_list = sum(1 for x in listings if x["platform"] == pl)
+        conf = confidence(N_SALES[pl], v["expected_days_low"], v["expected_days_high"])
+        notes = []
+        if conf == "low":
+            notes.append(f"Only {N_SALES[pl]} observed sales on {pl.title()}; speed estimate leans on the average")
         recs[pl] = {
-            "recommended_list_gbp": v["list_price_gbp"],
-            "expected_strike_gbp": g["price_gbp"],
-            "net_payout_gbp": v["net_payout_gbp"],
-            "expected_days": v["expected_days"],
-            "offer_buffer_pct": r(cfg["offer_buffer"] * 100, 1),
-            "fit_score": int(round(100 * fastest / v["expected_days"])) if pl != "fb_marketplace"
-            else int(round(100 * fastest / v["expected_days"] * (1 - cfg["flake_prob"]))),
-            "flake_risk_pct": r(cfg["flake_prob"] * 100, 0) if cfg["flake_prob"] else None,
-            "notes": ["Local pickup only; ask for a deposit to cut flake risk"] if pl == "fb_marketplace" else [],
+            "recommended_list_gbp": g["price_gbp"], **{k: v[k] for k in (
+                "expected_sale_price_gbp", "net_payout_gbp", "prob_sell_7d",
+                "expected_days", "expected_days_low", "expected_days_high")},
+            "offer_buffer_pct": r(PLATFORMS[pl]["offer_buffer"] * 100, 1),
+            "n_listings": n_list, "n_sales": N_SALES[pl], "confidence": conf, "notes": notes,
         }
     return recs
 
 
-def markdown(grid, strike, platform):
-    buf = PLATFORMS[platform]["offer_buffer"]
-    # floor: highest price with >90% chance of selling within 48h
-    floor_candidates = [g["price_gbp"] for g in grid
-                        if sm.cdf(2, float(lam_for(ITEM["condition_tier"], [g["price_gbp"]])[0]), FIT["k"]) >= 0.9]
-    floor = max(floor_candidates) if floor_candidates else grid[0]["price_gbp"]
-    floor = min(floor, strike * 0.9)  # the floor must actually be a drop
-    mid = (strike + floor) / 2
-    lp = lambda s: r(s / (1 - buf))  # noqa: E731
+def markdown(tier, grid, platform, start_price):
+    # floor: highest list price with >90% chance of selling within 48h on this platform
+    floor_c = [g["price_gbp"] for g in grid
+               if sm.cdf(2, float(lam_platform(tier, [g["price_gbp"]], platform)[0]), K) >= 0.9]
+    floor = min(max(floor_c) if floor_c else grid[0]["price_gbp"], start_price * 0.9)
+    mid = (start_price + floor) / 2
+    name = "Vinted" if platform == "vinted" else "eBay"
     return [
-        {"day": 0, "list_price_gbp": lp(strike), "platform": platform,
-         "action": f"List Sunday evening at £{lp(strike):.2f} (includes {buf:.0%} offer buffer)"},
-        {"day": 4, "list_price_gbp": lp(mid), "platform": platform,
-         "action": f"If unsold, drop to £{lp(mid):.2f} so favouriters get a price-drop alert"},
-        {"day": 10, "list_price_gbp": lp(floor), "platform": platform,
-         "action": f"Floor: £{lp(floor):.2f} (>90% chance of selling within 48h)"},
+        {"day": 0, "list_price_gbp": r(start_price), "platform": platform,
+         "action": f"List on {name} at £{start_price:.2f}"},
+        {"day": 4, "list_price_gbp": r(mid), "platform": platform,
+         "action": f"If unsold, drop to £{mid:.2f} so watchers and favouriters get a price-drop alert"},
+        {"day": 10, "list_price_gbp": r(floor), "platform": platform,
+         "action": f"Floor: £{floor:.2f} (over 90% chance of selling within 48 hours)"},
     ]
 
 
-def comparable_listings():
-    rows = [
-        ("eb1", "ebay", "Nike Air Force 1 07 White UK 9 - worn twice", 36.0, 4.0, "good", "sold_unknown_time", None, None, None),
-        ("eb2", "ebay", "Mens Nike AF1 Low Triple White Size 9", 31.0, 3.5, "good", "sold_unknown_time", None, None, None),
-        ("eb3", "ebay", "Nike Air Force 1 '07 UK9 Boxed VGC", 44.0, 0.0, "very_good", "sold_unknown_time", None, None, None),
-        ("vi1", "vinted", "Air force 1 blanches 9", 45.0, 3.2, "good", "active", 16.0, None, 3),
-        ("vi2", "vinted", "Nike AF1 white uk 9 good condition", 30.0, 3.2, "good", "sold_interval", 2.0, 2.9, 11),
-        ("vi3", "vinted", "AF1 '07 triple white size 9", 52.0, 3.2, "very_good", "active", 23.5, None, 1),
-        ("vi4", "vinted", "air forces 1 uk9 creased", 24.0, 3.2, "fair", "sold_interval", 0.6, 1.4, 9),
-        ("eb4", "ebay", "Nike Air Force 1 White UK 9", 48.0, 4.5, "good", "active", 21.0, None, None),
-    ]
-    out = []
-    for lid, pl, title, price, ship, tier, obs, t, tu, fav in rows:
-        cfg = PLATFORMS[pl]
-        fee = price * cfg["buyer_fee_pct"] + cfg["buyer_fee_fixed_gbp"]
-        out.append({
-            "listing_id": lid, "platform": pl, "title": title, "url": None,
-            "price_gbp": price, "shipping_gbp": ship, "buyer_fee_gbp": r(fee),
-            "total_buyer_price_gbp": r(price + ship + fee), "condition_tier": tier,
-            "condition_raw": None, "obs_type": obs, "t_days": t, "t_upper_days": tu,
-            "listed_at": None, "sold_at": None, "observed_at": NOW.isoformat(),
-            "favourite_count": fav, "is_outlier": False, "outlier_reason": None,
-        })
-    return out
+def summary(listings):
+    sold = [x for x in listings if x["obs_type"] != "active"]
+    active = [x for x in listings if x["obs_type"] == "active"]
+    med = lambda xs: float(np.median([x["price_gbp"] for x in xs])) if xs else None  # noqa: E731
+    buckets = {}
+    for t in TIERS:
+        ps = [x["price_gbp"] for x in sold if x["condition_tier"] == t]
+        lam = float(lam_pooled(t, [P.anchor[t]])[0])
+        q = np.percentile(ps, [25, 50, 75]) if ps else [P.anchor[t]] * 3
+        buckets[t] = {"p25": r(q[0]), "median": r(q[1]), "p75": r(q[2]),
+                      "avg_days": d(sm.expected_days(lam, K)), "n": len(ps)}
+    a, s = med(active), med(sold)
+    return {
+        "sample_size_sold": len(sold), "sample_size_active": len(active), "sample_size_excluded": 11,
+        "active_median_gbp": r(a), "sold_median_gbp": r(s),
+        "survivorship_bias_pct": r((a - s) / s * 100, 1),
+        "condition_buckets": buckets, "data_source": "mock",
+        "platforms_ok": list(PLATFORMS), "fetched_at": NOW.isoformat(),
+    }
 
 
 def build_market_scan():
+    listings = simulate_listings(P, n_per_platform=250, now=NOW, seed=7)
     grids = {t: grid_for(t) for t in TIERS}
-    presets = {t: presets_for(t, grids[t]) for t in TIERS}
+    markers = {t: markers_for(t, grids[t]) for t in TIERS}
     tier = ITEM["condition_tier"]
-    strike = presets[tier]["best_ev_gbp"]
-    recs = recommendations(grids[tier], strike)
-    top = max(recs, key=lambda p: recs[p]["fit_score"])
-    buckets = {}
-    for t in TIERS:
-        a = ANCHOR[t]
-        lam = float(lam_for(t, [a])[0])
-        buckets[t] = {"p25": r(a * 0.82), "median": r(a), "p75": r(a * 1.18),
-                      "avg_days": r(sm.expected_days(lam, FIT["k"]), 1), "n": {"fair": 9, "good": 31, "very_good": 26, "mint": 16}[t]}
-    active_med, sold_med = 45.0, 34.0
+    recs = recommendations(tier, grids[tier], listings)
+    best_pl = max(recs, key=lambda pl: value(pl, tier, recs[pl]["recommended_list_gbp"], recs[pl]["net_payout_gbp"]))
+    n_int = sum(1 for x in listings if x["obs_type"] == "sold_interval")
     return {
         "item_metadata": ITEM,
         "cleaned_image_url": "/static/mock/cleaned_item_01.png",
-        "market_summary": {
-            "sample_size_sold": 38, "sample_size_active": 44, "sample_size_excluded": 7,
-            "active_median_gbp": active_med, "sold_median_gbp": sold_med,
-            "survivorship_bias_pct": r((active_med - sold_med) / sold_med * 100, 1),
-            "condition_buckets": buckets, "data_source": "mock",
-            "platforms_ok": ["ebay", "vinted", "fb_marketplace"], "fetched_at": NOW.isoformat(),
-        },
-        "model_fit": {**FIT, "anchor_gbp": ANCHOR,
-                      "platform_multiplier": {p: c["speed_multiplier"] for p, c in PLATFORMS.items()},
-                      "n_obs": 82, "n_censored": 44, "used_priors": False, "log_likelihood": -187.4},
+        "market_summary": summary(listings),
+        "model_fit": {"k": K, "lambda0": P.lambda0, "beta1": P.beta1, "beta2": P.beta2, "sigma_p": P.sigma_p,
+                      "anchor_gbp": P.anchor, "platform_theta": P.theta, "platform_n_sales": N_SALES,
+                      "n_obs": len(listings), "n_censored": len(listings) - n_int, "n_interval": n_int,
+                      "used_priors": False, "log_likelihood": None},
         "price_range": {"min_gbp": r(PRICES[0]), "max_gbp": r(PRICES[-1]), "step_gbp": r(PRICES[1] - PRICES[0])},
         "price_curve_grid": grids,
-        "presets": presets,
+        "sale_surface": {t: surface_for(t) for t in TIERS},
+        "price_markers": markers,
+        "best_platform": best_pl,
         "platform_recommendations": recs,
-        "markdown_schedule": markdown(grids[tier], strike, top),
-        "comparable_listings": comparable_listings(),
-        "warnings": ["MOCK DATA: generated by scripts/make_mock.py, not from real listings"],
+        "markdown_schedule": markdown(tier, grids[tier], best_pl, recs[best_pl]["recommended_list_gbp"]),
+        "comparable_listings": listings[:500],
+        "warnings": ["MOCK DATA: generated by scripts/make_mock.py from simulated listings, not real ones"],
     }
 
 
@@ -265,8 +271,13 @@ def main():
     schema.update({"title": "FlipCurveApi", "type": "object",
                    "properties": {n: {"$ref": f"#/$defs/{n}"} for n in names}})
     (contract_dir / "schema.json").write_text(json.dumps(schema, indent=2))
-    g = scan.price_curve_grid
-    print("wrote mocks + schema;", {t: len(v) for t, v in g.items()}, "presets:", scan.presets["good"])
+    ms = scan.market_summary
+    print(f"wrote mocks + schema; listings={len(scan.comparable_listings)} sold={ms.sample_size_sold} "
+          f"active={ms.sample_size_active} bias={ms.survivorship_bias_pct}% best={scan.best_platform}")
+    for pl, rec in scan.platform_recommendations.items():
+        print(f"  {pl}: list £{rec.recommended_list_gbp} -> net £{rec.net_payout_gbp}, "
+              f"{rec.expected_days}d ({rec.expected_days_low}-{rec.expected_days_high}), {rec.confidence}")
+    print("  markers(good):", scan.price_markers["good"])
 
 
 if __name__ == "__main__":

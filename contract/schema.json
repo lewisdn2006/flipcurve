@@ -53,9 +53,10 @@
     },
     "CurvePoint": {
       "additionalProperties": false,
+      "description": "Pooled across platforms (theta = 0) unless read from `platforms`.",
       "properties": {
         "price_gbp": {
-          "description": "Strike price",
+          "description": "List price",
           "title": "Price Gbp",
           "type": "number"
         },
@@ -90,14 +91,14 @@
           "type": "number"
         },
         "ci_days_low": {
-          "description": "5th percentile of time-to-sell (90% range)",
+          "description": "5th percentile of one item's time-to-sell",
           "maximum": 365.0,
           "minimum": 0,
           "title": "Ci Days Low",
           "type": "number"
         },
         "ci_days_high": {
-          "description": "95th percentile of time-to-sell",
+          "description": "95th percentile of one item's time-to-sell",
           "maximum": 365.0,
           "minimum": 0,
           "title": "Ci Days High",
@@ -115,7 +116,7 @@
         },
         "best_platform": {
           "$ref": "#/$defs/Platform",
-          "description": "Highest net payout, ties -> fewest expected days"
+          "description": "Highest net payout x E[exp(-gamma T)]"
         }
       },
       "required": [
@@ -168,7 +169,7 @@
       "additionalProperties": false,
       "properties": {
         "schema_version": {
-          "default": "1.0",
+          "default": "1.1",
           "title": "Schema Version",
           "type": "string"
         },
@@ -324,7 +325,7 @@
           "$ref": "#/$defs/ConditionTier"
         },
         "condition_score": {
-          "description": "Vision score 0-10; c in [0.1,1] = score/10",
+          "description": "Vision score 0-10",
           "maximum": 10,
           "minimum": 0,
           "title": "Condition Score",
@@ -358,7 +359,7 @@
     },
     "ListingRow": {
       "additionalProperties": false,
-      "description": "One normalised marketplace listing. Scrapers emit these; the engine consumes them.",
+      "description": "One normalised marketplace listing. Scrapers emit these; the engine consumes them;\nthe evidence scatter draws them.",
       "properties": {
         "listing_id": {
           "title": "Listing Id",
@@ -384,7 +385,7 @@
           "title": "Url"
         },
         "price_gbp": {
-          "description": "Item price as listed / sold",
+          "description": "Price shown on the listing (sold price for sold rows)",
           "exclusiveMinimum": 0,
           "title": "Price Gbp",
           "type": "number"
@@ -461,6 +462,18 @@
           "description": "Upper bound, sold_interval only",
           "title": "T Upper Days"
         },
+        "start_source": {
+          "default": "unknown",
+          "description": "How we know when it was listed",
+          "enum": [
+            "exact",
+            "id_calibration",
+            "upload_text",
+            "unknown"
+          ],
+          "title": "Start Source",
+          "type": "string"
+        },
         "listed_at": {
           "anyOf": [
             {
@@ -504,6 +517,19 @@
           ],
           "default": null,
           "title": "Favourite Count"
+        },
+        "best_offer_accepted": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "eBay: true means the real sale price was below price_gbp",
+          "title": "Best Offer Accepted"
         },
         "is_outlier": {
           "default": false,
@@ -592,10 +618,10 @@
     },
     "MarketScanResponse": {
       "additionalProperties": false,
-      "description": "Everything the frontend needs, in one payload. The slider never calls the backend.",
+      "description": "Everything the frontend needs, in one payload; charts are drawn from it with no refetch.",
       "properties": {
         "schema_version": {
-          "default": "1.0",
+          "default": "1.1",
           "title": "Schema Version",
           "type": "string"
         },
@@ -637,21 +663,35 @@
           "title": "Price Curve Grid",
           "type": "object"
         },
-        "presets": {
+        "sale_surface": {
           "additionalProperties": {
-            "$ref": "#/$defs/Presets"
+            "$ref": "#/$defs/SaleSurface"
           },
           "propertyNames": {
             "$ref": "#/$defs/ConditionTier"
           },
-          "title": "Presets",
+          "title": "Sale Surface",
           "type": "object"
+        },
+        "price_markers": {
+          "additionalProperties": {
+            "$ref": "#/$defs/PriceMarkers"
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/ConditionTier"
+          },
+          "title": "Price Markers",
+          "type": "object"
+        },
+        "best_platform": {
+          "$ref": "#/$defs/Platform",
+          "description": "Platform recommended for the item's condition"
         },
         "platform_recommendations": {
           "additionalProperties": {
             "$ref": "#/$defs/PlatformRecommendation"
           },
-          "description": "At presets[item.condition_tier].best_ev_gbp; cards re-read the grid as the slider moves",
+          "description": "For the item's condition tier",
           "propertyNames": {
             "$ref": "#/$defs/Platform"
           },
@@ -666,10 +706,11 @@
           "type": "array"
         },
         "comparable_listings": {
-          "description": "5-10 rows for the evidence drawer",
+          "description": "Cleaned listings for the evidence scatter",
           "items": {
             "$ref": "#/$defs/ListingRow"
           },
+          "maxItems": 500,
           "title": "Comparable Listings",
           "type": "array"
         },
@@ -687,7 +728,9 @@
         "model_fit",
         "price_range",
         "price_curve_grid",
-        "presets",
+        "sale_surface",
+        "price_markers",
+        "best_platform",
         "platform_recommendations",
         "markdown_schedule"
       ],
@@ -793,7 +836,7 @@
     },
     "ModelFit": {
       "additionalProperties": false,
-      "description": "Fitted Weibull AFT parameters, shown in a 'how this works' drawer for judges.",
+      "description": "Fitted Weibull AFT parameters (maths doc, sections 4-6), for the 'how it works' drawer.",
       "properties": {
         "k": {
           "exclusiveMinimum": 0,
@@ -801,15 +844,18 @@
           "type": "number"
         },
         "lambda0": {
+          "description": "Days, Good condition, typical price, average platform",
           "exclusiveMinimum": 0,
           "title": "Lambda0",
           "type": "number"
         },
         "beta1": {
+          "description": "Price effect per spread of markup",
           "title": "Beta1",
           "type": "number"
         },
         "beta2": {
+          "description": "Condition effect",
           "title": "Beta2",
           "type": "number"
         },
@@ -822,22 +868,33 @@
           "additionalProperties": {
             "type": "number"
           },
-          "description": "M(c)",
+          "description": "M(c), median sold price per condition",
           "propertyNames": {
             "$ref": "#/$defs/ConditionTier"
           },
           "title": "Anchor Gbp",
           "type": "object"
         },
-        "platform_multiplier": {
+        "platform_theta": {
           "additionalProperties": {
             "type": "number"
           },
-          "description": "lambda_platform = lambda * m",
+          "description": "Speed term; lambda multiplied by exp(theta)",
           "propertyNames": {
             "$ref": "#/$defs/Platform"
           },
-          "title": "Platform Multiplier",
+          "title": "Platform Theta",
+          "type": "object"
+        },
+        "platform_n_sales": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "description": "Observed sales (exact + interval) per platform",
+          "propertyNames": {
+            "$ref": "#/$defs/Platform"
+          },
+          "title": "Platform N Sales",
           "type": "object"
         },
         "n_obs": {
@@ -848,7 +905,13 @@
           "title": "N Censored",
           "type": "integer"
         },
+        "n_interval": {
+          "default": 0,
+          "title": "N Interval",
+          "type": "integer"
+        },
         "used_priors": {
+          "description": "True when thin data left the fit close to the priors",
           "title": "Used Priors",
           "type": "boolean"
         },
@@ -872,7 +935,8 @@
         "beta2",
         "sigma_p",
         "anchor_gbp",
-        "platform_multiplier",
+        "platform_theta",
+        "platform_n_sales",
         "n_obs",
         "n_censored",
         "used_priors"
@@ -881,7 +945,7 @@
       "type": "object"
     },
     "ObsType": {
-      "description": "How a listing enters the survival likelihood.\n\nsold_exact        sold, time-to-sale known            -> ln f(t)\nactive            still unsold after t days           -> ln S(t)\nsold_interval     vanished between two snapshots, so  -> ln[S(t) - S(t_upper)]\n                  sold somewhere in (t, t_upper]\nsold_unknown_time sold, duration unknown (typical      -> price/condition anchors only,\n                  eBay sold result)                       NOT in the hazard likelihood",
+      "description": "How a listing enters the survival likelihood (maths doc, section 5).\n\nsold_exact        sold, time-to-sale known                  -> ln f(t)\nactive            still unsold after t days                 -> ln S(t)\nsold_interval     sold somewhere in (t, t_upper] days       -> ln[S(t) - S(t_upper)]\n                  e.g. eBay sold item whose start date came from item-number\n                  calibration (sold date is day-only), or a Vinted item seen sold\n                  with t = 0 and t_upper = its age when we checked\nsold_unknown_time sold, no duration at all                  -> price anchors M(c) only",
       "enum": [
         "sold_exact",
         "active",
@@ -894,21 +958,27 @@
     "Platform": {
       "enum": [
         "ebay",
-        "vinted",
-        "fb_marketplace"
+        "vinted"
       ],
       "title": "Platform",
       "type": "string"
     },
     "PlatformPoint": {
       "additionalProperties": false,
+      "description": "One platform at one list price.",
       "properties": {
-        "list_price_gbp": {
-          "title": "List Price Gbp",
+        "expected_sale_price_gbp": {
+          "title": "Expected Sale Price Gbp",
           "type": "number"
         },
         "net_payout_gbp": {
           "title": "Net Payout Gbp",
+          "type": "number"
+        },
+        "prob_sell_7d": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Prob Sell 7D",
           "type": "number"
         },
         "expected_days": {
@@ -917,18 +987,27 @@
           "title": "Expected Days",
           "type": "number"
         },
-        "prob_sell_7d": {
-          "maximum": 1,
+        "expected_days_low": {
+          "description": "90% confidence range on the average wait",
+          "maximum": 365.0,
           "minimum": 0,
-          "title": "Prob Sell 7D",
+          "title": "Expected Days Low",
+          "type": "number"
+        },
+        "expected_days_high": {
+          "maximum": 365.0,
+          "minimum": 0,
+          "title": "Expected Days High",
           "type": "number"
         }
       },
       "required": [
-        "list_price_gbp",
+        "expected_sale_price_gbp",
         "net_payout_gbp",
+        "prob_sell_7d",
         "expected_days",
-        "prob_sell_7d"
+        "expected_days_low",
+        "expected_days_high"
       ],
       "title": "PlatformPoint",
       "type": "object"
@@ -937,44 +1016,66 @@
       "additionalProperties": false,
       "properties": {
         "recommended_list_gbp": {
+          "description": "Best list price on this platform for the item's condition",
           "title": "Recommended List Gbp",
           "type": "number"
         },
-        "expected_strike_gbp": {
-          "title": "Expected Strike Gbp",
+        "expected_sale_price_gbp": {
+          "title": "Expected Sale Price Gbp",
           "type": "number"
         },
         "net_payout_gbp": {
           "title": "Net Payout Gbp",
           "type": "number"
         },
+        "prob_sell_7d": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Prob Sell 7D",
+          "type": "number"
+        },
         "expected_days": {
+          "maximum": 365.0,
+          "minimum": 0,
           "title": "Expected Days",
+          "type": "number"
+        },
+        "expected_days_low": {
+          "maximum": 365.0,
+          "minimum": 0,
+          "title": "Expected Days Low",
+          "type": "number"
+        },
+        "expected_days_high": {
+          "maximum": 365.0,
+          "minimum": 0,
+          "title": "Expected Days High",
           "type": "number"
         },
         "offer_buffer_pct": {
           "title": "Offer Buffer Pct",
           "type": "number"
         },
-        "fit_score": {
-          "maximum": 100,
+        "n_listings": {
           "minimum": 0,
-          "title": "Fit Score",
+          "title": "N Listings",
           "type": "integer"
         },
-        "flake_risk_pct": {
-          "anyOf": [
-            {
-              "maximum": 100,
-              "minimum": 0,
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
+        "n_sales": {
+          "description": "Observed sales behind this platform's speed estimate",
+          "minimum": 0,
+          "title": "N Sales",
+          "type": "integer"
+        },
+        "confidence": {
+          "enum": [
+            "high",
+            "medium",
+            "low",
+            "estimated"
           ],
-          "default": null,
-          "title": "Flake Risk Pct"
+          "title": "Confidence",
+          "type": "string"
         },
         "notes": {
           "items": {
@@ -986,47 +1087,52 @@
       },
       "required": [
         "recommended_list_gbp",
-        "expected_strike_gbp",
+        "expected_sale_price_gbp",
         "net_payout_gbp",
+        "prob_sell_7d",
         "expected_days",
+        "expected_days_low",
+        "expected_days_high",
         "offer_buffer_pct",
-        "fit_score"
+        "n_listings",
+        "n_sales",
+        "confidence"
       ],
       "title": "PlatformRecommendation",
       "type": "object"
     },
-    "Presets": {
+    "PriceMarkers": {
       "additionalProperties": false,
-      "description": "Strike prices the quick-preset buttons snap the slider to (per condition tier).",
+      "description": "List prices to mark on the charts (per condition tier).",
       "properties": {
-        "sell_24h_gbp": {
-          "description": "Highest price with P(sell <= 24h) >= 0.5",
-          "title": "Sell 24H Gbp",
+        "fast_sale_gbp": {
+          "description": "Highest list price with P(sell <= 24h) >= 0.5",
+          "title": "Fast Sale Gbp",
           "type": "number"
         },
-        "best_ev_gbp": {
-          "description": "p*(gamma) at default urgency",
-          "title": "Best Ev Gbp",
+        "best_value_gbp": {
+          "description": "Best list price on the best platform at default urgency",
+          "title": "Best Value Gbp",
           "type": "number"
         },
         "patient_gbp": {
-          "description": "Highest price with P(sell <= 30d) >= 0.8",
+          "description": "Highest list price with P(sell <= 30d) >= 0.8",
           "title": "Patient Gbp",
           "type": "number"
         },
         "gamma_per_day": {
-          "description": "Discount rate used for best_ev",
+          "description": "Urgency used for best_value",
           "title": "Gamma Per Day",
           "type": "number"
         }
       },
       "required": [
-        "sell_24h_gbp",
-        "best_ev_gbp",
+        "fast_sale_gbp",
+        "best_value_gbp",
         "patient_gbp",
         "gamma_per_day"
       ],
-      "title": "Presets",
+      "title": "PriceMarkers",
       "type": "object"
     },
     "PriceRange": {
@@ -1051,6 +1157,37 @@
         "step_gbp"
       ],
       "title": "PriceRange",
+      "type": "object"
+    },
+    "SaleSurface": {
+      "additionalProperties": false,
+      "description": "P(sold within days[j] | price_axis[i]) for the price x time heatmap, pooled across platforms.",
+      "properties": {
+        "days": {
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "title": "Days",
+          "type": "array"
+        },
+        "prob": {
+          "description": "prob[i][j]: i over the shared price axis, j over days",
+          "items": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Prob",
+          "type": "array"
+        }
+      },
+      "required": [
+        "days",
+        "prob"
+      ],
+      "title": "SaleSurface",
       "type": "object"
     },
     "SearchQueries": {

@@ -1,4 +1,5 @@
-"""Re-scrape active listings for demo items every few hours; listings that vanish become obs_type=sold_interval.
+"""Optional Vinted re-check (DECISIONS.md D1): re-open the IDs from an earlier scrape;
+any now marked Sold become obs_type=sold_interval (age at first scrape, age now].
 
-Owner: Person 2. See DECISIONS.md and contract/API_CONTRACT.md before changing anything here.
+Owner: Person 2.
 """
