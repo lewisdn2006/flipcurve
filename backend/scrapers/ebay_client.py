@@ -33,32 +33,81 @@ class Blocked(RuntimeError):
 
 
 class Fetcher:
-    """Polite GET with a delay between requests. Uses curl_cffi (browser-like TLS) if installed."""
+    """Polite GET with a delay between requests and a homepage visit first (to pick up cookies).
 
-    def __init__(self, delay_s: float = 0.7, timeout_s: float = 10.0):
+    kind (or env FLIPCURVE_FETCHER):
+      'curl_cffi' - browser-like TLS fingerprint; we must NOT override its User-Agent, or the
+                    headers contradict the fingerprint, which is a classic bot signal
+      'browser'   - a real Chromium via Playwright (pip install playwright &&
+                    python -m playwright install chromium); slowest, hardest to block
+      'httpx'     - plain requests; fine for sites with no bot protection
+    Default: curl_cffi if installed, else httpx. scripts/fetch_diag.py tells you which works.
+    """
+
+    def __init__(self, delay_s: float = 0.7, timeout_s: float = 15.0, kind: str | None = None,
+                 impersonate: str | None = None):
+        import os
+        impersonate = impersonate or os.getenv("FLIPCURVE_IMPERSONATE", "chrome")
         self.delay_s, self.timeout_s, self._last = delay_s, timeout_s, 0.0
-        try:
-            from curl_cffi import requests as creq  # type: ignore
-            self._session = creq.Session(impersonate="chrome")
-            self.kind = "curl_cffi"
-        except ImportError:
+        self._warmed: set[str] = set()
+        kind = kind or os.getenv("FLIPCURVE_FETCHER") or None
+        if kind in (None, "curl_cffi"):
+            try:
+                from curl_cffi import requests as creq  # type: ignore
+                self._session = creq.Session(impersonate=impersonate)
+                self.kind = "curl_cffi"
+            except ImportError:
+                kind = "httpx"
+        if kind == "browser":
+            from playwright.sync_api import sync_playwright  # type: ignore
+            self._pw = sync_playwright().start()
+            profile = os.path.join(os.path.dirname(__file__), "..", "db", "browser_profile")
+            self._ctx = self._pw.chromium.launch_persistent_context(
+                profile, headless=os.getenv("FLIPCURVE_HEADLESS", "1") == "1", locale="en-GB")
+            self._page = self._ctx.new_page()
+            self.kind = "browser"
+        elif kind == "httpx":
             import httpx
             self._session = httpx.Client(headers=HEADERS, follow_redirects=True, timeout=timeout_s)
             self.kind = "httpx"
 
-    def get(self, url: str) -> str:
+    def _raw_get(self, url: str) -> tuple[int, str]:
         wait = self.delay_s - (time.monotonic() - self._last)
         if wait > 0:
             time.sleep(wait)
-        if self.kind == "curl_cffi":
-            r = self._session.get(url, headers=HEADERS, timeout=self.timeout_s)
-        else:
-            r = self._session.get(url)
-        self._last = time.monotonic()
-        text = r.text
-        if r.status_code != 200 or any(m.lower() in text[:5000].lower() for m in BLOCK_MARKERS):
-            raise Blocked(f"HTTP {r.status_code} from {url}")
+        try:
+            if self.kind == "browser":
+                resp = self._page.goto(url, wait_until="domcontentloaded", timeout=self.timeout_s * 1000)
+                return (resp.status if resp else 0), self._page.content()
+            if self.kind == "curl_cffi":
+                r = self._session.get(url, headers={"Accept-Language": "en-GB,en;q=0.9"}, timeout=self.timeout_s)
+            else:
+                r = self._session.get(url)
+            return r.status_code, r.text
+        finally:
+            self._last = time.monotonic()
+
+    def _warm(self, url: str):
+        from urllib.parse import urlsplit
+        host = urlsplit(url).netloc
+        if host not in self._warmed:
+            self._warmed.add(host)
+            self._raw_get(f"https://{host}/")
+
+    def get(self, url: str) -> str:
+        self._warm(url)
+        status, text = self._raw_get(url)
+        if status == 403:  # one retry after a pause; cookies from the warm-up sometimes need a moment
+            time.sleep(2.0)
+            status, text = self._raw_get(url)
+        if status != 200 or any(m.lower() in text[:5000].lower() for m in BLOCK_MARKERS):
+            raise Blocked(f"HTTP {status} from {url}")
         return text
+
+    def close(self):
+        if self.kind == "browser":
+            self._ctx.close()
+            self._pw.stop()
 
 
 def search_url(query: str, page: int = 1, sold: bool = False, uk_only: bool = True) -> str:
