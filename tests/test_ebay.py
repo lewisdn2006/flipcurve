@@ -99,3 +99,10 @@ def test_rows_validate_and_intervals_make_sense(tmp_path):
     assert by_id["999000000001"]["obs_type"] == "sold_unknown_time"
     for r in a + sold:
         ListingRow.model_validate(r)
+
+
+def test_block_detection_uses_title_only():
+    from backend.scrapers.fetcher import looks_blocked
+    normal = "<html><head><title>Nike Air Force 1 for sale | eBay</title><script>var captchaCfg={}</script></head></html>"
+    block = "<html><head><title>Pardon Our Interruption...</title></head></html>"
+    assert not looks_blocked(normal) and looks_blocked(block)

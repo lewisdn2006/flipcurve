@@ -18,8 +18,20 @@ from __future__ import annotations
 import os
 import time
 
+import re
+
 HONEST_UA = "FlipCurve/0.1 (OxHack 2026 student price-guide prototype)"
-BLOCK_MARKERS = ("Pardon Our Interruption", "captcha", "Checking your browser")
+# Matched against the page <title> only: normal eBay pages mention "captcha" in their scripts,
+# which made a real results page look like a refusal (24 Oct).
+BLOCK_TITLES = ("pardon our interruption", "security measure", "captcha", "checking your browser",
+                "access denied", "just a moment")
+_TITLE = re.compile(r"<title[^>]*>(.*?)</title>", re.I | re.S)
+
+
+def looks_blocked(html: str) -> bool:
+    m = _TITLE.search(html[:20000])
+    title = (m.group(1) if m else "").strip().lower()
+    return any(t in title for t in BLOCK_TITLES)
 
 
 class Blocked(RuntimeError):
@@ -62,8 +74,10 @@ class Fetcher:
             self._last = time.monotonic()
         if status == 404:
             raise Blocked(f"HTTP 404 from {url}")  # callers treat 404 as 'gone'
-        if status != 200 or any(m.lower() in text[:5000].lower() for m in BLOCK_MARKERS):
+        if status != 200:
             raise Blocked(f"HTTP {status} from {url}")
+        if looks_blocked(text):
+            raise Blocked(f"bot-check page (HTTP 200) from {url}")
         return text
 
     def close(self):
