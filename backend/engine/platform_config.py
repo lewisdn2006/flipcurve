@@ -12,7 +12,7 @@ PLATFORMS = {
     "vinted": {
         "prior_theta": 0.0,
         "offer_buffer": 0.13,
-        "seller_fee_pct": 0.0,        # VERIFY: buyer pays buyer-protection fee + postage
+        "seller_fee_pct": 0.0,        # Vinted charges sellers nothing; the buyer pays fee + postage
         "seller_fixed_gbp": 0.0,
         "buyer_fee_pct": 0.05,        # verified 24 Oct 2026 from listing prices (5% + £0.70)
         "buyer_fee_fixed_gbp": 0.70,
@@ -20,9 +20,9 @@ PLATFORMS = {
     "ebay": {
         "prior_theta": 0.0,
         "offer_buffer": 0.04,
-        "seller_fee_pct": 0.0,        # VERIFY: UK private-seller fee rules
+        "seller_fee_pct": 0.0,        # verified Oct 2026: UK private sellers pay no selling fees
         "seller_fixed_gbp": 0.0,
-        "buyer_fee_pct": 0.0,         # VERIFY: eBay UK buyer protection fee
+        "buyer_fee_pct": 0.0,         # unused: eBay's tiered buyer fee is platform_economics.ebay_buyer_fee
         "buyer_fee_fixed_gbp": 0.0,
     },
 }
