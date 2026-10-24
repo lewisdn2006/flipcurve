@@ -14,8 +14,8 @@ PLATFORMS = {
         "offer_buffer": 0.13,
         "seller_fee_pct": 0.0,        # VERIFY: buyer pays buyer-protection fee + postage
         "seller_fixed_gbp": 0.0,
-        "buyer_fee_pct": 0.05,        # VERIFY
-        "buyer_fee_fixed_gbp": 0.70,  # VERIFY
+        "buyer_fee_pct": 0.05,        # verified 24 Oct 2026 from listing prices (5% + £0.70)
+        "buyer_fee_fixed_gbp": 0.70,
     },
     "ebay": {
         "prior_theta": 0.0,
