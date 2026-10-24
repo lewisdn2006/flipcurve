@@ -49,10 +49,32 @@ class VintedCalibration:
         s = slack_minutes * 60
         self.samples[int(item_id)] = (when.timestamp() - s, when.timestamp())
 
+    def consistent_ids(self) -> list[int]:
+        """Sample IDs that agree with a counter that only goes up.
+
+        A bumped listing shows its bump time as "Uploaded", so an old ID can claim a very
+        recent upload (seen 24 Oct: ID 10482200093 "27 min ago" while newer IDs said days).
+        Two samples conflict when the older ID's earliest start is after the newer ID's
+        latest start. Greedily drop the sample in the most conflicts until none remain."""
+        ids = sorted(self.samples)
+        alive = set(ids)
+        while True:
+            counts = {i: 0 for i in alive}
+            srt = sorted(alive)
+            for a_pos, a in enumerate(srt):
+                for b in srt[a_pos + 1:]:
+                    if self.samples[a][0] > self.samples[b][1]:
+                        counts[a] += 1
+                        counts[b] += 1
+            worst = max(counts, key=counts.get, default=None)
+            if worst is None or counts[worst] == 0:
+                return sorted(alive)
+            alive.discard(worst)
+
     def _envelope(self):
         """Monotone counter => start(n) >= every older sample's earliest bound (running max)
         and <= every newer sample's latest bound (running min from the other end)."""
-        ids = sorted(self.samples)
+        ids = self.consistent_ids()
         lo_env, run = [], float("-inf")
         for i in ids:
             run = max(run, self.samples[i][0])

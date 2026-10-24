@@ -97,3 +97,26 @@ def test_active_rows_validate(real_cal):
     assert newest["t_days"] < 0.01
     for r in rows:
         ListingRow.model_validate(r)
+
+
+def test_bumped_listing_sample_is_ignored(tmp_path):
+    """Real samples from 24 Oct 2026 (UTC): the oldest ID was a bumped listing whose page said
+    'Uploaded 27 min ago'. Without pruning, every listing came out ~0 days old."""
+    t = lambda d, hm: datetime(2026, 10, d, int(hm[:2]), int(hm[3:]), tzinfo=timezone.utc)  # noqa: E731
+    cal = VintedCalibration(tmp_path / "c.json")
+    for iid, (d1, a), (d2, b) in [
+        (10482200093, (24, "21:01"), (24, "21:03")),   # bumped: contradicts everything newer
+        (10484378826, (21, "21:28"), (23, "09:28")),
+        (10492646366, (22, "21:28"), (24, "09:28")),
+        (10510472775, (24, "13:28"), (24, "14:58")),
+        (10514379106, (24, "16:28"), (24, "17:58")),
+        (10516428018, (24, "19:28"), (24, "20:58")),
+        (10517596608, (24, "20:28"), (24, "21:28")),
+    ]:
+        cal.samples[iid] = (t(d1, a).timestamp(), t(d2, b).timestamp())
+    assert 10482200093 not in cal.consistent_ids()
+    seen = t(24, "21:28")
+    b = cal.bounds(10485345145)  # just newer than the "2 days ago" sample
+    age_lo = (seen - b.hi).total_seconds() / 86400
+    age_hi = (seen - b.lo).total_seconds() / 86400
+    assert 0.4 < age_lo < age_hi < 3.1

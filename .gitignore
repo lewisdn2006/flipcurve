@@ -11,3 +11,5 @@ node_modules/
 dist/
 .DS_Store
 backend/static/uploads/
+backend/db/browser_profile/
+backend/db/*.json
