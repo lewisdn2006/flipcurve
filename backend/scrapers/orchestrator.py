@@ -44,14 +44,15 @@ def save_cache(query: str, platform: str, rows: list[dict], extra: dict | None =
 
 def _live_ebay(query: str) -> list[dict]:
     from backend.scrapers.ebay_calibration import CalibrationStore
-    from backend.scrapers.ebay_client import Fetcher, scan
+    from backend.scrapers.ebay_client import scan
+    from backend.scrapers.fetcher import Fetcher
     rows, stats = scan(query, CalibrationStore(), Fetcher())
     save_cache(query, "ebay", rows, {"stats": stats})
     return rows
 
 
 def _live_vinted(query: str) -> list[dict]:
-    from backend.scrapers.ebay_client import Fetcher
+    from backend.scrapers.fetcher import Fetcher
     from backend.scrapers.vinted_calibration import VintedCalibration
     from backend.scrapers.vinted_client import scan
     old = cache_path(query, "vinted")

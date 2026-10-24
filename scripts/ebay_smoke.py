@@ -20,7 +20,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from backend.scrapers.ebay_calibration import CALIBRATION_QUERIES, CalibrationStore  # noqa: E402
-from backend.scrapers.ebay_client import Blocked, Fetcher, calibrate, scan  # noqa: E402
+from backend.scrapers.ebay_client import calibrate, scan  # noqa: E402
+from backend.scrapers.fetcher import Blocked, Fetcher  # noqa: E402
 
 
 def q(xs, p):
@@ -47,7 +48,7 @@ def main():
               f"within 6 h {round(sum(e <= 6 for e in errs) / len(errs), 3) if errs else None}")
         rows, stats = scan(args.query, store, fetcher, now=now)
     except Blocked as e:
-        print(f"\nBLOCKED by eBay: {e}\nTry: pip install curl_cffi   (then run again)")
+        print(f"\nRefused by eBay: {e}\nThat's eBay saying no for now; try again later or use cached data.")
         sys.exit(2)
 
     print(f"scan '{args.query}': {stats}")

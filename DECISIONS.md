@@ -102,6 +102,22 @@ speed and haggling. Don't invent fee differences.
 eBay and Vinted give real data; FB doesn't. FB's placeholder numbers are kept in
 `DEFERRED_PLATFORMS` in `engine/platform_config.py` for adding back later.
 
+## D10. How we collect listing data
+
+FlipCurve uses public listings as price guidance for someone selling their own item.
+We collect them politely, and we never try to get around a refusal.
+
+* **eBay active listings:** the official Browse API when `EBAY_CLIENT_ID` / `EBAY_CLIENT_SECRET`
+  are set (it returns `itemOriginDate`, which survives relists). Otherwise the newest-first
+  search page.
+* **eBay sold listings and Vinted:** search pages loaded by a real browser
+  (`backend/scrapers/fetcher.py`, Playwright), one page at a time with pauses.
+* **Low volume:** a few pages per demo item, cached in `cache_seed/` and reused.
+* **A refusal means stop.** On a 403, a bot check or a CAPTCHA we raise `Blocked` and use
+  cached data. No switching disguises, no retry loops, no CAPTCHA solving.
+* For the demo, build the cache ahead of time with `scripts/ebay_smoke.py` and
+  `scripts/vinted_smoke.py` (then `--recheck` for Vinted later).
+
 ## TEAM — still to decide
 
 - [ ] Demo items: fill in `backend/scrapers/cache_seed/demo_items.csv` with the things on the table.

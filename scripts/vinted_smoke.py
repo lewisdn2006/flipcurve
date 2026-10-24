@@ -21,7 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from backend.scrapers.ebay_client import Blocked, Fetcher  # noqa: E402
+from backend.scrapers.fetcher import Blocked, Fetcher  # noqa: E402
 from backend.scrapers.vinted_calibration import VintedCalibration  # noqa: E402
 from backend.scrapers.vinted_client import recheck, scan  # noqa: E402
 
@@ -56,7 +56,7 @@ def main():
             out.write_text(json.dumps({"query": args.query, "fetched_at": now.isoformat(), "stats": stats,
                                        "cards": cards, "rows": rows}, indent=1))
     except Blocked as e:
-        print(f"\nBLOCKED by Vinted: {e}\nTry: pip install curl_cffi   (then run again)")
+        print(f"\nRefused by Vinted: {e}\nThat's Vinted saying no for now; try again later or use cached data.")
         sys.exit(2)
     print(f"saved {len(rows)} rows -> {out.relative_to(ROOT)}")
 

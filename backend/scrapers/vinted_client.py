@@ -1,9 +1,8 @@
 """Vinted UK fetcher: catalogue search -> active ListingRow dicts with ages from ID calibration,
 plus the optional re-check that turns listings seen earlier into sold intervals.
 
-Vinted loads DataDome bot protection, so plain requests may be refused; Fetcher (shared with
-eBay) uses curl_cffi's browser impersonation when installed. If Vinted still blocks it, fall
-back to the seeded cache for the demo.
+Fetching goes through backend/scrapers/fetcher.py (real browser by default, no attempts to
+get around a refusal). If Vinted refuses, the orchestrator uses the cached results.
 
 Owner: Person 2.
 """
@@ -12,7 +11,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 
-from backend.scrapers.ebay_client import Blocked, Fetcher
+from backend.scrapers.fetcher import Blocked, Fetcher
 from backend.scrapers.vinted_calibration import VintedCalibration
 from backend.scrapers.vinted_parse import CONDITION_TIER, parse_catalog, parse_item_page
 

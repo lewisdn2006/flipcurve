@@ -90,11 +90,11 @@ def condition_tier(raw: str | None) -> str | None:
     """Map eBay's condition text to our 4 tiers (None = unknown; the engine treats it as 'good')."""
     if raw is None:
         return None
-    if raw in ("Brand new", "New with tags", "New with box", "New without tags"):
+    if raw in ("Brand new", "New", "New with tags", "New with box", "New without tags"):
         return "mint"
     if raw in ("New (other)", "Opened – never used", "Pre-owned - Excellent"):
         return "very_good"
-    if raw in ("Pre-owned - Good", "Pre-owned", "Used"):
+    if raw in ("Pre-owned - Good", "Pre-owned", "Used", "Good"):
         return "good"
     if raw == "Pre-owned - Fair":
         return "fair"
