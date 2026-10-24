@@ -67,8 +67,11 @@ def active_rows(cards: list[dict], cal: VintedCalibration, now: datetime) -> lis
             continue
         # censored at the youngest plausible age: "unsold for at least this long" stays true
         age_min = max((now - b.hi).total_seconds() / 86400, 0.0)
+        # a single scrape only shows survivors: entry age = age now, so no speed information
+        # until a recheck() follows these listings forward (maths doc, section 5)
         rows.append({**_row(c, now), "obs_type": "active", "t_days": round(age_min, 4), "t_upper_days": None,
-                     "start_source": "id_calibration", "listed_at": b.mid.isoformat()})
+                     "t_entry_days": round(age_min, 4), "start_source": "id_calibration",
+                     "listed_at": b.mid.isoformat()})
     return rows
 
 
@@ -103,14 +106,15 @@ def recheck(first_cards: list[dict], first_seen: datetime, cal: VintedCalibratio
         b = cal.bounds(c["item_id"])
         if b is None:
             continue
+        entry = max((first_seen - b.hi).total_seconds() / 86400, 0.0)  # age when first seen (youngest bound)
         if info["status"] == "sold":
-            lo = max((first_seen - b.hi).total_seconds() / 86400, 0.0)
-            hi = max((now - b.lo).total_seconds() / 86400, lo)
-            rows.append({**_row(c, now), "obs_type": "sold_interval", "t_days": round(lo, 4),
-                         "t_upper_days": round(hi, 4), "start_source": "id_calibration",
-                         "listed_at": b.mid.isoformat()})
+            hi = max((now - b.lo).total_seconds() / 86400, entry)
+            rows.append({**_row(c, now), "obs_type": "sold_interval", "t_days": round(entry, 4),
+                         "t_upper_days": round(hi, 4), "t_entry_days": round(entry, 4),
+                         "start_source": "id_calibration", "listed_at": b.mid.isoformat()})
         elif info["status"] == "active":
-            age_min = max((now - b.hi).total_seconds() / 86400, 0.0)
+            age_min = max((now - b.hi).total_seconds() / 86400, entry)
             rows.append({**_row(c, now), "obs_type": "active", "t_days": round(age_min, 4),
-                         "t_upper_days": None, "start_source": "id_calibration", "listed_at": b.mid.isoformat()})
+                         "t_upper_days": None, "t_entry_days": round(entry, 4),
+                         "start_source": "id_calibration", "listed_at": b.mid.isoformat()})
     return rows, counts

@@ -189,24 +189,46 @@ def sold_rows(cards: list[dict], store: CalibrationStore, now: datetime) -> list
     return rows
 
 
-def scan(query: str, store: CalibrationStore, fetcher: Fetcher, active_pages: int = 2, sold_pages: int = 2,
+def scan(query: str, store: CalibrationStore, fetcher: Fetcher, active_pages: int = 3, sold_pages: int = 3,
          now: datetime | None = None) -> tuple[list[dict], dict]:
-    """Fetch active + sold listings for one item query. Active pages also feed the calibration."""
+    """Fetch active + sold listings for one item query as a COHORT (maths doc, section 5):
+    only listings that started after `window_start` are kept, where window_start is the
+    earliest time both searches fully cover. Inside the window every listing is seen whether
+    it sold or not, so no left truncation (t_entry_days = 0). Active pages also feed calibration."""
     now = now or datetime.now(timezone.utc)
     act_cards, sold_cards = [], []
+    act_complete = sold_complete = False
     for p in range(1, active_pages + 1):
         cards = parse_cards(fetcher.get(search_url(query, p)), now)
         act_cards += cards
         store.add([(c["item_id"], c["start_time"]) for c in cards if c["start_time"]], source=f"item:{query}")
         if len(cards) < 200:
+            act_complete = True
             break
     for p in range(1, sold_pages + 1):
         cards = parse_cards(fetcher.get(search_url(query, p, sold=True)), now)
         sold_cards += cards
         if len(cards) < 200:
+            sold_complete = True
             break
-    a, s = active_rows(act_cards, now), sold_rows(sold_cards, store, now)
+
+    window_start = now - timedelta(days=90)  # eBay's sold search only goes back ~90 days
+    starts = [c["start_time"] for c in act_cards if c["start_time"]]
+    if not act_complete and starts:
+        window_start = max(window_start, min(starts))
+    sold_days = [c["sold_date"] for c in sold_cards if c["sold_date"]]
+    if not sold_complete and sold_days:
+        d = min(sold_days)
+        # a listing that started after the window opened and sold must have sold after it too
+        window_start = max(window_start, datetime(d.year, d.month, d.day, tzinfo=UK) + timedelta(days=1))
+
+    a = [r for r in active_rows(act_cards, now) if datetime.fromisoformat(r["listed_at"]) >= window_start]
+    s_all = sold_rows(sold_cards, store, now)
+    s = [r for r in s_all if r["obs_type"] != "sold_interval" or datetime.fromisoformat(r["listed_at"]) >= window_start]
+    for r in a + s:
+        r["t_entry_days"] = 0.0 if r["obs_type"] != "sold_unknown_time" else None
     dated = [r for r in s if r["obs_type"] == "sold_interval"]
     stats = {"active": len(a), "sold": len(s), "sold_dated": len(dated),
-             "coverage": round(len(dated) / len(s), 3) if s else None, "fetcher": fetcher.kind}
+             "coverage": round(sum(r["obs_type"] == "sold_interval" for r in s_all) / len(s_all), 3) if s_all else None,
+             "window_days": round((now - window_start).total_seconds() / 86400, 2), "fetcher": fetcher.kind}
     return a + s, stats

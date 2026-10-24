@@ -462,6 +462,20 @@
           "description": "Upper bound, sold_interval only",
           "title": "T Upper Days"
         },
+        "t_entry_days": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Age when we first saw it (left truncation); None/0 = seen from the start. The likelihood conditions on surviving to this age",
+          "title": "T Entry Days"
+        },
         "start_source": {
           "default": "unknown",
           "description": "How we know when it was listed",

@@ -142,6 +142,9 @@ class ListingRow(_Model):
     obs_type: ObsType
     t_days: Optional[float] = Field(None, ge=0, description="Duration (sold_exact), age (active) or lower bound (sold_interval)")
     t_upper_days: Optional[float] = Field(None, ge=0, description="Upper bound, sold_interval only")
+    t_entry_days: Optional[float] = Field(
+        None, ge=0, description="Age when we first saw it (left truncation); None/0 = seen from the start. "
+                                "The likelihood conditions on surviving to this age")
     start_source: StartSource = Field("unknown", description="How we know when it was listed")
     listed_at: Optional[datetime] = None
     sold_at: Optional[datetime] = None
@@ -158,6 +161,8 @@ class ListingRow(_Model):
         if self.obs_type == "sold_interval":
             if self.t_days is None or self.t_upper_days is None or self.t_upper_days < self.t_days:
                 raise ValueError("sold_interval needs t_days <= t_upper_days")
+        if self.t_entry_days and self.t_days is not None and self.t_entry_days > self.t_days + 1e-9:
+            raise ValueError("t_entry_days cannot be after t_days")
         return self
 
 

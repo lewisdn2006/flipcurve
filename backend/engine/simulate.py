@@ -3,13 +3,16 @@
 Used for: the recovery test (fit simulated data, check the true parameters come back),
 the mock payload's evidence scatter, and demo-day fallback data.
 
-It mimics how each platform lets us observe listings (see DECISIONS.md D1):
-  eBay    active  -> exact start time from search, obs 'active'
-          sold    -> visible for 90 days; start from item-number calibration, sold date is
-                     day-only, so obs 'sold_interval' of about +/- half a day
-  Vinted  active  -> age from ID calibration, obs 'active'
-          sold    -> only seen through a re-check: listed and active at the first scrape,
-                     sold by the re-check, so obs 'sold_interval' (age then, age now]
+It mimics how the real clients observe listings (DECISIONS.md D1, maths doc section 5):
+  eBay    cohort window: every listing that STARTED in the last `ebay_window_days` is seen,
+          sold or not (active search gives exact starts; sold search + item-number
+          calibration dates the sold ones). Active -> 'active'; sold -> 'sold_interval'
+          (sold date is day-only, plus calibration error). No truncation (entry age 0).
+  Vinted  left-truncated: a first scrape sees only listings still active then, at age a0.
+          A re-check `vinted_recheck_hours` later finds each one sold ('sold_interval'
+          (a0, a1]) or still active ('active' at a1). Every row has t_entry_days = a0, so
+          the fit conditions on having survived to a0. With no re-check, rows are active
+          with t_entry = t and carry no speed information - which is the honest answer.
 """
 from __future__ import annotations
 
@@ -45,59 +48,57 @@ def simulate_listings(
     params: TrueParams,
     n_per_platform: int = 400,
     now: datetime | None = None,
-    history_days: float = 120.0,
-    ebay_sold_window_days: float = 90.0,
+    ebay_window_days: float = 30.0,
+    vinted_window_days: float = 30.0,
     vinted_recheck_hours: float | None = 18.0,
     calibration_error_days: float = 0.25,
     tier_weights=(0.15, 0.45, 0.28, 0.12),
     seed: int = 7,
 ) -> list[dict]:
-    """Return ListingRow-shaped dicts for every listing we would actually be able to see."""
+    """Return ListingRow-shaped dicts for every listing the clients would actually see.
+    n_per_platform = listings that STARTED in each platform's window."""
     rng = np.random.default_rng(seed)
     now = now or datetime(2026, 10, 25, 12, 0, tzinfo=timezone.utc)
     rows: list[dict] = []
     for platform in PLATFORMS:
         cfg = PLATFORMS[platform]
+        window = ebay_window_days if platform == "ebay" else vinted_window_days
+        recheck = (vinted_recheck_hours or 0.0) / 24
         tiers = rng.choice(TIERS, size=n_per_platform, p=tier_weights)
         for i, tier in enumerate(tiers):
             anchor = params.anchor[tier]
             # sellers mostly price a little above the going rate, with a long right tail
-            price = float(np.round(anchor * np.exp(rng.normal(0.05, 0.22)), 0) - 0.01)
-            price = max(price, 1.99)
+            price = max(float(np.round(anchor * np.exp(rng.normal(0.05, 0.22)), 0) - 0.01), 1.99)
             lam = float(params.scale(price, tier, platform))
             T = lam * (-np.log(rng.uniform())) ** (1.0 / params.k)
-            start_ago = rng.uniform(0, history_days)          # days before `now`
-            listed_at = now - timedelta(days=start_ago)
-            sold_ago = start_ago - T                          # > 0 means sold before now
+            age_now = rng.uniform(0, window) + (recheck if platform == "vinted" else 0.0)
+            listed_at = now - timedelta(days=age_now)
             row = _row(platform, f"{platform[:2]}{i:05d}", tier, price, cfg, now, listed_at, rng)
 
             if platform == "ebay":
-                if sold_ago <= 0:
-                    row.update(obs_type="active", t_days=round(start_ago, 3), start_source="exact")
-                elif sold_ago <= ebay_sold_window_days:
-                    sold_at = now - timedelta(days=sold_ago)
-                    sold_day_noon = sold_at.replace(hour=12, minute=0, second=0, microsecond=0)
-                    centre = (sold_day_noon - listed_at).total_seconds() / 86400
-                    half = 0.5 + calibration_error_days
-                    row.update(obs_type="sold_interval", t_days=round(max(0.0, centre - half), 3),
-                               t_upper_days=round(max(0.0, centre - half) + 2 * half, 3),
-                               start_source="id_calibration", sold_at=sold_day_noon.isoformat(),
-                               best_offer_accepted=bool(rng.uniform() < 0.2))
+                if T >= age_now:
+                    row.update(obs_type="active", t_days=round(age_now, 4), start_source="exact")
                 else:
-                    continue  # sold too long ago for eBay's sold search
+                    sold_at = listed_at + timedelta(days=T)
+                    day_start = sold_at.replace(hour=0, minute=0, second=0, microsecond=0)
+                    lo = (day_start - listed_at).total_seconds() / 86400 - calibration_error_days
+                    hi = lo + 1.0 + 2 * calibration_error_days
+                    row.update(obs_type="sold_interval", t_days=round(max(lo, 0.0), 4),
+                               t_upper_days=round(max(hi, 0.0), 4), start_source="id_calibration",
+                               sold_at=day_start.isoformat(), best_offer_accepted=bool(rng.uniform() < 0.2))
             else:  # vinted
-                if sold_ago <= 0:
-                    row.update(obs_type="active", t_days=round(start_ago, 3), start_source="id_calibration")
-                elif vinted_recheck_hours is not None:
-                    first_scrape_ago = vinted_recheck_hours / 24
-                    if start_ago > first_scrape_ago and sold_ago < first_scrape_ago:
-                        # active at the first scrape, sold by the re-check
-                        row.update(obs_type="sold_interval", t_days=round(start_ago - first_scrape_ago, 3),
-                                   t_upper_days=round(start_ago, 3), start_source="id_calibration")
-                    else:
-                        continue  # sold before we ever saw it
+                a0 = age_now - recheck          # age at the first scrape
+                if T <= a0:
+                    continue                    # sold before we ever saw it: invisible
+                if vinted_recheck_hours is None:
+                    row.update(obs_type="active", t_days=round(a0, 4), t_entry_days=round(a0, 4),
+                               start_source="id_calibration")
+                elif T <= age_now:
+                    row.update(obs_type="sold_interval", t_days=round(a0, 4), t_upper_days=round(age_now, 4),
+                               t_entry_days=round(a0, 4), start_source="id_calibration")
                 else:
-                    continue
+                    row.update(obs_type="active", t_days=round(age_now, 4), t_entry_days=round(a0, 4),
+                               start_source="id_calibration")
             rows.append(row)
     return rows
 
@@ -109,8 +110,8 @@ def _row(platform, lid, tier, price, cfg, now, listed_at, rng):
         "listing_id": lid, "platform": platform, "title": f"Simulated {tier.replace('_', ' ')} listing",
         "url": None, "price_gbp": price, "shipping_gbp": ship, "buyer_fee_gbp": fee,
         "total_buyer_price_gbp": round(price + ship + fee, 2), "condition_tier": tier,
-        "condition_raw": None, "t_days": None, "t_upper_days": None, "listed_at": listed_at.isoformat(),
-        "sold_at": None, "observed_at": now.isoformat(),
+        "condition_raw": None, "t_days": None, "t_upper_days": None, "t_entry_days": None,
+        "listed_at": listed_at.isoformat(), "sold_at": None, "observed_at": now.isoformat(),
         "favourite_count": int(rng.poisson(2)) if platform == "vinted" else None,
         "best_offer_accepted": None, "is_outlier": False, "outlier_reason": None,
     }

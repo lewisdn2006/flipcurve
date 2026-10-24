@@ -1,33 +1,41 @@
-"""Censored Weibull AFT survival model.
+"""Censored Weibull AFT survival model: closed forms + penalised (MAP) fit.
 
-Owner: Person 1. See DECISIONS.md and contract/API_CONTRACT.md before changing the contract.
+Owner: Person 1. The maths is written up in the doc "FlipCurve: The Maths Behind Time-to-Sell"
+(sections referenced below).
 
-Model (from the backbone plan, section 3C):
-    z            = (p - M(c)) / sigma_p
-    lambda(p, c) = lambda0 * exp(beta1 * z - beta2 * (c - c_ref))
-    S(t | p, c)  = exp(-(t / lambda)^k)
-    E[T]         = lambda * Gamma(1 + 1/k)
-    T_q          = lambda * (-ln(1 - q))^(1/k)
-
-This file currently holds only the closed-form pieces (used by scripts/make_mock.py so the
-mock payload obeys the same maths). Phase 2 adds: censored log-likelihood (exact, right- and
-interval-censored), SciPy fit, prior shrinkage for N < 12, and the grid builder.
+Model (section 4):
+    z_i          = (p_i - M(c_i)) / sigma_p
+    ln lambda_i  = eta0 + beta1 * z_i - beta2 * (c_i - 2) + theta_{platform(i)}
+    S(t)         = exp(-(t / lambda)^k)
+Likelihood (section 5): active -> ln S(t); sold_exact -> ln f(t); sold_interval -> ln[S(a) - S(b)];
+every row first seen at age e > 0 also gets - ln S(e) (left truncation: it was only visible
+because it survived that long).
+Penalties = normal priors (section 6), so thin data falls back smoothly to the priors.
+Confidence (section 7): finite-difference Hessian -> covariance -> delta method on ln E[T].
 """
 from __future__ import annotations
 
+from dataclasses import dataclass, field
+
 import numpy as np
+from scipy.optimize import minimize
+from scipy.special import digamma, gammaln
 from scipy.special import gamma as gamma_fn
 
 C_REF = 2  # "good"
+TIERS = ["fair", "good", "very_good", "mint"]
+CIDX = {t: i + 1 for i, t in enumerate(TIERS)}
+# Typical price of each condition relative to Good; only used to fill a tier with too few sales.
+DEFAULT_TIER_RATIO = {"fair": 0.65, "good": 1.0, "very_good": 1.32, "mint": 1.9}
+MIN_SOLD_PER_ANCHOR = 5
+PRIOR_MIN_N = 12          # fewer observed sales than this -> flagged as leaning on priors
+T_MIN = 1e-3              # days; avoids ln(0) for listings seen the moment they went up
 
-# Category priors from the plan; used when fewer than PRIOR_MIN_N clean listings.
-PRIOR_K = 0.85
-PRIOR_BETA1 = 2.4
-PRIOR_MIN_N = 12
+# ------------------------------------------------------------------ closed forms (section 3)
 
 
 def scale(p, anchor, sigma_p, c, lambda0, beta1, beta2, c_ref=C_REF):
-    """Weibull scale lambda(p, c) in days. Vectorised over p."""
+    """Weibull scale lambda(p, c) in days, with theta = 0. Vectorised over p."""
     z = (np.asarray(p, dtype=float) - anchor) / sigma_p
     return lambda0 * np.exp(beta1 * z - beta2 * (c - c_ref))
 
@@ -52,15 +60,275 @@ def quantile_days(q, lam, k):
 
 
 def discounted_sale_value(lam, k, gamma_per_day, horizon_days=180.0, n=2000):
-    """E[exp(-gamma T)] for T ~ Weibull(lam, k), by quadrature on [0, horizon].
-
-    Used for p*(gamma) = argmax_p  net(p) * E[exp(-gamma T) | p].
-    Mass beyond the horizon is treated as never selling (value 0).
-    """
+    """E[exp(-gamma T)] for T ~ Weibull(lam, k), by quadrature on [0, horizon] (section 8).
+    Mass beyond the horizon is treated as never selling (value 0)."""
     lam = np.atleast_1d(np.asarray(lam, dtype=float))
     t = np.linspace(0.0, horizon_days, n)[:, None]
-    # integrate e^{-gamma t} dF(t) = sum e^{-gamma t_mid} * (F(t_i+1) - F(t_i))
     F = cdf(t, lam[None, :], k)
     dF = np.diff(F, axis=0)
     t_mid = 0.5 * (t[1:] + t[:-1])
     return (np.exp(-gamma_per_day * t_mid) * dF).sum(axis=0)
+
+
+# ------------------------------------------------------------------ priors (section 6)
+
+
+@dataclass
+class Prior:
+    beta1: float = 2.4
+    beta1_sd: float = 1.0
+    k: float = 0.85
+    lnk_sd: float = 0.3
+    beta2: float = 0.3
+    beta2_sd: float = 0.5
+    lambda0_days: float = 7.0     # weak: keeps eta0 finite when nothing has sold yet
+    eta0_sd: float = 1.5
+    tau: float = 0.5              # sd of platform speed terms
+    theta_mean: dict = field(default_factory=dict)  # mu_j; missing platforms -> 0
+
+
+# ------------------------------------------------------------------ data prep (section 9, step 1)
+
+
+def _get(r, key):
+    return r[key] if isinstance(r, dict) else getattr(r, key)
+
+
+def _tier(r) -> str:
+    t = _get(r, "condition_tier")
+    t = getattr(t, "value", t)
+    return t if t in CIDX else "good"
+
+
+def estimate_anchors(rows) -> dict[str, float]:
+    """M(c): median sold price per condition; thin tiers filled from the others by typical ratios."""
+    sold = [r for r in rows if _get(r, "obs_type") != "active" and not _get(r, "is_outlier")]
+    by_tier = {t: [float(_get(r, "price_gbp")) for r in sold if _tier(r) == t] for t in TIERS}
+    good = {t: float(np.median(v)) for t, v in by_tier.items() if len(v) >= MIN_SOLD_PER_ANCHOR}
+    if not good:  # nothing sold at all: use every listing, scaled down a little for survivorship
+        prices = [float(_get(r, "price_gbp")) for r in rows if not _get(r, "is_outlier")]
+        base = 0.85 * float(np.median(prices)) if prices else 30.0
+        return {t: round(base * DEFAULT_TIER_RATIO[t], 2) for t in TIERS}
+    # implied 'Good' level from each well-populated tier, then rebuild all tiers from it
+    ref = float(np.median([m / DEFAULT_TIER_RATIO[t] for t, m in good.items()]))
+    return {t: round(good.get(t, ref * DEFAULT_TIER_RATIO[t]), 2) for t in TIERS}
+
+
+def estimate_sigma(rows, anchors) -> float:
+    """sigma_p: robust spread (IQR / 1.349) of sold prices around their condition's anchor."""
+    sold = [r for r in rows if _get(r, "obs_type") != "active" and not _get(r, "is_outlier")]
+    resid = [float(_get(r, "price_gbp")) - anchors[_tier(r)] for r in sold]
+    floor = 0.1 * anchors["good"]
+    if len(resid) < 4:
+        return max(0.3 * anchors["good"], floor)
+    q75, q25 = np.percentile(resid, [75, 25])
+    return float(max((q75 - q25) / 1.349, floor))
+
+
+@dataclass
+class _Data:
+    z: np.ndarray
+    cdev: np.ndarray
+    j: np.ndarray
+    kind: np.ndarray   # 0 active, 1 exact, 2 interval
+    a: np.ndarray
+    b: np.ndarray
+    e: np.ndarray      # entry age (left truncation), 0 = seen from the start
+
+
+def _prepare(rows, platforms, anchors, sigma_p) -> _Data:
+    pidx = {p: i for i, p in enumerate(platforms)}
+    z, cdev, j, kind, a, b, e = [], [], [], [], [], [], []
+    for r in rows:
+        if _get(r, "is_outlier"):
+            continue
+        ot = getattr(_get(r, "obs_type"), "value", _get(r, "obs_type"))
+        pl = getattr(_get(r, "platform"), "value", _get(r, "platform"))
+        if pl not in pidx or ot == "sold_unknown_time":
+            continue
+        t1, t2 = _get(r, "t_days"), _get(r, "t_upper_days")
+        t0 = float(_get(r, "t_entry_days") or 0.0) if (isinstance(r, dict) and "t_entry_days" in r) or hasattr(r, "t_entry_days") else 0.0
+        if ot == "active" and t1 is not None:
+            k_, aa, bb = 0, max(float(t1), 0.0), np.nan
+        elif ot == "sold_exact" and t1 is not None:
+            k_, aa, bb = 1, max(float(t1), T_MIN), np.nan
+        elif ot == "sold_interval" and t1 is not None and t2 is not None:
+            aa, bb = max(float(t1), 0.0), float(t2)
+            if bb - aa < 1e-6:  # degenerate interval: treat as an exact sale
+                k_, aa, bb = 1, max(aa, T_MIN), np.nan
+            else:
+                k_ = 2
+        else:
+            continue
+        tier = _tier(r)
+        z.append((float(_get(r, "price_gbp")) - anchors[tier]) / sigma_p)
+        cdev.append(CIDX[tier] - C_REF)
+        j.append(pidx[pl])
+        kind.append(k_)
+        a.append(aa)
+        b.append(bb)
+        e.append(min(t0, aa))
+    return _Data(*(np.asarray(x, dtype=float if n != 2 and n != 3 else int)
+                   for n, x in enumerate([z, cdev, j, kind, a, b, e])))
+
+
+# ------------------------------------------------------------------ likelihood (section 5)
+
+
+def _loglik(psi, d: _Data, n_plat: int) -> float:
+    eta0, beta1, beta2 = psi[0], psi[1], psi[2]
+    theta = psi[3:3 + n_plat]
+    k = np.exp(psi[3 + n_plat])
+    lnlam = eta0 + beta1 * d.z - beta2 * d.cdev + theta[d.j]
+    ll = 0.0
+    m = d.kind == 0
+    if m.any():
+        t = d.a[m]
+        pos = t > 0
+        ll -= np.exp(k * (np.log(t[pos]) - lnlam[m][pos])).sum()
+    m = d.kind == 1
+    if m.any():
+        lu = np.log(d.a[m]) - lnlam[m]
+        ll += (np.log(k) - lnlam[m] + (k - 1) * lu - np.exp(k * lu)).sum()
+    m = d.kind == 2
+    if m.any():
+        aa, bb, ll_i = d.a[m], d.b[m], lnlam[m]
+        A = np.where(aa > 0, np.exp(k * (np.log(np.maximum(aa, 1e-12)) - ll_i)), 0.0)
+        B = np.exp(k * (np.log(bb) - ll_i))
+        # ln[e^-A - e^-B] = -A + ln(1 - e^-(B-A)), computed stably
+        ll += (-A + np.log(-np.expm1(-(B - A)) + 1e-300)).sum()
+    m = d.e > 0  # left truncation: we only saw it because it survived to age e
+    if m.any():
+        ll += np.exp(k * (np.log(d.e[m]) - lnlam[m])).sum()
+    return float(ll)
+
+
+def _penalty(psi, n_plat: int, prior: Prior, platforms) -> float:
+    eta0, beta1, beta2 = psi[0], psi[1], psi[2]
+    theta = psi[3:3 + n_plat]
+    lnk = psi[3 + n_plat]
+    mu = np.array([prior.theta_mean.get(p, 0.0) for p in platforms])
+    return float(
+        ((theta - mu) ** 2).sum() / (2 * prior.tau ** 2)
+        + (beta1 - prior.beta1) ** 2 / (2 * prior.beta1_sd ** 2)
+        + (beta2 - prior.beta2) ** 2 / (2 * prior.beta2_sd ** 2)
+        + (lnk - np.log(prior.k)) ** 2 / (2 * prior.lnk_sd ** 2)
+        + (eta0 - np.log(prior.lambda0_days)) ** 2 / (2 * prior.eta0_sd ** 2)
+    )
+
+
+def _hessian(f, x, h=1e-3):
+    n = len(x)
+    H = np.zeros((n, n))
+    for i in range(n):
+        for j in range(i, n):
+            ei, ej = np.eye(n)[i] * h, np.eye(n)[j] * h
+            H[i, j] = H[j, i] = (f(x + ei + ej) - f(x + ei - ej) - f(x - ei + ej) + f(x - ei - ej)) / (4 * h * h)
+    return H
+
+
+# ------------------------------------------------------------------ fitted model
+
+
+@dataclass
+class FitResult:
+    platforms: list[str]
+    psi: np.ndarray
+    cov: np.ndarray
+    anchors: dict[str, float]
+    sigma_p: float
+    n_obs: int
+    n_censored: int
+    n_interval: int
+    n_exact: int
+    n_sales: dict[str, int]
+    log_likelihood: float
+    used_priors: bool
+    converged: bool
+
+    @property
+    def k(self) -> float:
+        return float(np.exp(self.psi[-1]))
+
+    @property
+    def lambda0(self) -> float:
+        return float(np.exp(self.psi[0]))
+
+    @property
+    def beta1(self) -> float:
+        return float(self.psi[1])
+
+    @property
+    def beta2(self) -> float:
+        return float(self.psi[2])
+
+    @property
+    def theta(self) -> dict[str, float]:
+        return {p: float(self.psi[3 + i]) for i, p in enumerate(self.platforms)}
+
+    def z(self, price, tier):
+        return (np.asarray(price, float) - self.anchors[tier]) / self.sigma_p
+
+    def scale(self, price, tier, platform: str | None = None):
+        """lambda in days. platform=None -> pooled: the average of the platforms' speed terms."""
+        th = self.theta[platform] if platform else float(np.mean(list(self.theta.values())))
+        return np.exp(self.psi[0] + self.beta1 * self.z(price, tier) - self.beta2 * (CIDX[tier] - C_REF) + th)
+
+    def se_log_mean(self, price, tier, platform: str | None = None) -> np.ndarray:
+        """Delta-method SE of ln E[T] (section 7). Vectorised over price."""
+        z = np.atleast_1d(self.z(price, tier))
+        g = np.zeros((len(z), len(self.psi)))
+        g[:, 0] = 1.0
+        g[:, 1] = z
+        g[:, 2] = -(CIDX[tier] - C_REF)
+        if platform:
+            g[:, 3 + self.platforms.index(platform)] = 1.0
+        else:
+            g[:, 3:3 + len(self.platforms)] = 1.0 / len(self.platforms)
+        k = self.k
+        g[:, -1] = -digamma(1 + 1 / k) / k
+        return np.sqrt(np.maximum(np.einsum("ni,ij,nj->n", g, self.cov, g), 0.0))
+
+    def mean_days_range(self, price, tier, platform=None, z90=1.645):
+        lam = np.atleast_1d(self.scale(price, tier, platform))
+        mean = lam * np.exp(gammaln(1 + 1 / self.k))
+        se = self.se_log_mean(price, tier, platform)
+        return mean, mean * np.exp(-z90 * se), mean * np.exp(z90 * se)
+
+
+def fit(rows, platforms=("ebay", "vinted"), prior: Prior | None = None,
+        anchors: dict | None = None, sigma_p: float | None = None) -> FitResult:
+    """Fit the penalised censored Weibull AFT model to ListingRow-shaped rows."""
+    prior = prior or Prior()
+    platforms = list(platforms)
+    anchors = anchors or estimate_anchors(rows)
+    sigma_p = sigma_p or estimate_sigma(rows, anchors)
+    d = _prepare(rows, platforms, anchors, sigma_p)
+    n_plat = len(platforms)
+
+    def objective(psi):
+        return -_loglik(psi, d, n_plat) + _penalty(psi, n_plat, prior, platforms)
+
+    # start (section 9, step 3): eta0 from the median age of listings, priors elsewhere
+    ages = d.a[d.a > 0]
+    eta_start = np.log(np.median(ages)) if len(ages) else np.log(prior.lambda0_days)
+    x0 = np.concatenate([[eta_start, prior.beta1, prior.beta2],
+                         [prior.theta_mean.get(p, 0.0) for p in platforms], [np.log(prior.k)]])
+    res = minimize(objective, x0, method="L-BFGS-B")
+    H = _hessian(objective, res.x)
+    try:
+        cov = np.linalg.inv(H)
+        if np.any(np.diag(cov) < 0):
+            raise np.linalg.LinAlgError
+    except np.linalg.LinAlgError:
+        cov = np.linalg.pinv(H)
+        cov = (cov + cov.T) / 2
+        np.fill_diagonal(cov, np.abs(np.diag(cov)))
+    sales_mask = d.kind > 0
+    n_sales = {p: int(((d.j == i) & sales_mask).sum()) for i, p in enumerate(platforms)}
+    return FitResult(
+        platforms=platforms, psi=res.x, cov=cov, anchors=anchors, sigma_p=sigma_p,
+        n_obs=len(d.kind), n_censored=int((d.kind == 0).sum()), n_interval=int((d.kind == 2).sum()),
+        n_exact=int((d.kind == 1).sum()), n_sales=n_sales, log_likelihood=_loglik(res.x, d, n_plat),
+        used_priors=sum(n_sales.values()) < PRIOR_MIN_N, converged=bool(res.success),
+    )
