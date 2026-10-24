@@ -16,9 +16,8 @@ Owner: Person 2.
 from __future__ import annotations
 
 import os
-import time
-
 import re
+import time
 
 HONEST_UA = "FlipCurve/0.1 (OxHack 2026 student price-guide prototype)"
 # Matched against the page <title> only: normal eBay pages mention "captcha" in their scripts,
@@ -26,6 +25,7 @@ HONEST_UA = "FlipCurve/0.1 (OxHack 2026 student price-guide prototype)"
 BLOCK_TITLES = ("pardon our interruption", "security measure", "captcha", "checking your browser",
                 "access denied", "just a moment")
 _TITLE = re.compile(r"<title[^>]*>(.*?)</title>", re.I | re.S)
+CHALLENGE_URL = re.compile(r"splashui/challenge|/captcha|/challenge", re.I)
 
 
 def looks_blocked(html: str) -> bool:
@@ -65,8 +65,7 @@ class Fetcher:
             time.sleep(wait)
         try:
             if self.kind == "browser":
-                resp = self._page.goto(url, wait_until="domcontentloaded", timeout=self.timeout_s * 1000)
-                status, text = (resp.status if resp else 0), self._page.content()
+                status, text = self._browser_get(url)
             else:
                 r = self._session.get(url)
                 status, text = r.status_code, r.text
@@ -79,6 +78,27 @@ class Fetcher:
         if looks_blocked(text):
             raise Blocked(f"bot-check page (HTTP 200) from {url}")
         return text
+
+    def _browser_get(self, url: str) -> tuple[int, str]:
+        """Load a page and read it once it has settled. eBay pages sometimes keep navigating
+        after the first load (24 Oct crash: 'page is navigating and changing the content')."""
+        from playwright.sync_api import Error as PWError, TimeoutError as PWTimeout  # type: ignore
+        resp = self._page.goto(url, wait_until="domcontentloaded", timeout=self.timeout_s * 1000)
+        status = resp.status if resp else 0
+        try:
+            self._page.wait_for_load_state("load", timeout=10_000)
+        except PWTimeout:
+            pass
+        text = ""
+        for _ in range(3):  # reading a page mid-navigation fails; wait and read again
+            try:
+                text = self._page.content()
+                break
+            except PWError:
+                self._page.wait_for_timeout(1000)
+        if CHALLENGE_URL.search(self._page.url):
+            return 403, text  # landed on a bot-check page: treat as a refusal
+        return status, text
 
     def close(self):
         if self.kind == "browser":
