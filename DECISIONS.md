@@ -117,6 +117,12 @@ We collect them politely, and we never try to get around a refusal.
   cached data. No switching disguises, no retry loops, no CAPTCHA solving.
 * For the demo, build the cache ahead of time with `scripts/ebay_smoke.py` and
   `scripts/vinted_smoke.py` (then `--recheck` for Vinted later).
+* **eBay, when automated loads are refused (24 Oct):** eBay refused the hidden browser's
+  sold-search page but served the same page to a person browsing normally in Chrome. So eBay
+  data for the demo comes from pages a team member opens and saves (Cmd+S) while browsing:
+  `scripts/import_ebay_pages.py urls <query>` lists the pages, `import` turns them into the cache.
+  Terapeak (Seller Hub > Research) is eBay's own sold-data tool; it was showing "unavailable"
+  on a freshly enabled account, so worth retrying.
 
 ## TEAM — still to decide
 

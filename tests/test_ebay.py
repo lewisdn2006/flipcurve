@@ -106,3 +106,28 @@ def test_block_detection_uses_title_only():
     normal = "<html><head><title>Nike Air Force 1 for sale | eBay</title><script>var captchaCfg={}</script></head></html>"
     block = "<html><head><title>Pardon Our Interruption...</title></head></html>"
     assert not looks_blocked(normal) and looks_blocked(block)
+
+
+def test_import_saved_pages(tmp_path, monkeypatch):
+    """The saved-page importer builds a cohort from active + sold pages in a folder."""
+    import importlib.util
+    import os
+
+    import backend.scrapers.ebay_calibration as cal_mod
+    import backend.scrapers.orchestrator as orch
+    monkeypatch.setattr(cal_mod, "DEFAULT_DB", tmp_path / "cal.sqlite")
+    monkeypatch.setattr(orch, "CACHE", tmp_path / "cache")
+    spec = importlib.util.spec_from_file_location("imp", "scripts/import_ebay_pages.py")
+    imp = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(imp)
+    monkeypatch.setattr(imp, "CalibrationStore", lambda: CalibrationStore(tmp_path / "cal.sqlite"))
+    folder = tmp_path / "pages"
+    folder.mkdir()
+    (folder / "active.html").write_text(ACTIVE_HTML)
+    (folder / "sold.html").write_text(SOLD_HTML)
+    t = NOW.timestamp()
+    for f in folder.iterdir():
+        os.utime(f, (t, t))
+    imp.cmd_import("nike air force 1", folder)
+    out = (tmp_path / "cache" / "nike-air-force-1_ebay.json")
+    assert out.exists()

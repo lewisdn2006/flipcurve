@@ -136,6 +136,16 @@ def scan(query: str, store: CalibrationStore, fetcher: Fetcher, active_pages: in
             sold_complete = True
             break
 
+    rows, stats = build_rows(act_cards, sold_cards, store, now, act_complete, sold_complete, sold_refused)
+    stats["fetcher"] = fetcher.kind
+    return rows, stats
+
+
+def build_rows(act_cards: list[dict], sold_cards: list[dict], store: CalibrationStore, now: datetime,
+               act_complete: bool = False, sold_complete: bool = False,
+               sold_refused: str | None = None) -> tuple[list[dict], dict]:
+    """Turn parsed search cards into a cohort of ListingRows (used by scan() and by the
+    saved-page importer). Pass *_complete=True only if the pages reached the end of the results."""
     window_start = now - timedelta(days=90)  # eBay's sold search only goes back ~90 days
     starts = [c["start_time"] for c in act_cards if c["start_time"]]
     if not act_complete and starts:
@@ -153,7 +163,7 @@ def scan(query: str, store: CalibrationStore, fetcher: Fetcher, active_pages: in
         for r in a:
             r["t_entry_days"] = r["t_days"]
         return a, {"active": len(a), "sold": 0, "sold_dated": 0, "coverage": None, "window_days": None,
-                   "fetcher": fetcher.kind, "sold_refused": sold_refused}
+                   "sold_refused": sold_refused}
     a = [r for r in active_rows(act_cards, now) if datetime.fromisoformat(r["listed_at"]) >= window_start]
     s_all = sold_rows(sold_cards, store, now)
     s = [r for r in s_all if r["obs_type"] != "sold_interval" or datetime.fromisoformat(r["listed_at"]) >= window_start]
@@ -164,5 +174,5 @@ def scan(query: str, store: CalibrationStore, fetcher: Fetcher, active_pages: in
     dated = [r for r in s if r["obs_type"] == "sold_interval"]
     stats = {"active": len(a), "sold": len(s), "sold_dated": len(dated),
              "coverage": round(sum(r["obs_type"] == "sold_interval" for r in s_all) / len(s_all), 3) if s_all else None,
-             "window_days": round((now - window_start).total_seconds() / 86400, 2), "fetcher": fetcher.kind}
+             "window_days": round((now - window_start).total_seconds() / 86400, 2)}
     return a + s, stats
