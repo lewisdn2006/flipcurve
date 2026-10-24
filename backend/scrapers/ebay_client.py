@@ -124,8 +124,13 @@ def scan(query: str, store: CalibrationStore, fetcher: Fetcher, active_pages: in
             if len(cards) < 200:
                 act_complete = True
                 break
+    sold_refused = None
     for p in range(1, sold_pages + 1):
-        cards = parse_cards(fetcher.get(search_url(query, p, sold=True)), now)
+        try:
+            cards = parse_cards(fetcher.get(search_url(query, p, sold=True)), now)
+        except Blocked as e:  # keep what we have; don't retry around it
+            sold_refused = str(e)
+            break
         sold_cards += cards
         if len(cards) < 200:
             sold_complete = True
@@ -141,11 +146,21 @@ def scan(query: str, store: CalibrationStore, fetcher: Fetcher, active_pages: in
         # a listing that started after the window opened and sold must have sold after it too
         window_start = max(window_start, datetime(d.year, d.month, d.day, tzinfo=UK) + timedelta(days=1))
 
+    if sold_refused and not sold_cards:
+        # no sold side: active listings are survivors we happened to see, so they carry prices
+        # but no speed information (entry age = age now, maths doc section 5)
+        a = active_rows(act_cards, now)
+        for r in a:
+            r["t_entry_days"] = r["t_days"]
+        return a, {"active": len(a), "sold": 0, "sold_dated": 0, "coverage": None, "window_days": None,
+                   "fetcher": fetcher.kind, "sold_refused": sold_refused}
     a = [r for r in active_rows(act_cards, now) if datetime.fromisoformat(r["listed_at"]) >= window_start]
     s_all = sold_rows(sold_cards, store, now)
     s = [r for r in s_all if r["obs_type"] != "sold_interval" or datetime.fromisoformat(r["listed_at"]) >= window_start]
     for r in a + s:
         r["t_entry_days"] = 0.0 if r["obs_type"] != "sold_unknown_time" else None
+    # (if the sold side was cut short by a refusal, window_start above already reflects how
+    #  far back the sold pages we did get reach, so the cohort stays balanced)
     dated = [r for r in s if r["obs_type"] == "sold_interval"]
     stats = {"active": len(a), "sold": len(s), "sold_dated": len(dated),
              "coverage": round(sum(r["obs_type"] == "sold_interval" for r in s_all) / len(s_all), 3) if s_all else None,
