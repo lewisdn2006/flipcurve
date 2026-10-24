@@ -2,6 +2,8 @@
 
 Run from repo root on a machine that can reach eBay:
     python scripts/ebay_smoke.py "nike air force 1 07 white" --queries 8
+Gentle retry (2 page loads, reuses the saved calibration):
+    python scripts/ebay_smoke.py "nike air force 1 07 white" --skip-calibration --pages 1
 
 It writes the calibration to backend/db/ebay_calibration.sqlite (reused next time, so later
 runs are faster) and the item's rows to backend/scrapers/cache_seed/<slug>_ebay.json.
@@ -34,6 +36,7 @@ def main():
     ap.add_argument("query")
     ap.add_argument("--queries", type=int, default=8, help="how many calibration queries to run")
     ap.add_argument("--skip-calibration", action="store_true")
+    ap.add_argument("--pages", type=int, default=3, help="max pages each for active and sold (fewer = gentler)")
     args = ap.parse_args()
 
     now = datetime.now(timezone.utc)
@@ -46,7 +49,7 @@ def main():
         errs = store.leave_one_out_error_hours()
         print(f"calibration accuracy (leave-one-out): median {q(errs, .5)} h, p90 {q(errs, .9)} h, "
               f"within 6 h {round(sum(e <= 6 for e in errs) / len(errs), 3) if errs else None}")
-        rows, stats = scan(args.query, store, fetcher, now=now)
+        rows, stats = scan(args.query, store, fetcher, active_pages=args.pages, sold_pages=args.pages, now=now)
     except Blocked as e:
         print(f"\nRefused by eBay: {e}\nThat's eBay saying no for now; try again later or use cached data.")
         sys.exit(2)
