@@ -202,6 +202,10 @@ export type TDays = number | null;
  */
 export type TUpperDays = number | null;
 /**
+ * Age when we first saw it (left truncation); None/0 = seen from the start. The likelihood conditions on surviving to this age
+ */
+export type TEntryDays = number | null;
+/**
  * How we know when it was listed
  */
 export type StartSource = "exact" | "id_calibration" | "upload_text" | "unknown";
@@ -503,6 +507,7 @@ export interface ListingRow {
   obs_type: ObsType;
   t_days?: TDays;
   t_upper_days?: TUpperDays;
+  t_entry_days?: TEntryDays;
   start_source?: StartSource;
   listed_at?: ListedAt;
   sold_at?: SoldAt;
