@@ -32,9 +32,15 @@ No platform publishes "listed on X, sold on Y".
 `ListingRow.start_source` records how the start date was found: `exact`,
 `id_calibration`, `upload_text` or `unknown`.
 
-**Vinted re-check (optional, cheap):** scrape each demo item's Vinted results once, then
-check those IDs again later. Any that now show "Sold" become interval sales. Without it,
-Vinted contributes only active listings.
+**Vinted re-check (cheap, and the only source of Vinted speed data):** scrape each demo
+item's Vinted results once (`scripts/vinted_smoke.py`), then later run it again with
+`--recheck`. Any that now show "Sold" become interval sales. A single scrape only shows
+listings that survived long enough to be seen (left truncation), so on its own it carries no
+speed information: without a re-check, Vinted's badge reads "estimated" or "low".
+
+**Sampling rules the model relies on (maths doc, section 5):** eBay rows are a cohort, meaning
+only listings that started inside the window both searches fully cover, with entry age 0.
+Vinted rows carry `t_entry_days` = their age when first seen, and the likelihood conditions on it.
 
 Caveats: the sold date is day-only; relisted items may carry a misleading start date;
 "Best Offer accepted" (`best_offer_accepted`) means the real sale price was below the shown one.

@@ -24,7 +24,7 @@ def list_models(key: str) -> list[str]:
 
 def check_gemini() -> bool:
     key = os.getenv("GEMINI_API_KEY", "").strip()
-    model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
+    model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash").strip()
     if not key:
         print("GEMINI: missing GEMINI_API_KEY in .env")
         return False
@@ -34,7 +34,7 @@ def check_gemini() -> bool:
     }
     try:
         r = httpx.post(f"{API}/models/{model}:generateContent", json=body,
-                       headers={"x-goog-api-key": key}, timeout=20)
+                       headers={"x-goog-api-key": key}, timeout=90)
     except httpx.HTTPError as e:
         print(f"GEMINI: network error ({type(e).__name__}: {e})")
         return False
