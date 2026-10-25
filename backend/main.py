@@ -77,7 +77,7 @@ def _identify_fallback(source: str, why: str) -> dict:
             "search_queries": {"ebay": "", "vinted": ""}, "is_broken": False, "must_have": [], "must_not_have": []}
     return {"item": item, "source": source, "cleaned_image_url": None, "confidence": 0.0,
             "warnings": [f"Couldn't identify the photo automatically ({why}). Type what it is and the "
-                         "searches below, or try Identify again in a minute."]}
+                         "searches below, or try Identify again later (each model above says when it's tried again)."]}
 
 
 @app.post("/api/v1/identify", response_model=IdentifyResponse)

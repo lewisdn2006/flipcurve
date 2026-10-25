@@ -307,6 +307,16 @@ identify without trying the backups, and all of them showed the same "busy or un
   Google's whole message, says which limit was hit and when each skipped model is tried again.
   Gemma's request and answer are not trimmed.
 
+* **Every usable model, and reading Gemma's answers** (same day; a one-photo test reached Gemma,
+  which answered, but "answer wasn't valid JSON"). After the main model and Claude, every model the
+  key lists for generateContent is tried, best first: Flash (newest first), Flash-Lite, Pro, Gemma
+  (4B and up, newest and largest first), others; models that make images or speech, live audio,
+  embeddings or agents are left out. Ones out of allowance are skipped by their cooldown, which is
+  now saved in backend/db/model_cooldowns.json (gitignored) so a restart or the smoke script doesn't
+  ask them again. The answer reader ignores thinking parts and finds the item JSON in fenced blocks,
+  after notes, with trailing commas, comments, Python-style quotes, or cut off part-way. When it
+  still can't, the warning quotes the first 400 characters of what the model said.
+
 ## TEAM — still to decide
 
 - [ ] Demo items: fill in `backend/scrapers/cache_seed/demo_items.csv` with the things on the table.

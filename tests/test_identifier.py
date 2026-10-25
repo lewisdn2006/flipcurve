@@ -577,3 +577,74 @@ def test_slow_gemma_after_skipped_flash_still_fits_three_minutes(monkeypatch):
         GeminiIdentifier(api_key="k", model="m", sleep=lambda s: None, budget_s=180,
                          client=httpx.Client(transport=httpx.MockTransport(handler))).from_images([_jpeg(400)])
     assert clock["t"] <= 180 and "gemma-4-31b-it: no answer within 160 s" in e.value.reason()
+
+
+# ---- 25 Oct: Gemma answered a single photo, but "answer wasn't valid JSON"
+
+def _text_reply(text, parts=None):
+    return httpx.Response(200, json={"candidates": [{"content": {"parts": parts or [{"text": text}]}}]})
+
+
+@pytest.mark.parametrize("text", [
+    "Sure! Looking at the photo, this is a pair of trainers.\n\n```json\n" + json.dumps(GOOD, indent=2) + "\n```\n\nLet me know {if} you need more.",
+    "Notes: brand looks like {Nike}.\nAnswer:\n" + json.dumps(GOOD),
+    json.dumps(GOOD, indent=2)[:-2].rstrip() + ",\n  // sure about this\n}",          # trailing comma + comment
+    str({**GOOD, "is_broken": False, "era_or_year": None}),                           # Python-style dict
+    "```json\n" + json.dumps(GOOD)[:-40],                                             # cut off part-way
+])
+def test_json_is_found_however_the_answer_wraps_it(text):
+    out = make(lambda req: _text_reply(text)).from_text("x")
+    assert out["item"]["title"].startswith("Nike Air Force 1")
+
+
+def test_thinking_parts_are_ignored():
+    parts = [{"text": "{not json, just thinking about the {photo}", "thought": True}, {"text": json.dumps(GOOD)}]
+    assert make(lambda req: _text_reply("", parts)).from_text("x")["item"]["brand"] == "Nike"
+
+
+def test_unreadable_answer_is_shown_in_the_warning(monkeypatch):
+    monkeypatch.setenv("GEMINI_FALLBACK_MODELS", "")
+    with pytest.raises(IdentifyError) as e:
+        make(lambda req: _text_reply("I think this is a Nike trainer, maybe an Air Force 1.")).from_text("x")
+    assert "answer wasn't valid JSON (it said: «I think this is a Nike trainer, maybe an Air Force 1.»)" in e.value.reason()
+
+
+def test_every_usable_model_is_tried_best_first(monkeypatch):
+    monkeypatch.delenv("GEMINI_FALLBACK_MODELS", raising=False)
+    monkeypatch.delenv("GEMMA_MODEL", raising=False)
+    names = ["m", "gemini-3-pro-preview", "gemini-2.5-flash", "gemini-3.5-flash-lite", "gemini-3.5-flash",
+             "gemini-2.5-flash-preview-tts", "gemini-3-flash-image", "text-embedding-004", "gemini-3-flash-live",
+             "gemma-3-1b-it", "gemma-3-27b-it", "gemma-4-31b-it", "gemma-4-26b-a4b-it", "aqa"]
+    order = []
+
+    def handler(req):
+        if req.method == "GET":
+            return httpx.Response(200, json={"models": [{"name": f"models/{n}", "supportedGenerationMethods": ["generateContent"]}
+                                                        for n in names]})
+        order.append(_model_of(req))
+        return httpx.Response(429, json={"error": {"message": "quota"}})
+
+    with pytest.raises(IdentifyError):
+        GeminiIdentifier(api_key="k", model="m", sleep=lambda s: None, budget_s=180,
+                         client=httpx.Client(transport=httpx.MockTransport(handler))).from_text("x")
+    assert order == ["m", "gemini-3.5-flash", "gemini-2.5-flash", "gemini-3.5-flash-lite", "gemini-3-pro-preview",
+                     "gemma-4-31b-it", "gemma-4-26b-a4b-it", "gemma-3-27b-it"]
+
+
+def test_cooldowns_survive_a_restart(monkeypatch, tmp_path):
+    from backend.vision import gemini_identifier as gi
+    f = tmp_path / "cool.json"
+    monkeypatch.setenv("FLIPCURVE_COOLDOWN_FILE", str(f))
+    monkeypatch.setattr(gi, "_COOLDOWN_LOADED", False)
+    gi.cool_down("m", _quota_429(qid="GenerateRequestsPerDayPerProjectPerModel-FreeTier"))
+    assert f.exists()
+    gi.COOLDOWN.clear()                                   # "restart": memory gone, file stays
+    monkeypatch.setattr(gi, "_COOLDOWN_LOADED", False)
+    assert gi.cooling("m") and "daily limit" in gi.cooling("m")["why"]
+
+
+
+def test_escaped_quotes_and_braces_inside_strings_dont_confuse_it():
+    obj = {**GOOD, "title": 'Nike Air Force 1 "07 {Low}" White'}
+    text = "Here {you} go:\n" + json.dumps(obj) + "\nHope that helps}"
+    assert make(lambda req: _text_reply(text)).from_text("x")["item"]["title"] == 'Nike Air Force 1 "07 {Low}" White'

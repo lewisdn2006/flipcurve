@@ -33,7 +33,10 @@ GEMMA_TIMEOUT_S = 160.0          # Gemma is slow on the free tier but has allowa
 FIRST_MODEL_CAP_S = 40.0         # longest wait for the first model, so the backups always get a turn
 SMALL_RETRY_SIDE = 800           # one more go with smaller photos when the first round failed for non-busy reasons
 GEMINI_MAX_SIDE = 1280           # photos sent to Gemini: plenty to read a label, fewer image tiles = faster
-SKIP_IN_FALLBACK = ("image", "tts", "audio", "live", "embedding", "thinking-exp", "native")
+# models in the list that can't do this job (make images or speech, live audio, embeddings, agents)
+SKIP_IN_FALLBACK = ("image", "tts", "audio", "live", "embedding", "thinking-exp", "native", "aqa", "computer-use",
+                    "robotics", "research", "veo", "imagen", "lyria", "translate", "transcribe")
+MIN_GEMMA_B = 4                  # smaller Gemmas can't see photos well (or at all)
 
 PROMPT = """You are helping someone in the UK price a secondhand item they own, to sell on eBay or Vinted.
 Look at the photo(s) (or read the description) and identify the exact product.
@@ -294,30 +297,94 @@ def parse_answer(resp: dict) -> dict:
         raise Unusable("empty answer")
     cand = cands[0] or {}
     finish = cand.get("finishReason") or ""
-    text = "".join(p.get("text", "") for p in (cand.get("content") or {}).get("parts") or [] if isinstance(p, dict))
+    # thinking parts (thought: true) are the model's notes, not its answer
+    text = "".join(p.get("text", "") for p in (cand.get("content") or {}).get("parts") or []
+                   if isinstance(p, dict) and not p.get("thought"))
     if not text.strip():
         if finish in BLOCKED:
             raise Unusable(f"answer blocked ({finish})")
         if finish == "MAX_TOKENS":
             raise Unusable("ran out of room before answering")
         raise Unusable("empty answer")
-    text = text.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-    if not text.startswith("{") and "{" in text:  # tolerate a sentence around the JSON
-        text = text[text.index("{"):text.rindex("}") + 1] if "}" in text else text[text.index("{"):]
-    try:
-        raw = json.loads(text)
-    except json.JSONDecodeError:
-        raise Unusable("answer was cut off" if finish == "MAX_TOKENS" else "answer wasn't valid JSON") from None
-    if isinstance(raw, list) and raw and isinstance(raw[0], dict):
-        raw = raw[0]
-    if not isinstance(raw, dict):
-        raise Unusable("answer wasn't a JSON object")
+    raw = _find_json(text)
+    if raw is None:
+        shown = " ".join(text.split())
+        shown = shown[:400] + ("…" if len(shown) > 400 else "")
+        why = "answer was cut off" if finish == "MAX_TOKENS" else "answer wasn't valid JSON"
+        raise Unusable(f"{why} (it said: «{shown}»)")
     out = _clean(raw)
     named = _str(raw.get("title")) or _str(raw.get("model_name")) or _str((raw.get("search_queries") or {}).get("ebay")
                                                                           if isinstance(raw.get("search_queries"), dict) else raw.get("search_queries"))
     if not named:
         raise Unusable("couldn't name the item", partial=out)  # another model may do better; kept as a last resort
     return out
+
+
+ITEM_KEYS = {"title", "search_queries", "condition_tier", "brand", "model_name"}
+
+
+def _json_candidates(text: str):
+    """Places the JSON might be: the whole reply, ```fenced``` blocks, then every balanced {...}
+    (last first: models tend to put notes first and the answer last)."""
+    t = text.strip()
+    yield t
+    for m in re.finditer(r"```(?:json|JSON)?\s*(.*?)```", t, re.S):
+        yield m.group(1).strip()
+    objs, depth, start, in_str, esc = [], 0, None, False, False
+    for i, ch in enumerate(t):
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch == "{":
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == "}" and depth:
+            depth -= 1
+            if depth == 0:
+                objs.append(t[start:i + 1])
+    yield from reversed(objs)
+    if start is not None and depth:  # an object that never closed (cut off): try closing it
+        yield t[start:] + "}" * depth
+
+
+def _repair(t: str) -> str:
+    """Common slips: comments, trailing commas, curly quotes, Python's True/False/None."""
+    t = re.sub(r"//[^\n\"]*$", "", t, flags=re.M)
+    t = re.sub(r"/\*.*?\*/", "", t, flags=re.S)
+    t = t.replace("\u201c", '"').replace("\u201d", '"').replace("\u2018", "'").replace("\u2019", "'")
+    t = re.sub(r",\s*([}\]])", r"\1", t)
+    t = re.sub(r"\bTrue\b", "true", re.sub(r"\bFalse\b", "false", re.sub(r"\bNone\b", "null", t)))
+    return t
+
+
+def _find_json(text: str) -> dict | None:
+    """The item object in a model's reply, however it was wrapped; None if there isn't one."""
+    import ast
+    first = None
+    for c in _json_candidates(text):
+        for attempt in (c, _repair(c)):
+            try:
+                v = json.loads(attempt)
+            except (json.JSONDecodeError, ValueError):
+                try:
+                    v = ast.literal_eval(attempt)  # single-quoted keys and strings
+                except (ValueError, SyntaxError, MemoryError, RecursionError):
+                    continue
+            if isinstance(v, list) and v and isinstance(v[0], dict):
+                v = v[0]
+            if isinstance(v, dict):
+                if ITEM_KEYS & set(v):
+                    return v
+                first = first or v
+    return first
 
 
 def _google_error(r: httpx.Response) -> str:
@@ -332,8 +399,44 @@ def _google_error(r: httpx.Response) -> str:
 # being asked again on every identify (25 Oct: each identify spent requests on three Flash models
 # that could only say 429). Shared by all identifies in this server process.
 
-COOLDOWN: dict[str, dict] = {}     # model -> {"until": epoch seconds, "why": text}
+COOLDOWN: dict[str, dict] = {}     # model -> {"until": epoch seconds, "why": text, "since": epoch seconds}
 _COOLDOWN_LOCK = threading.Lock()
+_COOLDOWN_LOADED = False
+
+
+def _cooldown_file():
+    """Where cooldowns are kept between restarts (backend/db/ is gitignored). FLIPCURVE_COOLDOWN_FILE=""
+    turns that off (tests)."""
+    from pathlib import Path
+    env = os.getenv("FLIPCURVE_COOLDOWN_FILE")
+    if env is not None:
+        return Path(env) if env.strip() else None
+    return Path(__file__).resolve().parents[1] / "db" / "model_cooldowns.json"
+
+
+def _load_cooldowns():
+    global _COOLDOWN_LOADED
+    if _COOLDOWN_LOADED:
+        return
+    _COOLDOWN_LOADED = True
+    f = _cooldown_file()
+    try:
+        if f and f.exists():
+            now = time.time()
+            COOLDOWN.update({m: c for m, c in json.loads(f.read_text()).items() if c.get("until", 0) > now})
+    except Exception:  # noqa: BLE001 - a broken file just means starting fresh
+        pass
+
+
+def _save_cooldowns():
+    f = _cooldown_file()
+    if not f:
+        return
+    try:
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(json.dumps(COOLDOWN, indent=1))
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def _next_pacific_midnight(now: float) -> float:
@@ -382,16 +485,20 @@ def cool_down(model: str, r: httpx.Response, now: float | None = None) -> str:
     until = _next_pacific_midnight(now) if q["daily"] else now + max(q["retry_s"] or 60.0, 10.0)
     why = ("daily limit" if q["daily"] else "per-minute limit") + (f": {', '.join(q['ids'])}" if q["ids"] else "")
     with _COOLDOWN_LOCK:
+        _load_cooldowns()
         COOLDOWN[model] = {"until": until, "why": why, "since": now}
+        _save_cooldowns()
     return f"{why}; skipped until {_clock(until)}"
 
 
 def cooling(model: str, now: float | None = None) -> dict | None:
     now = time.time() if now is None else now
     with _COOLDOWN_LOCK:
+        _load_cooldowns()
         c = COOLDOWN.get(model)
         if c and c["until"] <= now:
             COOLDOWN.pop(model, None)
+            _save_cooldowns()
             c = None
     return c
 
@@ -431,40 +538,50 @@ class GeminiIdentifier:
             pass
         return self._names
 
+    @staticmethod
+    def _rank(n: str) -> tuple:
+        """Order to try models in: Flash (newest first), Flash-Lite, Pro, then Gemma (newest, largest;
+        slow but with the biggest free allowance), then anything else."""
+        v = re.search(r"(?:gemini|gemma)-(\d+(?:\.\d+)?)", n)
+        ver = float(v.group(1)) if v else 0.0
+        size = re.search(r"(\d+)b\b", n.replace("-", " "))
+        b = int(size.group(1)) if size else 0
+        fam = (3 if n.startswith("gemma") else 1 if "lite" in n else 0 if "flash" in n else 2 if "pro" in n else 4)
+        return (fam, -ver, -b, n)
+
+    def _gemma_ok(self, n: str) -> bool:
+        size = re.search(r"(\d+)b\b", n.replace("-", " "))
+        return n.startswith("gemma") and bool(size) and int(size.group(1)) >= MIN_GEMMA_B
+
     def gemma_model(self) -> str | None:
-        """Google's open Gemma model, which has a far bigger free allowance than the Flash models
-        (25 Oct, AI Studio: 14.4K requests a day for Gemma 4 against a handful for Flash).
-        GEMMA_MODEL if set ("" turns it off); with an explicit GEMINI_FALLBACK_MODELS list, only that
-        list is used; otherwise the newest, largest Gemma this key can use."""
+        """Best Gemma (Google's open models: far bigger free allowance than Flash, 25 Oct).
+        GEMMA_MODEL pins one ("" turns Gemma off); otherwise the newest, largest this key can use."""
         env = os.getenv("GEMMA_MODEL")
         if env is not None:
             return env.strip() or None
         if os.getenv("GEMINI_FALLBACK_MODELS") is not None:
             return None
-        best, key = None, None
-        for n in self._list_models():
-            m = re.match(r"gemma-(\d+(?:\.\d+)?)\D.*?(\d+)b", n)
-            if not m or not any(k in n for k in ("-it", "gemma-4", "gemma-5")) or any(k in n for k in SKIP_IN_FALLBACK):
-                continue
-            k = (float(m.group(1)), int(m.group(2)))   # newest version, then most parameters
-            if key is None or k > key:
-                best, key = n, k
-        return best
+        gs = sorted((n for n in self._list_models() if self._gemma_ok(n) and not any(k in n for k in SKIP_IN_FALLBACK)),
+                    key=self._rank)
+        return gs[0] if gs else None
 
     def fallback_models(self) -> list[str]:
-        """Other models to try when the main one is overloaded or out of allowance (25 Oct).
-        GEMINI_FALLBACK_MODELS (comma-separated) if set; otherwise the newest Flash models this key
-        can use, then Gemma (bigger free allowance, a bit less accurate). Never raises."""
+        """Every other model this key can use for the job, best first (25 Oct: "try every model that
+        has allowance left"). Ones out of allowance are skipped later by their cooldown.
+        GEMINI_FALLBACK_MODELS (comma-separated) replaces the list; GEMMA_MODEL pins or turns off Gemma."""
         if not self.key:
             return []
         env = os.getenv("GEMINI_FALLBACK_MODELS")
         if env is not None:
-            out = [m.strip() for m in env.split(",") if m.strip() and m.strip() != self.model][:3]
+            out = [m.strip() for m in env.split(",") if m.strip() and m.strip() != self.model]
         else:
-            names = self._list_models()
-            flash = [n for n in names if "flash" in n and n != self.model and not any(k in n for k in SKIP_IN_FALLBACK)]
-            out = sorted(flash, reverse=True)[:2]  # newest versions sort last alphabetically
-        g = self.gemma_model()
+            out = [n for n in self._list_models() if n != self.model and not any(k in n for k in SKIP_IN_FALLBACK)
+                   and (n.startswith("gemini") or self._gemma_ok(n))]
+            pinned = os.getenv("GEMMA_MODEL")
+            if pinned is not None:  # a pinned Gemma replaces the discovered ones; "" means none
+                out = [n for n in out if not n.startswith("gemma")]
+            out = sorted(dict.fromkeys(out), key=self._rank)
+        g = os.getenv("GEMMA_MODEL", "").strip() or (self.gemma_model() if env is not None else None)
         return out + ([g] if g and g not in out and g != self.model else [])
 
     def _left(self) -> float:
