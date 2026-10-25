@@ -317,6 +317,20 @@ identify without trying the backups, and all of them showed the same "busy or un
   after notes, with trailing commas, comments, Python-style quotes, or cut off part-way. When it
   still can't, the warning quotes the first 400 characters of what the model said.
 
+## D19. Recent sales set the price; similar versions only when exact sales are few (25 Oct)
+
+iPhone 15 Pro 256GB, Good: 62 exact sales (Good median £400, middle half £356-456), yet the
+recommendation was £474, above Back Market's refurbished price for a Fair one (£449). Two changes:
+* **Recent sales set the price level.** The newest of the last 30 / 45 / 90 days that has 10+ exact
+  sales sets the condition anchors, the best-value / patient ceilings and the condition ranges on
+  the page; older sales still count for selling speed. A warning says which window was used.
+  (Things that lose value, like phones, sold for more three months ago.)
+* **Similar versions only when needed.** With 30+ exact sales, similar versions (Pro Max for a Pro)
+  no longer join the speed fit (they're listed as left out: "similar version (Max) not needed");
+  below that they still help, as in D12. In that scan 112 of 174 sales in the fit were Pro Max.
+* Also (same day): with under 3 sales the listings-only price level is condition-adjusted like the
+  sold path (it had treated a median of Very good asks as the Good price, then added 32%).
+
 ## TEAM — still to decide
 
 - [ ] Demo items: fill in `backend/scrapers/cache_seed/demo_items.csv` with the things on the table.

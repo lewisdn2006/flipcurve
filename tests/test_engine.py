@@ -135,3 +135,61 @@ def test_tee_and_tshirt_match_and_must_have_relaxes_overlap():
     assert not out["MKI Miyuki Zoku White Logo Mens Tee XL"]["is_outlier"]
     assert not out["MKI MIYUKI ZOKU White T Shirt"]["is_outlier"]
     assert out["Plain white t-shirt"]["is_outlier"]
+
+
+
+def _full(r):
+    base = {"shipping_gbp": None, "buyer_fee_gbp": None, "total_buyer_price_gbp": None, "t_upper_days": None,
+            "t_entry_days": None, "stock_window_days": None, "related": None, "start_source": "exact",
+            "listed_at": None, "sold_at": None, "favourite_count": None, "best_offer_accepted": None,
+            "is_outlier": False, "outlier_reason": None, "url": None}
+    return {**base, **r}
+
+
+def _phone_rows(now=NOW):
+    """A phone losing value: 40 sales over 90 days, from about £470 ninety days ago to about £400 now,
+    plus 30 Pro Max sales at Max prices and some still-listed ones."""
+    from datetime import timedelta
+    rows = []
+    for i in range(40):
+        age = 90 * i / 39                        # days since the sale
+        price = 400 + 70 * age / 90 + (i % 5 - 2) * 6
+        rows.append({"listing_id": f"s{i}", "platform": "ebay", "title": "Apple iPhone 15 Pro 256GB Black Titanium Unlocked",
+                     "price_gbp": round(price, 2), "condition_tier": "good", "condition_raw": None, "obs_type": "sold_interval",
+                     "t_days": 3.0, "t_upper_days": 4.0, "sold_at": (now - timedelta(days=age)).isoformat(),
+                     "observed_at": now.isoformat()})
+    for i in range(30):
+        rows.append({"listing_id": f"m{i}", "platform": "ebay", "title": "Apple iPhone 15 Pro Max 256GB Black Titanium",
+                     "price_gbp": 560 + i, "condition_tier": "good", "condition_raw": None, "obs_type": "sold_interval",
+                     "t_days": 1.0, "t_upper_days": 2.0, "sold_at": (now - timedelta(days=i)).isoformat(),
+                     "observed_at": now.isoformat()})
+    for i in range(20):
+        rows.append({"listing_id": f"a{i}", "platform": "ebay", "title": "Apple iPhone 15 Pro 256GB Black Titanium",
+                     "price_gbp": 430 + 3 * i, "condition_tier": "good", "condition_raw": None, "obs_type": "active",
+                     "t_days": 5.0 + i, "observed_at": now.isoformat()})
+    return [_full(r) for r in rows]
+
+
+PHONE = {**ITEM, "title": "Apple iPhone 15 Pro 256GB Black Titanium", "size_or_storage": "256GB",
+         "search_queries": {"ebay": "apple iphone 15 pro 256gb black", "vinted": "iphone 15 pro black"}}
+
+
+def test_price_level_comes_from_recent_sales():
+    out = run(PHONE, _phone_rows(), now=NOW, data_source="seed")
+    good = out["market_summary"]["condition_buckets"]["good"]
+    assert good["n"] < 40 and good["median"] < 420          # the last month, not the 90-day median (~£435)
+    assert any("last 30 days" in w for w in out["warnings"])
+    assert out["model_fit"]["anchor_gbp"]["good"] < 420
+
+
+def test_similar_versions_are_dropped_once_there_are_enough_exact_sales():
+    out = run(PHONE, _phone_rows(), now=NOW, data_source="seed")
+    assert not any(x.get("related") for x in out["comparable_listings"])
+    assert any("similar versions weren't used" in w for w in out["warnings"])
+    assert not any("Few exact matches" in w for w in out["warnings"])
+
+
+def test_similar_versions_still_help_when_exact_sales_are_few():
+    rows = [r for r in _phone_rows() if not (r["listing_id"].startswith("s") and int(r["listing_id"][1:]) >= 8)]
+    out = run(PHONE, rows, now=NOW, data_source="seed")
+    assert any(x.get("related") == "max" for x in out["comparable_listings"])

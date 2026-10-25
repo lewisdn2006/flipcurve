@@ -40,23 +40,65 @@ def confidence(n_sales: int, low: float, high: float) -> str:
 
 
 RELATED_MIN = 5
+# With this many sales of the exact item, similar versions (a Pro Max for a Pro) stop joining the
+# speed fit: 25 Oct, iPhone 15 Pro: 62 exact sales, yet 112 of 174 sales in the fit were Pro Max
+RELATED_ENOUGH_EXACT_SALES = 30
+# Price level from recent sales (25 Oct: a falling-value phone): the newest window with this many
+# exact sales is used for the price level, the recommendation ceilings and the condition ranges.
+# Older sales still count for selling speed.
+RECENT_WINDOWS_DAYS = (30, 45, 90)
+RECENT_MIN_SALES = 10
+
+
+def _when(r):
+    """When a sale happened (or, for a listing, when it was seen)."""
+    for k in ("sold_at", "observed_at", "listed_at"):
+        v = r.get(k)
+        if v:
+            try:
+                t = v if isinstance(v, datetime) else datetime.fromisoformat(str(v).replace("Z", "+00:00"))
+                return t if t.tzinfo else t.replace(tzinfo=timezone.utc)
+            except ValueError:
+                continue
+    return None
+
+
+def price_rows(rows, now):
+    """Exact-match rows used to set the price level: every listing, but only the most recent
+    sales when there are enough of them (newest window of RECENT_WINDOWS_DAYS with
+    RECENT_MIN_SALES+ sales). Returns (rows, days or None, n recent sales, n all sales)."""
+    exact = [r for r in rows if not r.get("related")]
+    sold = [r for r in exact if r["obs_type"] != "active" and not r["is_outlier"]]
+    for days in RECENT_WINDOWS_DAYS:
+        recent = [r for r in sold if (w := _when(r)) is not None and (now - w).total_seconds() <= days * 86400]
+        if len(recent) >= RECENT_MIN_SALES:
+            if len(recent) == len(sold):
+                return exact, None, len(sold), len(sold)  # every sale is recent anyway
+            keep = {id(r) for r in recent}
+            return ([r for r in exact if r["obs_type"] == "active" or id(r) in keep], days, len(recent), len(sold))
+    return exact, None, len(sold), len(sold)
 RELATED_LABEL = {"mid": "Mid", "low": "Low", "high": "High", "hi": "High", "kids": "kids' sizes",
                  "pro": "Pro", "max": "Max", "plus": "Plus", "mini": "Mini", "ultra": "Ultra",
                  "lite": "Lite", "se": "SE"}
 
 
-def _with_related(rows):
+def _with_related(rows, base_rows=None):
     """Similar-but-different versions (filter tags them `related`) join the speed fit with their
     prices rescaled to this item's level (their own median sold or listed price, by condition):
     a Jordan 1 Mid at its usual price is taken to sell about as fast as a Low at the Low's usual
     price. They never set the price level. Tiny groups are dropped as outliers.
     Returns (rows, rows for the fit, {label: n used})."""
     exact = [r for r in rows if not r.get("related")]
-    base = sm.estimate_anchors(exact)["good"] if exact else None
+    base = sm.estimate_anchors(base_rows if base_rows is not None else exact)["good"] if exact else None
     fit_rows = [r for r in exact if not r["is_outlier"]]
     used = {}
+    n_exact_sales = sum(1 for r in fit_rows if r["obs_type"] != "active")
     for g in sorted({r["related"] for r in rows if r.get("related") and not r["is_outlier"]}):
         grp = [r for r in rows if r.get("related") == g and not r["is_outlier"]]
+        if n_exact_sales >= RELATED_ENOUGH_EXACT_SALES:
+            for r in grp:  # enough of the exact item: a different model would only blur it
+                r["is_outlier"], r["outlier_reason"] = True, f"similar version ({RELATED_LABEL.get(g, g)}) not needed"
+            continue
         if len(grp) < RELATED_MIN or base is None:
             for r in grp:
                 r["is_outlier"], r["outlier_reason"] = True, f"different model ({RELATED_LABEL.get(g, g)})"
@@ -168,7 +210,7 @@ def _markers(grid, pp, platforms, anchor, k):
             "gamma_per_day": DEFAULT_GAMMA_PER_DAY, "note": note}
 
 
-def _summary(rows, now, data_source, platforms_ok):
+def _summary(rows, now, data_source, platforms_ok, bucket_rows=None):
     clean = [r for r in rows if not r["is_outlier"] and not r.get("related")]
     sold = [r for r in clean if r["obs_type"] != "active"]
     active = [r for r in clean if r["obs_type"] == "active"]
@@ -189,8 +231,11 @@ def _summary(rows, now, data_source, platforms_ok):
         _, pa, ps = max(by_pl.values())
         gap = (pa - ps) / ps * 100
     buckets = {}
+    # condition ranges from the same (recent) sales that set the price level
+    bsold = [r for r in (bucket_rows if bucket_rows is not None else clean)
+             if not r["is_outlier"] and not r.get("related") and r["obs_type"] != "active"]
     for t in TIERS:
-        ps = [x["price_gbp"] for x in sold if (x.get("condition_tier") or "good") == t]
+        ps = [x["price_gbp"] for x in bsold if (x.get("condition_tier") or "good") == t]
         if ps:
             q = np.percentile(ps, [25, 50, 75])
             buckets[t] = {"p25": _r(q[0]), "median": _r(q[1]), "p75": _r(q[2]), "n": len(ps)}
@@ -224,14 +269,15 @@ def run(item: dict, rows: list[dict], now: datetime | None = None, data_source: 
     item_text = " ".join(str(item.get(k) or "") for k in ("title", "model_name", "category", "size_or_storage"))
     rows = filter_rows(rows, item["search_queries"], item.get("is_broken", False), item_text=item_text,
                        must_have=item.get("must_have") or (), must_not_have=item.get("must_not_have") or ())
-    rows, fit_rows, related = _with_related(rows)
-    f = sm.fit(fit_rows, platforms=platforms, prior=prior, anchors=sm.estimate_anchors(
-        [r for r in rows if not r.get("related")]))
+    prows, recent_days, n_recent, n_sold_all = price_rows(rows, now)
+    rows, fit_rows, related = _with_related(rows, base_rows=prows)
+    dropped_related = sorted({r["outlier_reason"] for r in rows if (r.get("outlier_reason") or "").endswith("not needed")})
+    f = sm.fit(fit_rows, platforms=platforms, prior=prior, anchors=sm.estimate_anchors(prows))
     prices = price_axis(f)
 
     grids, surfaces, markers, pps = {}, {}, {}, {}
     for t in TIERS:
-        pps[t] = _platform_points(f, t, prices, price_ceilings(rows, t, f.anchors))
+        pps[t] = _platform_points(f, t, prices, price_ceilings(prows, t, f.anchors))
         grids[t] = _grid(f, t, prices, pps[t])
         lam = f.scale(prices, t)
         surfaces[t] = {"days": [float(x) for x in SURFACE_DAYS],
@@ -277,6 +323,12 @@ def run(item: dict, rows: list[dict], now: datetime | None = None, data_source: 
                                  fallback_floor=markers[tier]["fast_sale_gbp"])
 
     warnings = []
+    if recent_days:
+        warnings.append(f"Prices are set from the {n_recent} sales in the last {recent_days} days (of {n_sold_all}), "
+                        "since older sales may reflect a higher value; older ones still count for selling speed")
+    if dropped_related:
+        warnings.append(f"Enough sales of this exact item ({sum(1 for r in fit_rows if r['obs_type'] != 'active')}), "
+                        "so similar versions weren't used: " + ", ".join(d.replace(" not needed", "") for d in dropped_related))
     if f.used_priors:
         warnings.append("Few observed sales: the speed estimates lean on typical values for similar items")
     if related:
@@ -291,7 +343,7 @@ def run(item: dict, rows: list[dict], now: datetime | None = None, data_source: 
     platforms_ok = sorted({r["platform"] for r in rows})
     return {
         "item_metadata": item,
-        "market_summary": _summary(rows, now, data_source, platforms_ok),
+        "market_summary": _summary(rows, now, data_source, platforms_ok, bucket_rows=prows),
         "model_fit": {"k": _r(f.k, 4), "lambda0": _r(f.lambda0, 4), "beta1": _r(f.beta1, 4), "beta2": _r(f.beta2, 4),
                       "sigma_p": _r(f.sigma_p, 3), "anchor_gbp": f.anchors,
                       "platform_theta": {p: _r(v, 4) for p, v in f.theta.items()}, "platform_n_sales": f.n_sales,
