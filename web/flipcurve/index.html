@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlipCurve</title>
+<meta name="description" content="Price something you want to sell: what similar items sold for on eBay and Vinted, and how long they took.">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f5f2; --surface: #fcfcfb; --line: #e2e0da; --grid: #ecebe6;
+  --ink: #0b0b0b; --ink-2: #52514e; --ink-3: #8a8883;
+  --accent: #2a78d6; --ebay: #2a78d6; --vinted: #eb6834;
+  --good: #1a7f45; --warn-bg: #fff4dc; --warn-ink: #6b4a00; --bad: #b3261e;
+  --s100:#cde2fb; --s700:#0d366b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #121211; --surface: #1a1a19; --line: #2e2d2b; --grid: #262624;
+    --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #8f8d86;
+    --accent: #3987e5; --ebay: #3987e5; --vinted: #d95926;
+    --good: #4cc27f; --warn-bg: #3a2e12; --warn-ink: #f2d38a; --bad: #f08a83;
+    --s100:#184f95; --s700:#cde2fb;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121211; --surface: #1a1a19; --line: #2e2d2b; --grid: #262624;
+  --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #8f8d86;
+  --accent: #3987e5; --ebay: #3987e5; --vinted: #d95926;
+  --good: #4cc27f; --warn-bg: #3a2e12; --warn-ink: #f2d38a; --bad: #f08a83;
+  --s100:#184f95; --s700:#cde2fb;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+       font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -0.02em; }
+h2 { font-size: 17px; margin: 0 0 12px; }
+.sub { color: var(--ink-2); margin: 0 0 20px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin: 0 0 16px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.grow { flex: 1 1 220px; min-width: 0; }
+label { font-size: 13px; color: var(--ink-2); display: block; margin-bottom: 4px; }
+input[type=text], select { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--bg); color: var(--ink); font: inherit; }
+button { padding: 9px 16px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent);
+  color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+button.ghost { background: transparent; color: var(--accent); }
+button:disabled { opacity: .5; cursor: default; }
+.status { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--ink-3); }
+.dot.ok { background: var(--good); } .dot.bad { background: var(--bad); } .dot.warn { background: #c98500; }
+.tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+.tabs button { background: transparent; color: var(--ink-2); border-color: var(--line); font-weight: 500; }
+.tabs button.on { color: var(--ink); border-color: var(--ink-2); }
+.hidden { display: none !important; }
+.warn { background: var(--warn-bg); color: var(--warn-ink); border-radius: 8px; padding: 8px 12px; margin: 0 0 8px; font-size: 14px; }
+.err { color: var(--bad); font-size: 14px; margin-top: 8px; }
+.bar { height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; margin: 8px 0 4px; }
+.bar > div { height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+.muted { color: var(--ink-2); font-size: 13px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.plat { border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.plat.best { border-color: var(--accent); }
+.plat h3 { margin: 0 0 6px; font-size: 15px; display: flex; justify-content: space-between; gap: 8px; }
+.big { font-size: 24px; font-weight: 650; letter-spacing: -0.01em; }
+.kv { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; font-size: 14px; }
+.kv span:nth-child(odd) { color: var(--ink-2); }
+.badge { font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--ink-2); }
+.markers { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.markers div { flex: 1 1 120px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.markers b { display: block; font-size: 18px; }
+.chart { position: relative; }
+.chart svg { width: 100%; height: auto; display: block; }
+.legend { display: flex; gap: 14px; font-size: 13px; color: var(--ink-2); margin-bottom: 4px; }
+.legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  padding: 6px 10px; font-size: 13px; box-shadow: 0 4px 14px rgba(0,0,0,.12); white-space: nowrap; z-index: 2; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+th { color: var(--ink-2); font-weight: 600; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.scroll { overflow-x: auto; }
+a { color: var(--accent); }
+ol.sched { margin: 0; padding-left: 20px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>FlipCurve</h1>
+  <p class="sub">What will it sell for, and how fast? Prices from real eBay and Vinted listings, including the ones that didn't sell.</p>
+
+  <div class="card">
+    <div class="status">
+      <span><span class="dot" id="extDot"></span><span id="extText">Checking the helper extension…</span></span>
+      <span><span class="dot" id="apiDot"></span><span id="apiText">Checking the FlipCurve server…</span></span>
+    </div>
+    <details style="margin-top:8px"><summary class="muted">Server address</summary>
+      <div class="row" style="margin-top:8px"><input type="text" id="apiInput" class="grow"><button class="ghost" id="apiSave">Save</button></div>
+    </details>
+  </div>
+
+  <!-- 1. What are you selling? -->
+  <div class="card" id="stepInput">
+    <h2>1. What are you selling?</h2>
+    <div class="tabs"><button class="on" data-tab="text">Describe it</button><button data-tab="photo">Photo</button></div>
+    <div id="tabText">
+      <div class="row">
+        <div class="grow"><label for="q">Item</label><input type="text" id="q" placeholder="e.g. Nike Air Force 1 white size 9"></div>
+        <div style="flex:0 0 190px"><label for="qTier">Condition</label>
+          <select id="qTier"><option value="">Let FlipCurve guess</option><option value="mint">Mint / new</option>
+            <option value="very_good">Very good</option><option value="good">Good</option><option value="fair">Fair</option></select></div>
+      </div>
+    </div>
+    <div id="tabPhoto" class="hidden">
+      <div class="row">
+        <div class="grow"><label for="photos">One or two photos (whole item, plus a label close-up if there is one)</label>
+          <input type="file" id="photos" accept="image/*" multiple></div>
+        <div class="grow"><label for="hint">Anything the photo won't show (optional)</label><input type="text" id="hint" placeholder="e.g. size 9, small scuff on heel"></div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px"><button id="identifyBtn">Identify</button><span class="muted" id="identifyMsg"></span></div>
+    <div class="err" id="identifyErr"></div>
+  </div>
+
+  <!-- 2. Check it -->
+  <div class="card hidden" id="stepConfirm">
+    <h2>2. Is this right?</h2>
+    <div class="row">
+      <div class="grow"><label for="title">Item</label><input type="text" id="title"></div>
+      <div style="flex:0 0 150px"><label for="tier">Condition</label>
+        <select id="tier"><option value="mint">Mint / new</option><option value="very_good">Very good</option>
+          <option value="good">Good</option><option value="fair">Fair</option></select></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div class="grow"><label for="qEbay">eBay search</label><input type="text" id="qEbay"></div>
+      <div class="grow"><label for="qVinted">Vinted search</label><input type="text" id="qVinted"></div>
+    </div>
+    <p class="muted" id="flaws"></p>
+    <div class="row"><button id="scanBtn">Scan eBay and Vinted</button>
+      <button class="ghost" id="savedBtn" title="Skip the live scan and use listings saved from earlier scans">Use saved data</button></div>
+    <div id="progress" class="hidden"><div class="bar"><div id="barFill"></div></div><span class="muted" id="progressText"></span></div>
+    <div class="err" id="scanErr"></div>
+  </div>
+
+  <!-- 3. Results -->
+  <div id="results" class="hidden">
+    <div id="warnings"></div>
+    <div class="card">
+      <h2 id="headline"></h2>
+      <p class="muted" id="summary"></p>
+      <div class="grid2" id="platforms"></div>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:8px">
+        <h2 style="margin:0">Chance of selling within a week, by list price</h2>
+        <select id="viewTier" style="width:auto"><option value="mint">Mint</option><option value="very_good">Very good</option>
+          <option value="good">Good</option><option value="fair">Fair</option></select>
+      </div>
+      <div class="markers" id="markers"></div>
+      <div class="legend"><span><i style="background:var(--ebay)"></i>eBay</span><span><i style="background:var(--vinted)"></i>Vinted</span></div>
+      <div class="chart" id="curveChart"></div>
+    </div>
+    <div class="card">
+      <h2>How likely it's sold after each day, by list price</h2>
+      <p class="muted" style="margin-top:-6px">Stronger colour = more likely sold by then. Hover a cell for the number.</p>
+      <div class="chart" id="heatChart"></div>
+    </div>
+    <div class="card"><h2>Plan if it doesn't sell</h2><ol class="sched" id="schedule"></ol></div>
+    <div class="card"><h2>Listings this is based on</h2><p class="muted" id="evNote"></p>
+      <div class="scroll"><table id="evidence"></table></div></div>
+  </div>
+</main>
+
+<script>
+"use strict";
+const EXT_ID = "fdibajhmjjbjcdfafdofkoedbkhbkfcb";
+const TIERS = { mint: "Mint", very_good: "Very good", good: "Good", fair: "Fair" };
+const PLAT = { ebay: "eBay", vinted: "Vinted" };
+const $ = (id) => document.getElementById(id);
+const gbp = (x) => x == null ? "–" : "£" + Number(x).toFixed(2);
+const pct = (x) => x == null ? "–" : Math.round(x * 100) + "%";
+const days = (x) => x == null ? "–" : x < 1 ? "under a day" : x < 1.5 ? "about 1 day" : `about ${Math.round(x)} days`;
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+                set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+
+// ---- where the backend is: ?api=..., then saved, then a sensible default
+const LOCAL = ["localhost", "127.0.0.1"].includes(location.hostname);
+let API = (new URLSearchParams(location.search).get("api") || store.get("flipcurve_api") ||
+           (LOCAL ? (location.port === "8000" ? location.origin : "http://localhost:8000") : "https://api.lewisdn.com")).replace(/\/$/, "");
+$("apiInput").value = API;
+$("apiSave").onclick = () => { API = $("apiInput").value.trim().replace(/\/$/, ""); store.set("flipcurve_api", API); checkApi(); };
+
+async function api(path, opts = {}) {
+  const r = await fetch(API + path, opts);
+  if (!r.ok) throw new Error(`${path} failed (${r.status}): ${(await r.text()).slice(0, 200)}`);
+  return r.json();
+}
+
+// ---- status checks
+let helper = null;
+function setStatus(dot, text, cls, msg) { $(dot).className = "dot " + cls; $(text).innerHTML = msg; }
+function pingHelper() {
+  return new Promise((resolve) => {
+    if (!window.chrome || !chrome.runtime || !chrome.runtime.sendMessage) return resolve(null);
+    try {
+      chrome.runtime.sendMessage(EXT_ID, { type: "ping" }, (r) => { void chrome.runtime.lastError; resolve(r && r.ok ? r : null); });
+    } catch { resolve(null); }
+  });
+}
+async function checkHelper() {
+  helper = await pingHelper();
+  if (!helper) return setStatus("extDot", "extText", "bad",
+    "Helper extension not found. Install it in Chrome to scan live (or use saved data).");
+  const s = { ok: ["ok", "Helper ready, eBay signed in"], signin: ["warn", "Helper ready. Sign in to eBay in this browser to include sold listings"],
+              refused: ["warn", "Helper ready. eBay declined the last scan; it may work again later"] }[helper.ebayState]
+            || ["ok", "Helper ready"];
+  setStatus("extDot", "extText", s[0], `${s[1]} <span class="muted">(v${esc(helper.version)})</span>`);
+}
+async function checkApi() {
+  try { await api("/api/v1/health"); setStatus("apiDot", "apiText", "ok", "Server connected"); }
+  catch { setStatus("apiDot", "apiText", "bad", `Can't reach the server at ${esc(API)}`); }
+}
+checkHelper(); checkApi();
+
+// ---- step 1: identify
+let mode = "text";
+document.querySelectorAll(".tabs button").forEach((b) => b.onclick = () => {
+  mode = b.dataset.tab;
+  document.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("on", x === b));
+  $("tabText").classList.toggle("hidden", mode !== "text");
+  $("tabPhoto").classList.toggle("hidden", mode !== "photo");
+});
+$("q").addEventListener("keydown", (e) => { if (e.key === "Enter") $("identifyBtn").click(); });
+
+let item = null;
+$("identifyBtn").onclick = async () => {
+  $("identifyErr").textContent = "";
+  const btn = $("identifyBtn"); btn.disabled = true;
+  $("identifyMsg").textContent = mode === "photo" ? "Looking at your photo… (can take up to a minute)" : "Working out what it is…";
+  try {
+    let out;
+    if (mode === "text") {
+      const query = $("q").value.trim();
+      if (!query) throw new Error("Type what you're selling first.");
+      out = await api("/api/v1/identify-text", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, condition_tier: $("qTier").value || null }) });
+    } else {
+      const files = [...$("photos").files].slice(0, 2);
+      if (!files.length) throw new Error("Choose a photo first.");
+      const fd = new FormData();
+      files.forEach((f) => fd.append("images", f));
+      if ($("hint").value.trim()) fd.append("hint", $("hint").value.trim());
+      out = await api("/api/v1/identify", { method: "POST", body: fd });
+    }
+    item = out.item;
+    showConfirm(out);
+  } catch (e) { $("identifyErr").textContent = e.message; }
+  finally { btn.disabled = false; $("identifyMsg").textContent = ""; }
+};
+
+function showConfirm(out) {
+  $("title").value = item.title || "";
+  $("tier").value = item.condition_tier || "good";
+  $("qEbay").value = item.search_queries?.ebay || "";
+  $("qVinted").value = item.search_queries?.vinted || "";
+  const bits = [];
+  if (item.detected_flaws?.length) bits.push("Noticed: " + item.detected_flaws.join("; "));
+  (out.warnings || []).forEach((w) => bits.push(w));
+  $("flaws").textContent = bits.join(" · ");
+  $("stepConfirm").classList.remove("hidden");
+  $("stepConfirm").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function confirmedItem() {
+  return { ...item, title: $("title").value.trim() || item.title, condition_tier: $("tier").value,
+           search_queries: { ebay: $("qEbay").value.trim(), vinted: $("qVinted").value.trim() } };
+}
+
+// ---- step 2: scan (helper collects pages in this browser -> server fits the model)
+function collect(queries, recheckIds) {
+  return new Promise((resolve, reject) => {
+    let port;
+    try { port = chrome.runtime.connect(EXT_ID); } catch (e) { return reject(new Error("Couldn't talk to the helper extension.")); }
+    let done = false;
+    port.onMessage.addListener((m) => {
+      if (m.type === "progress") {
+        $("barFill").style.width = Math.round(100 * m.done / m.total) * 0.8 + "%";
+        $("progressText").textContent = `${m.label} (${m.done} of ${m.total})`;
+      } else if (m.type === "result") {
+        done = true; port.disconnect();
+        m.ok ? resolve(m) : reject(new Error(m.error || "The helper stopped."));
+      }
+    });
+    port.onDisconnect.addListener(() => { void chrome.runtime.lastError; if (!done) reject(new Error("The helper disconnected mid-scan.")); });
+    port.postMessage({ type: "collect", queries, ebayPages: 2, vintedPages: 1, vintedItemSamples: 4, recheckVintedIds: recheckIds });
+  });
+}
+
+$("scanBtn").onclick = () => scan(true);
+$("savedBtn").onclick = () => scan(false);
+
+async function scan(live) {
+  $("scanErr").textContent = "";
+  const it = confirmedItem();
+  if (!it.search_queries.ebay && !it.search_queries.vinted) return ($("scanErr").textContent = "Add at least one search.");
+  ["scanBtn", "savedBtn"].forEach((id) => $(id).disabled = true);
+  $("progress").classList.remove("hidden"); $("barFill").style.width = "2%";
+  try {
+    let result;
+    if (live) {
+      await checkHelper();
+      if (!helper) throw new Error("The helper extension isn't installed or enabled in this browser. Install it, or use saved data.");
+      $("progressText").textContent = "Starting…";
+      let ids = [];
+      try { if (it.search_queries.vinted) ids = (await api("/api/v1/recheck-ids?vinted_query=" + encodeURIComponent(it.search_queries.vinted))).ids || []; } catch {}
+      const got = await collect(it.search_queries, ids);
+      $("progressText").textContent = "Working out prices and selling times…"; $("barFill").style.width = "90%";
+      result = await api("/api/v1/scan-pages", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ item: it, pages: got.pages, stopped: got.stopped || {} }) });
+      checkHelper();
+    } else {
+      $("progressText").textContent = "Working out prices from saved listings…"; $("barFill").style.width = "60%";
+      result = await api("/api/v1/market-scan", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ item: it, allow_live: false }) });
+    }
+    $("barFill").style.width = "100%"; $("progressText").textContent = "Done";
+    render(result);
+  } catch (e) { $("scanErr").textContent = e.message; }
+  finally { ["scanBtn", "savedBtn"].forEach((id) => $(id).disabled = false); }
+}
+
+// ---- step 3: results
+let R = null;
+function render(r) {
+  R = r;
+  $("results").classList.remove("hidden");
+  $("warnings").innerHTML = (r.warnings || []).map((w) => `<div class="warn">${esc(w)}</div>`).join("");
+  const best = r.best_platform, rec = r.platform_recommendations || {};
+  const b = rec[best];
+  $("headline").textContent = b ? `List on ${PLAT[best]} at ${gbp(b.recommended_list_gbp)}` : "Results";
+  const ms = r.market_summary || {};
+  $("summary").textContent = `Based on ${ms.sample_size_sold ?? 0} sold and ${ms.sample_size_active ?? 0} unsold listings` +
+    (ms.survivorship_bias_pct ? `. Unsold listings are priced about ${Math.round(ms.survivorship_bias_pct)}% higher than what actually sells, so asking prices alone would mislead you.` : ".");
+  $("platforms").innerHTML = Object.entries(rec).map(([p, x]) => `
+    <div class="plat ${p === best ? "best" : ""}">
+      <h3><span>${PLAT[p] || p}${p === best ? " · best" : ""}</span><span class="badge" title="${x.n_sales} sales seen">${esc(x.confidence)} confidence</span></h3>
+      <div class="big">${gbp(x.net_payout_gbp)} <span class="muted" style="font-weight:400">in your pocket</span></div>
+      <div class="kv" style="margin-top:6px">
+        <span>List at</span><span>${gbp(x.recommended_list_gbp)}</span>
+        <span>Likely sale price</span><span>${gbp(x.expected_sale_price_gbp)}</span>
+        <span>Typical time to sell</span><span>${days(x.expected_days)}</span>
+        <span>Range</span><span>${x.expected_days_low?.toFixed(1)}–${x.expected_days_high?.toFixed(1)} days</span>
+        <span>Chance sold in 7 days</span><span>${pct(x.prob_sell_7d)}</span>
+        <span>Listings / sales seen</span><span>${x.n_listings} / ${x.n_sales}</span>
+      </div>
+      ${(x.notes || []).map((n) => `<p class="muted" style="margin:6px 0 0">${esc(n)}</p>`).join("")}
+    </div>`).join("");
+  $("viewTier").value = r.item_metadata?.condition_tier || "good";
+  drawTier();
+  $("schedule").innerHTML = (r.markdown_schedule || []).map((s) => `<li>${s.day === 0 ? "Day 0" : "Day " + s.day}: ${esc(s.action)}</li>`).join("");
+  drawEvidence(r.comparable_listings || []);
+  $("results").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+$("viewTier").onchange = drawTier;
+
+function drawTier() {
+  const t = $("viewTier").value, m = R.price_markers?.[t];
+  $("markers").innerHTML = m ? [["Quick sale", m.fast_sale_gbp], ["Best value", m.best_value_gbp], ["Patient", m.patient_gbp]]
+    .map(([k, v]) => `<div><span class="muted">${k}</span><b>${gbp(v)}</b></div>`).join("") : "";
+  drawCurve(R.price_curve_grid?.[t] || [], m);
+  drawHeat(R.sale_surface?.[t], R.price_curve_grid?.[t] || []);
+}
+
+const NS = "http://www.w3.org/2000/svg";
+function svgEl(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent && parent.appendChild(e); return e; }
+function tip(box, html, x, y) {
+  let t = box.querySelector(".tip"); if (!t) { t = document.createElement("div"); t.className = "tip"; box.appendChild(t); }
+  if (html == null) return t.remove();
+  t.innerHTML = html;
+  const w = box.clientWidth, tw = t.offsetWidth;
+  t.style.left = Math.min(Math.max(0, x + 12), w - tw) + "px"; t.style.top = Math.max(0, y - 40) + "px";
+}
+
+function drawCurve(pts, markers) {
+  const box = $("curveChart"); box.innerHTML = "";
+  if (!pts.length) return;
+  const W = 680, H = 280, L = 44, Rr = 56, T = 12, B = 34;
+  const xs = pts.map((p) => p.price_gbp), x0 = xs[0], x1 = xs[xs.length - 1];
+  const X = (v) => L + (v - x0) / (x1 - x0) * (W - L - Rr), Y = (v) => T + (1 - v) * (H - T - B);
+  const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Chance of selling within 7 days against list price" }, box);
+  for (const v of [0, .25, .5, .75, 1]) {
+    svgEl("line", { x1: L, x2: W - Rr, y1: Y(v), y2: Y(v), stroke: "var(--grid)" }, svg);
+    svgEl("text", { x: L - 6, y: Y(v) + 4, "text-anchor": "end", "font-size": 11, fill: "var(--ink-3)" }, svg).textContent = Math.round(v * 100) + "%";
+  }
+  const step = Math.max(5, Math.ceil((x1 - x0) / 6 / 5) * 5);
+  for (let v = Math.ceil(x0 / step) * step; v <= x1; v += step)
+    svgEl("text", { x: X(v), y: H - 12, "text-anchor": "middle", "font-size": 11, fill: "var(--ink-3)" }, svg).textContent = "£" + v;
+  if (markers) [["Quick", markers.fast_sale_gbp], ["Best", markers.best_value_gbp], ["Patient", markers.patient_gbp]].forEach(([k, v]) => {
+    if (v < x0 || v > x1) return;
+    svgEl("line", { x1: X(v), x2: X(v), y1: T, y2: H - B, stroke: "var(--ink-3)", "stroke-dasharray": "3 4" }, svg);
+    svgEl("text", { x: X(v) + 3, y: T + 10, "font-size": 10, fill: "var(--ink-2)" }, svg).textContent = k;
+  });
+  const plats = Object.keys(pts[0].platforms || {});
+  plats.forEach((p) => {
+    const d = pts.map((q, i) => `${i ? "L" : "M"}${X(q.price_gbp).toFixed(1)},${Y(q.platforms[p].prob_sell_7d).toFixed(1)}`).join("");
+    svgEl("path", { d, fill: "none", stroke: `var(--${p})`, "stroke-width": 2, "stroke-linejoin": "round" }, svg);
+    const last = pts[pts.length - 1].platforms[p].prob_sell_7d;
+    svgEl("text", { x: W - Rr + 6, y: Y(last) + (p === "ebay" ? -4 : 12), "font-size": 11, fill: "var(--ink-2)" }, svg).textContent = PLAT[p];
+  });
+  const cross = svgEl("line", { y1: T, y2: H - B, stroke: "var(--ink-2)", visibility: "hidden" }, svg);
+  const dots = plats.map((p) => svgEl("circle", { r: 4.5, fill: `var(--${p})`, stroke: "var(--surface)", "stroke-width": 2, visibility: "hidden" }, svg));
+  const hit = svgEl("rect", { x: L, y: T, width: W - L - Rr, height: H - T - B, fill: "transparent" }, svg);
+  hit.addEventListener("mousemove", (e) => {
+    const r = svg.getBoundingClientRect(), sx = (e.clientX - r.left) * W / r.width;
+    const i = Math.max(0, Math.min(pts.length - 1, Math.round((sx - L) / (W - L - Rr) * (pts.length - 1))));
+    const q = pts[i], cx = X(q.price_gbp);
+    cross.setAttribute("x1", cx); cross.setAttribute("x2", cx); cross.setAttribute("visibility", "visible");
+    plats.forEach((p, j) => { dots[j].setAttribute("cx", cx); dots[j].setAttribute("cy", Y(q.platforms[p].prob_sell_7d)); dots[j].setAttribute("visibility", "visible"); });
+    tip(box, `<b>List at ${gbp(q.price_gbp)}</b><br>` + plats.map((p) => {
+      const v = q.platforms[p]; return `${PLAT[p]}: ${pct(v.prob_sell_7d)} in 7 days · ${days(v.expected_days)} · you get ${gbp(v.net_payout_gbp)}`;
+    }).join("<br>"), e.clientX - r.left, e.clientY - r.top);
+  });
+  hit.addEventListener("mouseleave", () => { cross.setAttribute("visibility", "hidden"); dots.forEach((d) => d.setAttribute("visibility", "hidden")); tip(box, null); });
+}
+
+function mix(a, b, t) { // hex colours from CSS vars
+  const h = (s) => s.trim().replace("#", "").match(/../g).map((x) => parseInt(x, 16));
+  const A = h(a), Bc = h(b); return "rgb(" + A.map((v, i) => Math.round(v + (Bc[i] - v) * t)).join(",") + ")";
+}
+function drawHeat(surf, pts) {
+  const box = $("heatChart"); box.innerHTML = "";
+  if (!surf || !pts.length) return;
+  const cs = getComputedStyle(document.documentElement), c0 = cs.getPropertyValue("--s100"), c1 = cs.getPropertyValue("--s700");
+  const rows = surf.prob.length, cols = surf.days.length;
+  const W = 680, L = 56, T = 8, B = 30, cw = (W - L - 8) / cols, ch = 6, H = T + rows * ch + B;
+  const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Probability sold by day, for each list price" }, box);
+  for (let i = 0; i < rows; i++) {
+    const y = T + (rows - 1 - i) * ch; // higher prices at the top
+    for (let j = 0; j < cols; j++) {
+      const v = surf.prob[i][j];
+      const cell = svgEl("rect", { x: L + j * cw, y, width: cw - 1, height: ch - 0.5, fill: mix(c0, c1, v) }, svg);
+      cell.addEventListener("mousemove", (e) => { const r = box.getBoundingClientRect();
+        tip(box, `List at <b>${gbp(pts[i]?.price_gbp)}</b>: ${pct(v)} chance sold within ${surf.days[j]} day${surf.days[j] > 1 ? "s" : ""}`, e.clientX - r.left, e.clientY - r.top); });
+      cell.addEventListener("mouseleave", () => tip(box, null));
+    }
+    if (i % 7 === 0) svgEl("text", { x: L - 6, y: y + ch, "text-anchor": "end", "font-size": 11, fill: "var(--ink-3)" }, svg).textContent = "£" + Math.round(pts[i]?.price_gbp ?? 0);
+  }
+  surf.days.forEach((d, j) => svgEl("text", { x: L + j * cw + cw / 2, y: H - 12, "text-anchor": "middle", "font-size": 11, fill: "var(--ink-3)" }, svg).textContent = d + "d");
+}
+
+function drawEvidence(list) {
+  const kind = { sold_exact: "Sold", sold_interval: "Sold", sold_unknown_time: "Sold", active: "Not sold yet" };
+  const sorted = [...list].sort((a, b) => (a.obs_type === "active") - (b.obs_type === "active") || a.price_gbp - b.price_gbp);
+  const shown = sorted.filter((x) => !x.is_outlier).slice(0, 30);
+  const excluded = list.filter((x) => x.is_outlier).length;
+  $("evNote").textContent = `${list.length} listings found; showing ${shown.length}` + (excluded ? `. ${excluded} left out (wrong item, bundles, extreme prices).` : ".");
+  $("evidence").innerHTML = `<tr><th>Site</th><th>Listing</th><th>Condition</th><th class="num">Price</th><th>Status</th><th class="num">Days listed</th></tr>` +
+    shown.map((x) => `<tr><td>${PLAT[x.platform] || x.platform}</td>
+      <td>${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a>` : esc(x.title)}</td>
+      <td>${TIERS[x.condition_tier] || "–"}</td><td class="num">${gbp(x.price_gbp)}</td>
+      <td>${kind[x.obs_type] || x.obs_type}</td>
+      <td class="num">${x.t_days != null ? (x.t_upper_days != null ? `${x.t_days.toFixed(1)}–${x.t_upper_days.toFixed(1)}` : x.t_days.toFixed(1)) : "–"}</td></tr>`).join("");
+}
+</script>
+</body>
+</html>

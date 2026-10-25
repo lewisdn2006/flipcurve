@@ -18,6 +18,8 @@ from typing import Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from backend.engine.pipeline import run as run_engine
 from backend.models.schemas import (
@@ -41,6 +43,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+WEB_DIR = Path(__file__).resolve().parents[1] / "web" / "flipcurve"
+
+
+@app.get("/", include_in_schema=False)
+def root():
+    return RedirectResponse("/flipcurve/")
 
 
 def _mock(name: str) -> dict:
@@ -160,3 +168,8 @@ def scan_pages(req: ScanPagesRequest):
     out["warnings"] = warnings + out["warnings"]
     log.info("scan-pages stats: %s", stats)
     return out
+
+
+# The FlipCurve page itself, so http://localhost:8000/flipcurve/ works for testing.
+# (On lewisdn.com the same file is served by Cloudflare and talks to this server via the tunnel.)
+app.mount("/flipcurve", StaticFiles(directory=WEB_DIR, html=True), name="web")
