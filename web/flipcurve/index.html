@@ -5,185 +5,469 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FlipCurve</title>
 <meta name="description" content="Price something you want to sell: what similar items sold for on eBay and Vinted, and how long they took.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  color-scheme: light;
-  --bg: #f6f5f2; --surface: #fcfcfb; --line: #e2e0da; --grid: #ecebe6;
-  --ink: #0b0b0b; --ink-2: #52514e; --ink-3: #8a8883;
-  --accent: #2a78d6; --ebay: #2a78d6; --vinted: #eb6834;
-  --good: #1a7f45; --warn-bg: #fff4dc; --warn-ink: #6b4a00; --bad: #b3261e;
-  --s100:#cde2fb; --s700:#0d366b;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --bg: #121211; --surface: #1a1a19; --line: #2e2d2b; --grid: #262624;
-    --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #8f8d86;
-    --accent: #3987e5; --ebay: #3987e5; --vinted: #d95926;
-    --good: #4cc27f; --warn-bg: #3a2e12; --warn-ink: #f2d38a; --bad: #f08a83;
-    --s100:#184f95; --s700:#cde2fb;
-  }
-}
-:root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #121211; --surface: #1a1a19; --line: #2e2d2b; --grid: #262624;
-  --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #8f8d86;
-  --accent: #3987e5; --ebay: #3987e5; --vinted: #d95926;
-  --good: #4cc27f; --warn-bg: #3a2e12; --warn-ink: #f2d38a; --bad: #f08a83;
-  --s100:#184f95; --s700:#cde2fb;
+  --bg: #0d0e10; --panel: #141518; --panel-2: #101114; --chip: rgba(255,255,255,0.06);
+  --line: rgba(255,255,255,0.07); --line-2: rgba(255,255,255,0.12); --line-3: rgba(255,255,255,0.18);
+  --ink: #eeece6; --ink-soft: #cfcdc6; --ink-2: #a8a69e; --ink-3: #77756f; --ph: #5f5d58;
+  --ebay: #4f8fe8; --vinted: #ec7a45; --sold: #4fb7a8; --link: #9cc0f3;
+  --ok: #5cc98a; --warn: #f0cf86; --low: #f2a57f; --bad: #f08a83;
+  --mono: "Geist Mono", ui-monospace, monospace;
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink);
-       font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
-main { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
-h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -0.02em; }
-h2 { font-size: 17px; margin: 0 0 12px; }
-.sub { color: var(--ink-2); margin: 0 0 20px; }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin: 0 0 16px; }
-.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.grow { flex: 1 1 220px; min-width: 0; }
-label { font-size: 13px; color: var(--ink-2); display: block; margin-bottom: 4px; }
-input[type=text], select { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px;
-  background: var(--bg); color: var(--ink); font: inherit; }
-button { padding: 9px 16px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent);
-  color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
-button.ghost { background: transparent; color: var(--accent); }
-button:disabled { opacity: .5; cursor: default; }
-.status { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); }
-.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--ink-3); }
-.dot.ok { background: var(--good); } .dot.bad { background: var(--bad); } .dot.warn { background: #c98500; }
-.tabs { display: flex; gap: 4px; margin-bottom: 12px; }
-.tabs button { background: transparent; color: var(--ink-2); border-color: var(--line); font-weight: 500; }
-.tabs button.on { color: var(--ink); border-color: var(--ink-2); }
+html { color-scheme: dark; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 Geist, system-ui, -apple-system, "Segoe UI", sans-serif;
+       -webkit-font-smoothing: antialiased; }
+a { color: var(--link); text-decoration: none; }
+a:hover { color: var(--ink); text-decoration: underline; }
+input, select, button { font: inherit; color: inherit; }
+input::placeholder { color: var(--ph); }
+button { cursor: pointer; }
+button:disabled { opacity: .45; cursor: default; }
 .hidden { display: none !important; }
-.warn { background: var(--warn-bg); color: var(--warn-ink); border-radius: 8px; padding: 8px 12px; margin: 0 0 8px; font-size: 14px; }
-.err { color: var(--bad); font-size: 14px; margin-top: 8px; }
-.bar { height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; margin: 8px 0 4px; }
-.bar > div { height: 100%; width: 0; background: var(--accent); transition: width .3s; }
-.muted { color: var(--ink-2); font-size: 13px; }
-.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
-.plat { border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
-.plat.best { border-color: var(--accent); }
-.plat h3 { margin: 0 0 6px; font-size: 15px; display: flex; justify-content: space-between; gap: 8px; }
-.big { font-size: 24px; font-weight: 650; letter-spacing: -0.01em; }
-.kv { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; font-size: 14px; }
-.kv span:nth-child(odd) { color: var(--ink-2); }
-.badge { font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--ink-2); }
-.thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-.thumb { position: relative; width: 72px; height: 72px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); }
+.mono { font-family: var(--mono); }
+.eyebrow { font: 500 10.5px/1.3 var(--mono); letter-spacing: .1em; color: var(--ink-3); text-transform: uppercase; }
+.muted { color: var(--ink-2); }
+
+/* top bar */
+.top { position: sticky; top: 0; z-index: 30; background: rgba(13,14,16,0.84); backdrop-filter: blur(14px);
+       -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid rgba(255,255,255,0.06); }
+.top-in { max-width: 1320px; margin: 0 auto; padding: 12px 32px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-mark { width: 24px; height: 24px; border-radius: 7px; background: var(--ink); display: grid; place-items: center; }
+.brand-mark i { width: 8px; height: 8px; border-radius: 50%; background: var(--bg); }
+.brand b { font-weight: 600; font-size: 16px; letter-spacing: -0.02em; }
+.top-r { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pill { display: flex; align-items: center; gap: 8px; padding: 6px 11px; border: 1px solid rgba(255,255,255,0.08); border-radius: 99px;
+        font-size: 12px; color: var(--ink-2); }
+.dot { flex: 0 0 7px; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); }
+.dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }
+.data-pill { white-space: nowrap; padding: 6px 11px; border-radius: 99px; font: 500 11px/1.3 var(--mono); letter-spacing: .04em;
+             color: var(--warn); background: rgba(240,207,134,0.1); }
+.btn-pill { padding: 6px 12px; border-radius: 99px; border: 1px solid var(--line-2); background: transparent; font-size: 12px; color: var(--ink-soft); }
+.btn-pill:hover { background: var(--chip); }
+.server-row { max-width: 1320px; margin: 0 auto; padding: 0 32px 12px; display: flex; gap: 8px; justify-content: flex-end; }
+.server-row input { width: 320px; max-width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
+                    background: var(--panel); font: 12px var(--mono); outline: none; }
+
+/* layout */
+.wrap { max-width: 1320px; margin: 0 auto; padding: 40px 32px 96px; display: flex; flex-direction: column; gap: 28px; }
+.intro { display: flex; flex-direction: column; gap: 8px; max-width: 760px; }
+h1 { margin: 0; font-size: 40px; line-height: 1.05; font-weight: 600; letter-spacing: -0.035em; text-wrap: balance; }
+.lede { margin: 0; font-size: 16px; color: var(--ink-2); text-wrap: pretty; }
+.sec { display: flex; flex-direction: column; gap: 14px; margin-top: 20px; }
+.sec-h { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.sec-h > div:first-child { display: flex; flex-direction: column; gap: 6px; }
+.sec-h h2 { margin: 0; font-size: 30px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.15; }
+.sec-h .right { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; }
+
+/* segmented controls */
+.seg { display: flex; padding: 4px; gap: 2px; background: var(--bg); border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); }
+.seg.on-panel { background: var(--panel); border-color: rgba(255,255,255,0.08); }
+.seg.sm { padding: 3px; border-radius: 10px; }
+.seg button { padding: 8px 14px; border-radius: 9px; border: none; background: transparent; color: var(--ink-2); font-size: 13px; font-weight: 500; }
+.seg.sm button { padding: 6px 11px; border-radius: 8px; font-size: 12px; }
+.seg button:hover { color: var(--ink); }
+.seg button.on { background: var(--ink); color: var(--bg); }
+
+/* search panel */
+.search { background: var(--panel); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+.search-row { display: flex; gap: 8px; align-items: stretch; flex-wrap: wrap; }
+.field { padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: var(--bg); font-size: 15px; outline: none; min-width: 0; }
+.field:focus { border-color: var(--line-3); }
+select.field { padding: 12px; font-size: 14px; }
+#textBox { flex: 1 1 280px; min-width: 0; display: flex; }
+#textBox input { flex: 1; }
+#photoBox { flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.photo-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.drop { flex: 1 1 200px; display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; border: 1px dashed var(--line-3);
+        background: var(--bg); font-size: 13px; color: var(--ink-2); cursor: pointer; min-height: 48px; }
+.drop:hover, .drop.over { border-color: rgba(255,255,255,0.35); color: var(--ink-soft); }
+.count { font: 500 11px var(--mono); padding: 3px 7px; border-radius: 6px; background: var(--chip); color: var(--ink-soft); white-space: nowrap; }
+.photo-row .field { flex: 1 1 200px; font-size: 14px; }
+.thumbs { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.thumb { position: relative; width: 64px; height: 64px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line-2); }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.thumb button { position: absolute; top: 2px; right: 2px; width: 22px; height: 22px; padding: 0; border-radius: 50%;
-  border: none; background: rgba(0,0,0,.65); color: #fff; font-size: 14px; line-height: 22px; }
-button.small { padding: 4px 10px; font-size: 13px; font-weight: 500; }
-.markers { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
-.markers div { flex: 1 1 120px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
-.markers b { display: block; font-size: 18px; }
-.chart { position: relative; }
-.chart svg { width: 100%; height: auto; display: block; }
-.legend { display: flex; gap: 14px; font-size: 13px; color: var(--ink-2); margin-bottom: 4px; }
-.legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
-.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
-  padding: 6px 10px; font-size: 13px; box-shadow: 0 4px 14px rgba(0,0,0,.12); white-space: nowrap; z-index: 2; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
-th { color: var(--ink-2); font-weight: 600; }
-td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-.scroll { overflow-x: auto; }
-a { color: var(--accent); }
-ol.sched { margin: 0; padding-left: 20px; }
+.thumb button { position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; padding: 0; border-radius: 50%; border: none;
+                background: rgba(0,0,0,.7); color: #fff; font-size: 13px; line-height: 20px; }
+#qTier { flex: 0 0 190px; }
+.btn-primary { padding: 12px 22px; border-radius: 12px; border: none; background: var(--ink); color: var(--bg); font-size: 14px; font-weight: 600; }
+.btn-primary:hover:not(:disabled) { background: #fff; }
+.btn-blue { padding: 8px 16px; border-radius: 10px; border: none; background: var(--ebay); color: #fff; font-size: 13px; font-weight: 600; }
+.btn-blue:hover:not(:disabled) { background: #6aa2ee; }
+.btn-ghost { padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14); background: transparent; font-size: 13px; font-weight: 500; }
+.btn-ghost:hover:not(:disabled) { background: var(--chip); }
+.btn-mini { padding: 4px 10px; border-radius: 8px; border: 1px solid var(--line-2); background: transparent; font-size: 12px; color: var(--ink-soft); }
+.btn-mini:hover { background: var(--chip); }
+.msgline { padding: 2px 10px 4px; font-size: 13px; color: var(--ink-2); }
+.msgline:empty { display: none; }
+.err { padding: 2px 10px 6px; font-size: 13px; color: var(--bad); }
+.err:empty { display: none; }
+
+.ident { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 10px 6px; border-top: 1px solid rgba(255,255,255,0.06); }
+.ident-title { font-size: 14px; font-weight: 600; }
+.chip { font-size: 12px; padding: 3px 9px; border-radius: 99px; background: var(--chip); color: var(--ink-soft); }
+.q-ebay { font: 12px var(--mono); color: var(--link); }
+.q-vinted { font: 12px var(--mono); color: var(--low); }
+.ident-r { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+#scanStatus { font: 11px var(--mono); color: var(--ink-2); }
+#scanStatus.done { color: var(--ok); }
+.progress { height: 3px; margin: 0 10px 6px; border-radius: 2px; background: var(--chip); overflow: hidden; }
+.progress > div { height: 100%; width: 0; background: var(--ebay); transition: width .3s; }
+.refine { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; padding: 6px 10px 12px; }
+.refine label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--ink-2); }
+.refine .field { padding: 10px 12px; border-radius: 10px; font-size: 14px; color: var(--ink); }
+
+.note { display: flex; gap: 10px; align-items: baseline; padding: 10px 14px; border-radius: 12px; background: rgba(240,207,134,0.08);
+        border: 1px solid rgba(240,207,134,0.18); color: var(--warn); font-size: 13px; }
+.note b { font: 600 10.5px var(--mono); letter-spacing: .08em; flex: 0 0 auto; }
+#warnings { display: flex; flex-direction: column; gap: 8px; }
+#warnings:empty { display: none; }
+
+/* hero */
+.hero { display: flex; gap: 16px; flex-wrap: wrap; align-items: stretch; }
+.item-card { flex: 1 1 300px; max-width: 400px; padding: 14px; display: flex; flex-direction: column; gap: 16px; }
+.item-photo { aspect-ratio: 4/3; border-radius: 12px; overflow: hidden; background: repeating-linear-gradient(135deg,rgba(255,255,255,0.035) 0 10px,transparent 10px 20px),#101114; }
+.item-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.item-body { padding: 0 6px 6px; display: flex; flex-direction: column; gap: 12px; }
+.item-name { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin-top: 6px; line-height: 1.25; }
+.kv2 { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; font-size: 13px; }
+.kv2 > span:nth-child(odd) { color: var(--ink-2); }
+.meter { height: 6px; border-radius: 3px; background: var(--chip); overflow: hidden; }
+.meter > div { height: 100%; background: var(--ink); border-radius: 3px; }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.tag { font-size: 12px; padding: 4px 10px; border-radius: 99px; border: 1px solid rgba(255,255,255,0.1); color: var(--ink-soft); }
+.rec-card { flex: 999 1 520px; min-width: 0; padding: 30px 32px; display: flex; flex-direction: column; gap: 26px; }
+.rec-card h2 { margin: 0; font-size: clamp(34px, 5.2vw, 54px); line-height: 1.02; font-weight: 600; letter-spacing: -0.045em; text-wrap: balance; }
+.rec-card p { margin: 0; font-size: 15px; color: var(--ink-2); max-width: 640px; text-wrap: pretty; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--line); border-radius: 14px;
+         overflow: hidden; border: 1px solid var(--line); }
+.stats > div { background: var(--panel); padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+.stats .k { font-size: 12px; color: var(--ink-2); }
+.stats .v { font-size: 26px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.1; }
+.stats .s { font: 11px var(--mono); color: var(--ink-3); }
+.markers { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.markers > div { padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 4px; }
+.markers > div.best { background: rgba(238,236,230,0.05); border-color: rgba(238,236,230,0.28); }
+.markers .k { font-size: 12px; color: var(--ink-2); }
+.markers .v { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+.markers .d { font-size: 12px; color: var(--ink-soft); }
+.marker-note { font-size: 12.5px; color: var(--warn); }
+.marker-note:empty { display: none; }
+
+/* 3D */
+.explorer { display: flex; flex-wrap: wrap; overflow: hidden; }
+.side { flex: 1 1 280px; max-width: 340px; padding: 18px; display: flex; flex-direction: column; gap: 16px; border-right: 1px solid rgba(255,255,255,0.06); }
+.modes { display: flex; flex-direction: column; gap: 6px; }
+.modes button { text-align: left; padding: 12px 14px; border-radius: 12px; border: 1px solid transparent; background: transparent;
+                display: flex; flex-direction: column; gap: 3px; }
+.modes button:hover { background: rgba(255,255,255,0.05); }
+.modes button.on { background: var(--chip); border-color: rgba(255,255,255,0.16); }
+.modes b { font-size: 14px; font-weight: 600; color: var(--ink-soft); }
+.modes button.on b { color: var(--ink); }
+.modes span { font-size: 12px; color: var(--ink-2); line-height: 1.4; }
+.howto { display: flex; flex-direction: column; gap: 9px; padding: 4px 4px 0; }
+.howto div { display: flex; gap: 10px; font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); }
+.howto i { flex: 0 0 10px; height: 10px; margin-top: 4px; border-radius: 3px; border: 1px solid transparent; }
+.readout { margin-top: auto; padding: 14px; border-radius: 12px; background: var(--bg); border: 1px solid rgba(255,255,255,0.06);
+           display: flex; flex-direction: column; gap: 6px; min-height: 118px; }
+#readout { font-size: 13px; line-height: 1.45; }
+.stage { flex: 999 1 560px; min-width: 0; position: relative; height: 660px; background: radial-gradient(ellipse at 50% 45%,#17191d 0%,#111215 70%); }
+.stage-abs { position: absolute; inset: 0; }
+#labels3d { pointer-events: none; overflow: hidden; }
+.stage-tools { position: absolute; top: 14px; right: 14px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.stage-tools .seg { background: rgba(13,14,16,0.8); backdrop-filter: blur(8px); border-color: rgba(255,255,255,0.08); }
+#rotateBtn { padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); background: rgba(13,14,16,0.8);
+             backdrop-filter: blur(8px); font-size: 12px; font-weight: 500; color: var(--ink); }
+#rotateBtn.off { color: var(--ink-3); }
+.stage-hint { position: absolute; left: 16px; bottom: 14px; font: 11px var(--mono); color: var(--ink-3); pointer-events: none; }
+#legend3d { position: absolute; right: 16px; bottom: 14px; display: flex; align-items: center; gap: 14px; font: 11px var(--mono);
+            color: var(--ink-2); pointer-events: none; flex-wrap: wrap; justify-content: flex-end; }
+#legend3d span { display: flex; align-items: center; gap: 6px; }
+#legend3d i { display: inline-block; }
+.ramp { width: 140px; height: 8px; border-radius: 4px; background: linear-gradient(90deg,#1b1e3d,#27467f,#2f7fa6,#4fb7a8,#a6e0a0,#f2f5c8); }
+#loading3d { display: grid; place-items: center; font: 12px var(--mono); color: var(--ink-3); text-align: center; padding: 20px; }
+
+/* platforms */
+.plats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; }
+.plat { padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+.plat.best { border-color: rgba(238,236,230,0.22); }
+.plat-h { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.plat-h .sw { width: 12px; height: 12px; border-radius: 4px; }
+.plat-h b { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+.best-tag { font: 600 10.5px var(--mono); letter-spacing: .08em; padding: 4px 8px; border-radius: 6px; background: var(--ink); color: var(--bg); }
+.conf { margin-left: auto; white-space: nowrap; flex-shrink: 0; font-size: 12px; padding: 4px 10px; border-radius: 99px; border: 1px solid var(--line-2); }
+.net { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.net b { font-size: 44px; font-weight: 600; letter-spacing: -0.04em; line-height: 1; }
+.net span { font-size: 14px; color: var(--ink-2); }
+.p7 { display: flex; flex-direction: column; gap: 6px; }
+.p7-h { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-2); }
+.p7-h span:last-child { font-family: var(--mono); color: var(--ink); }
+.p7-bar { height: 8px; border-radius: 4px; background: var(--chip); overflow: hidden; }
+.p7-bar > div { height: 100%; border-radius: 4px; }
+.rows { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; font-size: 13.5px; }
+.rows > span:nth-child(odd) { color: var(--ink-2); }
+.rows > span:nth-child(even) { font-family: var(--mono); font-size: 13px; text-align: right; }
+.plat-note { font-size: 12.5px; color: var(--warn); padding: 9px 12px; border-radius: 10px; background: rgba(240,207,134,0.07); }
+
+/* charts */
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 540px), 1fr)); gap: 16px; }
+.chart-card { padding: 22px 24px 18px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.chart-h { display: flex; gap: 12px; align-items: flex-start; }
+.chart-h .num { font: 500 11px var(--mono); color: var(--ink-3); padding-top: 3px; }
+.chart-h > div { display: flex; flex-direction: column; gap: 4px; }
+.chart-h b { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+.chart-h span { font-size: 13px; color: var(--ink-2); text-wrap: pretty; }
+.chart-body { min-height: 120px; }
+.chart-empty { min-height: 120px; display: grid; place-items: center; font: 12px var(--mono); color: var(--ink-3); text-align: center; }
+.chart-take { margin-top: auto; font-size: 13px; color: var(--ink-soft); border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px; text-wrap: pretty; }
+.chart-take:empty { display: none; }
+.params { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: rgba(255,255,255,0.06); border-radius: 12px; overflow: hidden; }
+.params > div { background: var(--panel); padding: 12px 14px; display: flex; flex-direction: column; gap: 3px; }
+.params .k { font-size: 11.5px; color: var(--ink-2); }
+.params .v { font: 500 17px var(--mono); letter-spacing: -0.02em; }
+.params .d { font-size: 11.5px; color: var(--ink-3); text-wrap: pretty; }
+
+/* plan */
+.plan { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+.plan > b { font-size: 16px; font-weight: 600; }
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.steps > div { display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 14px; background: var(--bg); border: 1px solid rgba(255,255,255,0.06); }
+.steps .h { display: flex; justify-content: space-between; align-items: center; }
+.steps .day { font: 600 11px var(--mono); letter-spacing: .08em; color: var(--ink-2); }
+.steps .pr { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+.steps .a { font-size: 13px; color: var(--ink-soft); text-wrap: pretty; }
+
+/* evidence */
+#evFilters { display: flex; gap: 8px; flex-wrap: wrap; }
+.ev { overflow: hidden; }
+.ev-scroll { overflow-x: auto; max-height: 560px; overflow-y: auto; }
+.ev-table { min-width: 820px; }
+.ev-row { display: grid; grid-template-columns: 96px minmax(0,1fr) 100px 90px 120px 110px 60px; gap: 12px; padding: 10px 20px; font-size: 13px;
+          border-bottom: 1px solid rgba(255,255,255,0.04); align-items: center; }
+.ev-row:hover { background: rgba(255,255,255,0.025); }
+.ev-head { font: 500 10.5px var(--mono); letter-spacing: .08em; color: var(--ink-3); border-bottom: 1px solid var(--line); position: sticky; top: 0;
+           background: var(--panel); padding: 12px 20px; z-index: 1; }
+.ev-head:hover { background: var(--panel); }
+.ev-row .r { text-align: right; }
+.ev-row .site { display: flex; align-items: center; gap: 8px; }
+.ev-row .site i { width: 8px; height: 8px; border-radius: 2px; }
+.ev-row .t { min-width: 0; display: flex; align-items: center; gap: 8px; }
+.ev-row .t a, .ev-row .t > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
+.ev-row.rel .t a { color: var(--ink-2); }
+.sim { flex: 0 0 auto; font: 500 10px var(--mono); padding: 2px 6px; border-radius: 5px; background: var(--chip); color: var(--ink-2); }
+.ev-row .st { display: flex; align-items: center; gap: 6px; }
+.ev-row .st i { width: 6px; height: 6px; border-radius: 50%; border: 1px solid; }
+
+.foot { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.06);
+        font-size: 12px; color: var(--ink-3); }
+
+@media (max-width: 720px) {
+  .top { position: static; }
+  .top-in { padding: 10px 16px; gap: 10px; }
+  .top-r { margin-left: 0; gap: 6px; }
+  .pill { font-size: 11px; padding: 5px 9px; }
+  .ident-r { margin-left: 0; width: 100%; }
+  .ident-r button { flex: 1 1 auto; }
+  #scanStatus { flex-basis: 100%; }
+  #scanStatus:empty { display: none; }
+  .server-row { padding: 0 16px 10px; }
+  .wrap { padding: 24px 16px 64px; gap: 22px; }
+  h1 { font-size: 30px; }
+  .sec-h h2 { font-size: 24px; }
+  .rec-card { padding: 22px 20px; gap: 20px; }
+  .item-card { max-width: none; }
+  .side { max-width: none; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .stage { height: 460px; }
+  .stage-hint { display: none; }
+  .chart-card { padding: 18px 16px 14px; }
+  .plat { padding: 20px; }
+  #qTier { flex: 1 1 160px; }
+  .btn-primary { flex: 1 1 auto; }
+}
 </style>
 </head>
 <body>
-<main>
-  <h1>FlipCurve</h1>
-  <p class="sub">What will it sell for, and how fast? Prices from real eBay and Vinted listings, including the ones that didn't sell.</p>
-
-  <div class="card">
-    <div class="status">
-      <span><span class="dot" id="extDot"></span><span id="extText">Checking the helper extension…</span></span>
-      <span><span class="dot" id="apiDot"></span><span id="apiText">Checking the FlipCurve server…</span></span>
+<div class="top">
+  <div class="top-in">
+    <div class="brand"><div class="brand-mark"><i></i></div><b>FlipCurve</b></div>
+    <div class="top-r">
+      <span class="pill"><span class="dot" id="extDot"></span><span id="extText">Checking the helper extension…</span></span>
+      <span class="pill"><span class="dot" id="apiDot"></span><span id="apiText">Checking the FlipCurve server…</span></span>
+      <span class="data-pill hidden" id="dataPill"></span>
+      <button class="btn-pill" id="serverBtn" aria-expanded="false">Server address</button>
     </div>
-    <details style="margin-top:8px"><summary class="muted">Server address</summary>
-      <div class="row" style="margin-top:8px"><input type="text" id="apiInput" class="grow"><button class="ghost" id="apiSave">Save</button></div>
-    </details>
   </div>
+  <div class="server-row hidden" id="serverRow">
+    <input type="text" id="apiInput" aria-label="Server address" spellcheck="false">
+    <button class="btn-ghost" id="apiSave">Save</button>
+  </div>
+</div>
 
-  <!-- 1. What are you selling? -->
-  <div class="card" id="stepInput">
-    <h2>1. What are you selling?</h2>
-    <div class="tabs"><button class="on" data-tab="text">Describe it</button><button data-tab="photo">Photo</button></div>
-    <div id="tabText">
-      <div class="row">
-        <div class="grow"><label for="q">Item</label><input type="text" id="q" placeholder="e.g. Nike Air Force 1 white size 9"></div>
-        <div style="flex:0 0 190px"><label for="qTier">Condition</label>
-          <select id="qTier"><option value="">Let FlipCurve guess</option><option value="mint">Mint / new</option>
-            <option value="very_good">Very good</option><option value="good">Good</option><option value="fair">Fair</option></select></div>
+<main class="wrap">
+  <!-- intro + search -->
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <div class="intro">
+      <h1>What will it sell for, and how fast?</h1>
+      <p class="lede">Prices from real eBay and Vinted listings, including the ones that didn't sell.</p>
+    </div>
+
+    <div class="search">
+      <div class="search-row">
+        <div class="seg tabs" role="tablist">
+          <button class="on" data-tab="text" role="tab">Describe it</button><button data-tab="photo" role="tab">Photo</button>
+        </div>
+        <div id="textBox"><input type="text" class="field" id="q" placeholder="e.g. Nike Air Force 1 white size 9" aria-label="What are you selling?"></div>
+        <div id="photoBox" class="hidden">
+          <div class="photo-row">
+            <label class="drop" id="drop" for="photos"><span class="count" id="photoCount">0 / 4</span><span id="dropText">Drop up to 4 photos: whole item, other angles, a label close-up</span></label>
+            <input type="file" id="photos" accept="image/*,.heic,.heif" multiple class="hidden">
+            <input type="text" class="field" id="hint" placeholder="Anything the photo won't show (optional)" aria-label="Anything the photo won't show">
+          </div>
+          <div class="thumbs hidden" id="thumbWrap"><div class="thumbs" id="thumbs"></div><button class="btn-mini" id="clearPhotos">Remove all</button></div>
+        </div>
+        <select class="field" id="qTier" aria-label="Condition"><option value="">Let FlipCurve guess</option><option value="mint">Mint / new</option>
+          <option value="very_good">Very good</option><option value="good">Good</option><option value="fair">Fair</option></select>
+        <button class="btn-primary" id="identifyBtn">Identify</button>
+      </div>
+      <div class="msgline" id="identifyMsg"></div>
+      <div class="err" id="identifyErr"></div>
+
+      <!-- identified -->
+      <div id="stepConfirm" class="hidden">
+        <div class="ident">
+          <span class="eyebrow">Identified</span>
+          <span class="ident-title" id="idTitle"></span>
+          <span class="chip" id="idCond"></span>
+          <span class="q-ebay" id="idEbay"></span>
+          <span class="q-vinted" id="idVinted"></span>
+          <button class="btn-mini" id="refineBtn" aria-expanded="false">Edit searches</button>
+          <button class="btn-mini" id="resetBtn">Start again</button>
+          <div class="ident-r">
+            <span id="scanStatus"></span>
+            <button class="btn-ghost" id="savedBtn" title="Skip the live scan and use listings saved from earlier scans">Use saved data</button>
+            <button class="btn-blue" id="scanBtn">Scan eBay and Vinted</button>
+          </div>
+        </div>
+        <div class="progress hidden" id="progress"><div id="barFill"></div></div>
+        <div class="refine hidden" id="refine">
+          <label>Item<input type="text" class="field" id="title"></label>
+          <label>Condition<select class="field" id="tier"><option value="mint">Mint / new</option><option value="very_good">Very good</option>
+            <option value="good">Good</option><option value="fair">Fair</option></select></label>
+          <label>eBay search<input type="text" class="field" id="qEbay"></label>
+          <label>Vinted search<input type="text" class="field" id="qVinted"></label>
+          <label>Listing titles must include (a|b = either)<input type="text" class="field" id="mustHave" placeholder="e.g. jordan, low"></label>
+          <label>Leave out listings mentioning<input type="text" class="field" id="mustNot" placeholder="e.g. white, travis, replica"></label>
+        </div>
+        <div class="err" id="scanErr"></div>
       </div>
     </div>
-    <div id="tabPhoto" class="hidden">
-      <div class="row">
-        <div class="grow"><label for="photos">Up to 4 photos (whole item, other angles, a label close-up if there is one)</label>
-          <input type="file" id="photos" accept="image/*,.heic,.heif" multiple>
-          <div class="thumbs" id="thumbs"></div>
-          <button class="ghost small hidden" id="clearPhotos" style="margin-top:8px">Remove all photos</button></div>
-        <div class="grow"><label for="hint">Anything the photo won't show (optional)</label><input type="text" id="hint" placeholder="e.g. size 9, small scuff on heel"></div>
-      </div>
-    </div>
-    <div class="row" style="margin-top:12px"><button id="identifyBtn">Identify</button><span class="muted" id="identifyMsg"></span>
-      <button class="ghost small" id="resetBtn" style="margin-left:auto">Start again</button></div>
-    <div class="err" id="identifyErr"></div>
-  </div>
-
-  <!-- 2. Check it -->
-  <div class="card hidden" id="stepConfirm">
-    <h2>2. Is this right?</h2>
-    <div class="row">
-      <div class="grow"><label for="title">Item</label><input type="text" id="title"></div>
-      <div style="flex:0 0 150px"><label for="tier">Condition</label>
-        <select id="tier"><option value="mint">Mint / new</option><option value="very_good">Very good</option>
-          <option value="good">Good</option><option value="fair">Fair</option></select></div>
-    </div>
-    <div class="row" style="margin-top:8px">
-      <div class="grow"><label for="qEbay">eBay search</label><input type="text" id="qEbay"></div>
-      <div class="grow"><label for="qVinted">Vinted search</label><input type="text" id="qVinted"></div>
-    </div>
-    <div class="row" style="margin-top:8px">
-      <div class="grow"><label for="mustHave">Listing titles must include (comma-separated; a|b = either)</label><input type="text" id="mustHave" placeholder="e.g. jordan, low"></div>
-      <div class="grow"><label for="mustNot">Leave out listings mentioning</label><input type="text" id="mustNot" placeholder="e.g. white, travis, replica"></div>
-    </div>
-    <p class="muted" id="flaws"></p>
-    <div class="row"><button id="scanBtn">Scan eBay and Vinted</button>
-      <button class="ghost" id="savedBtn" title="Skip the live scan and use listings saved from earlier scans">Use saved data</button></div>
-    <div id="progress" class="hidden"><div class="bar"><div id="barFill"></div></div><span class="muted" id="progressText"></span></div>
-    <div class="err" id="scanErr"></div>
-  </div>
-
-  <!-- 3. Results -->
-  <div id="results" class="hidden">
     <div id="warnings"></div>
-    <div class="card">
-      <h2 id="headline"></h2>
-      <p class="muted" id="summary"></p>
-      <div class="grid2" id="platforms"></div>
-    </div>
-    <div class="card">
-      <div class="row" style="justify-content:space-between;margin-bottom:8px">
-        <h2 style="margin:0">Chance of selling within a week, by list price</h2>
-        <select id="viewTier" style="width:auto"><option value="mint">Mint</option><option value="very_good">Very good</option>
-          <option value="good">Good</option><option value="fair">Fair</option></select>
+  </div>
+
+  <div id="results" class="hidden" style="display:flex;flex-direction:column;gap:28px">
+    <!-- hero -->
+    <div class="hero">
+      <div class="card item-card">
+        <div class="item-photo hidden" id="itemPhoto"></div>
+        <div class="item-body">
+          <div>
+            <div class="eyebrow" id="itemBrand"></div>
+            <div class="item-name" id="itemName"></div>
+          </div>
+          <div class="kv2"><span>Size</span><span id="itemSize"></span><span>Condition</span><span id="itemCond"></span></div>
+          <div class="meter"><div id="itemMeter"></div></div>
+          <div id="flawBox" style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:12px;color:var(--ink-2)">Noticed</span>
+            <div class="tags" id="itemFlaws"></div>
+          </div>
+        </div>
       </div>
-      <div class="markers" id="markers"></div>
-      <div class="legend"><span><i style="background:var(--ebay)"></i>eBay</span><span><i style="background:var(--vinted)"></i>Vinted</span></div>
-      <div class="chart" id="curveChart"></div>
+      <div class="card rec-card">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <span class="eyebrow" id="recLabel"></span>
+          <h2 id="headline"></h2>
+          <p id="summary"></p>
+        </div>
+        <div class="stats" id="heroStats"></div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <span style="font-size:13px;font-weight:600" id="markersHead">Three ways to price it</span>
+          <div class="markers" id="markers"></div>
+          <div class="marker-note" id="markerNote"></div>
+        </div>
+      </div>
     </div>
-    <div class="card">
-      <h2>How likely it's sold after each day, by list price</h2>
-      <p class="muted" style="margin-top:-6px">Stronger colour = more likely sold by then. Hover a cell for the number.</p>
-      <div class="chart" id="heatChart"></div>
+
+    <!-- 3D explorer -->
+    <div class="sec">
+      <div class="sec-h">
+        <div><span class="eyebrow">Explore in 3D</span><h2>Price, time and chance of selling, all at once</h2></div>
+        <div class="right"><span style="font-size:12px;color:var(--ink-2)">Condition (changes every chart)</span><div class="seg on-panel" id="tierTabs"></div></div>
+      </div>
+      <div class="card explorer">
+        <div class="side">
+          <div class="modes" id="modes"></div>
+          <div class="howto"><span class="eyebrow">How to read it</span><div id="modeNotes" style="display:flex;flex-direction:column;gap:9px"></div></div>
+          <div class="readout"><span class="eyebrow">Readout</span><div id="readout"></div></div>
+        </div>
+        <div class="stage">
+          <div class="stage-abs" id="canvas3d"></div>
+          <div class="stage-abs" id="labels3d"></div>
+          <div class="stage-tools">
+            <div class="seg sm" id="views"></div>
+            <button id="rotateBtn">Auto-spin on</button>
+          </div>
+          <div class="stage-hint">Drag to spin · scroll to zoom · hover for numbers</div>
+          <div id="legend3d"></div>
+          <div class="stage-abs" id="loading3d">Building the 3D view…</div>
+        </div>
+      </div>
     </div>
-    <div class="card"><h2>Plan if it doesn't sell</h2><ol class="sched" id="schedule"></ol></div>
-    <div class="card"><h2>Listings this is based on</h2><p class="muted" id="evNote"></p>
-      <div class="scroll"><table id="evidence"></table></div></div>
+
+    <!-- platforms -->
+    <div class="sec">
+      <div class="sec-h"><div><span class="eyebrow">Head to head</span><h2 id="platHead">eBay vs Vinted at the suggested price</h2></div></div>
+      <div class="plats" id="platforms"></div>
+    </div>
+
+    <!-- charts -->
+    <div class="sec">
+      <div class="sec-h">
+        <div><span class="eyebrow">Everything the scan found</span><h2>The numbers behind the price</h2></div>
+        <span class="right" style="font-size:12px;color:var(--ink-2)">Showing&nbsp;<b style="color:var(--ink)" id="tierLabel"></b>&nbsp;condition · hover any chart</span>
+      </div>
+      <div class="charts" id="charts"></div>
+    </div>
+
+    <!-- plan -->
+    <div class="card plan" id="planCard">
+      <b>Plan if it doesn't sell</b>
+      <div class="steps" id="schedule"></div>
+    </div>
+
+    <!-- evidence -->
+    <div class="sec">
+      <div class="sec-h">
+        <div><span class="eyebrow">Evidence</span><h2>Listings this is based on</h2><span style="font-size:13px;color:var(--ink-2)" id="evNote"></span></div>
+        <div class="right" id="evFilters"></div>
+      </div>
+      <div class="card ev">
+        <div class="ev-scroll"><div class="ev-table">
+          <div class="ev-row ev-head"><span>SITE</span><span>LISTING</span><span>CONDITION</span><span class="r">PRICE</span><span>STATUS</span><span class="r">DAYS LISTED</span><span class="r">FAVS</span></div>
+          <div id="evRows"></div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>FlipCurve · survival-corrected pricing from eBay and Vinted · built at OxHack 2026</span>
+    <span class="mono" id="fetchedAt"></span>
   </div>
 </main>
 
@@ -191,11 +475,13 @@ ol.sched { margin: 0; padding-left: 20px; }
 "use strict";
 const EXT_ID = "fdibajhmjjbjcdfafdofkoedbkhbkfcb";
 const TIERS = { mint: "Mint", very_good: "Very good", good: "Good", fair: "Fair" };
+const TIER_ORDER = ["mint", "very_good", "good", "fair"];
 const PLAT = { ebay: "eBay", vinted: "Vinted" };
+const PCOL = { ebay: "#4f8fe8", vinted: "#ec7a45" };
 const $ = (id) => document.getElementById(id);
-const gbp = (x) => x == null ? "–" : "£" + Number(x).toFixed(2);
-const pct = (x) => x == null ? "–" : Math.round(x * 100) + "%";
-const days = (x) => x == null ? "–" : x < 1 ? "under a day" : x < 1.5 ? "about 1 day" : `about ${Math.round(x)} days`;
+const gbp = (x) => x == null || isNaN(x) ? "–" : "£" + Number(x).toFixed(2);
+const pct = (x) => x == null || isNaN(x) ? "–" : Math.round(x * 100) + "%";
+const days = (x) => x == null ? "–" : x >= 365 ? "1 year+" : x < 1 ? "under a day" : x < 1.5 ? "about 1 day" : `about ${Math.round(x)} days`;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } },
                 set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
@@ -209,6 +495,11 @@ let API = (new URLSearchParams(location.search).get("api") || store.get("flipcur
                   : "https://api.lewisdn.com")).replace(/\/$/, "");
 $("apiInput").value = API;
 $("apiSave").onclick = () => { API = $("apiInput").value.trim().replace(/\/$/, ""); store.set("flipcurve_api", API); checkApi(); };
+$("serverBtn").onclick = () => {
+  const open = $("serverRow").classList.toggle("hidden") === false;
+  $("serverBtn").setAttribute("aria-expanded", open);
+  if (open) $("apiInput").focus();
+};
 
 async function api(path, opts = {}, timeoutMs = 0) {
   let r;
@@ -244,12 +535,12 @@ async function checkHelper() {
   const s = { ok: ["ok", "Helper ready, eBay signed in"], signin: ["warn", "Helper ready. Sign in to eBay in this browser to include sold listings"],
               refused: ["warn", "Helper ready. eBay declined the last scan; it may work again later"] }[helper.ebayState]
             || ["ok", "Helper ready"];
-  setStatus("extDot", "extText", s[0], `${s[1]} <span class="muted">(v${esc(helper.version)})</span>`);
+  setStatus("extDot", "extText", s[0], `${s[1]} <span style="color:var(--ink-3)">v${esc(helper.version)}</span>`);
 }
 async function checkApi() {
   try {
     const h = await api("/api/v1/health");
-    setStatus("apiDot", "apiText", "ok", "Server connected" + (h.ebay_api ? ' <span class="muted">· eBay API on</span>' : ""));
+    setStatus("apiDot", "apiText", "ok", "Server connected" + (h.ebay_api ? " · eBay API on" : ""));
   }
   catch { setStatus("apiDot", "apiText", "bad", `Can't reach the server at ${esc(API)}`); }
 }
@@ -260,8 +551,8 @@ let mode = "text";
 document.querySelectorAll(".tabs button").forEach((b) => b.onclick = () => {
   mode = b.dataset.tab;
   document.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("on", x === b));
-  $("tabText").classList.toggle("hidden", mode !== "text");
-  $("tabPhoto").classList.toggle("hidden", mode !== "photo");
+  $("textBox").classList.toggle("hidden", mode !== "text");
+  $("photoBox").classList.toggle("hidden", mode !== "photo");
 });
 $("q").addEventListener("keydown", (e) => { if (e.key === "Enter") $("identifyBtn").click(); });
 
@@ -286,6 +577,9 @@ $("identifyBtn").onclick = async () => {
       out = await identifyJob("/api/v1/identify/start", () => ({ method: "POST", body: fd }), "/api/v1/identify");
     }
     item = out.item;
+    // the photo route has no condition field, so a condition picked here overrides the AI's guess
+    if (mode === "photo" && $("qTier").value) item = { ...item, condition_tier: $("qTier").value };
+    identifiedFromPhoto = mode === "photo";
     showConfirm(out);
   } catch (e) { $("identifyErr").textContent = e.message; }
   finally { btn.disabled = false; $("identifyMsg").textContent = ""; }
@@ -314,6 +608,7 @@ async function identifyJob(startPath, opts, oldPath) {
   throw new Error("That took too long. Try again, or describe the item instead.");
 }
 
+let identifiedFromPhoto = false, identifyWarnings = [];
 function showConfirm(out) {
   $("title").value = item.title || "";
   $("tier").value = item.condition_tier || "good";
@@ -321,12 +616,29 @@ function showConfirm(out) {
   $("qVinted").value = item.search_queries?.vinted || "";
   $("mustHave").value = (item.must_have || []).join(", ");
   $("mustNot").value = (item.must_not_have || []).join(", ");
-  const bits = [];
-  if (item.detected_flaws?.length) bits.push("Noticed: " + item.detected_flaws.join("; "));
-  (out.warnings || []).forEach((w) => bits.push(w));
-  $("flaws").textContent = bits.join(" · ");
+  identifyWarnings = out.warnings || [];
+  drawWarnings(identifyWarnings);
+  syncIdent();
+  $("scanStatus").textContent = ""; $("scanStatus").className = "";
   $("stepConfirm").classList.remove("hidden");
-  $("stepConfirm").scrollIntoView({ behavior: "smooth", block: "start" });
+  $("scanBtn").focus({ preventScroll: true });
+}
+// the summary line mirrors the editable fields
+function syncIdent() {
+  $("idTitle").textContent = $("title").value.trim() || "Unnamed item";
+  $("idCond").textContent = TIERS[$("tier").value] || "–";
+  const e = $("qEbay").value.trim(), v = $("qVinted").value.trim();
+  $("idEbay").textContent = e ? `eBay: “${e}”` : "eBay: not searched";
+  $("idVinted").textContent = v ? `Vinted: “${v}”` : "Vinted: not searched";
+}
+["title", "tier", "qEbay", "qVinted"].forEach((id) => $(id).addEventListener("input", syncIdent));
+$("refineBtn").onclick = () => {
+  const open = $("refine").classList.toggle("hidden") === false;
+  $("refineBtn").textContent = open ? "Hide searches" : "Edit searches";
+  $("refineBtn").setAttribute("aria-expanded", open);
+};
+function drawWarnings(list) {
+  $("warnings").innerHTML = (list || []).map((w) => `<div class="note"><b>NOTE</b><span>${esc(w)}</span></div>`).join("");
 }
 
 const terms = (v) => v.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
@@ -366,23 +678,41 @@ function drawThumbs() {
     x.onclick = () => { photos.splice(i, 1); drawThumbs(); };
     d.append(img, x); $("thumbs").appendChild(d);
   });
-  $("clearPhotos").classList.toggle("hidden", photos.length === 0);
+  $("thumbWrap").classList.toggle("hidden", photos.length === 0);
+  $("photoCount").textContent = `${photos.length} / ${MAX_PHOTOS}`;
+  $("dropText").textContent = photos.length >= MAX_PHOTOS ? "That's the maximum. Remove one to swap it."
+    : photos.length ? "Add another angle or a label close-up" : "Drop up to 4 photos: whole item, other angles, a label close-up";
+}
+function addPhotos(files) {
+  photos = [...photos, ...[...files].filter((f) => /^image\//.test(f.type) || /\.(heic|heif)$/i.test(f.name))].slice(0, MAX_PHOTOS);
+  drawThumbs();
 }
 $("photos").addEventListener("change", () => {
-  photos = [...photos, ...$("photos").files].slice(0, MAX_PHOTOS);
+  addPhotos($("photos").files);
   $("photos").value = "";  // so choosing the same file again still fires
-  drawThumbs();
 });
+const drop = $("drop");
+["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, () => drop.classList.remove("over")));
+drop.addEventListener("drop", (e) => { e.preventDefault(); addPhotos(e.dataTransfer.files); });
 $("clearPhotos").onclick = () => { photos = []; drawThumbs(); };
 $("resetBtn").onclick = () => {
-  photos = []; drawThumbs(); item = null; R = null;
+  photos = []; drawThumbs(); item = null; R = null; identifyWarnings = [];
   ["q", "hint"].forEach((id) => $(id).value = ""); $("qTier").value = "";
   ["identifyErr", "scanErr"].forEach((id) => $(id).textContent = "");
+  drawWarnings([]);
   $("stepConfirm").classList.add("hidden"); $("results").classList.add("hidden"); $("progress").classList.add("hidden");
+  $("dataPill").classList.add("hidden"); $("fetchedAt").textContent = "";
+  if (viz) { viz.dispose(); viz = null; }
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
 // ---- step 2: scan (helper collects pages in this browser -> server fits the model)
+function progress(frac, text) {
+  $("progress").classList.remove("hidden");
+  $("barFill").style.width = Math.round(frac * 100) + "%";
+  if (text != null) { $("scanStatus").textContent = text; $("scanStatus").className = ""; }
+}
 function collect(queries, recheckIds) {
   return new Promise((resolve, reject) => {
     let port;
@@ -393,8 +723,7 @@ function collect(queries, recheckIds) {
       if (m.type === "page") {
         pages.push(m.page);
       } else if (m.type === "progress") {
-        $("barFill").style.width = Math.round(100 * m.done / m.total) * 0.8 + "%";
-        $("progressText").textContent = `${m.label} (${m.done} of ${m.total})`;
+        progress(0.8 * m.done / m.total, `${m.label} (${m.done} of ${m.total})`);
       } else if (m.type === "result") {
         done = true; port.disconnect();
         if (!m.ok) return reject(new Error(m.error || "The helper stopped."));
@@ -421,18 +750,17 @@ async function scan(live) {
   $("scanErr").textContent = "";
   const it = confirmedItem();
   if (!it.search_queries.ebay && !it.search_queries.vinted) return ($("scanErr").textContent = "Add at least one search.");
-  ["scanBtn", "savedBtn"].forEach((id) => $(id).disabled = true);
-  $("progress").classList.remove("hidden"); $("barFill").style.width = "2%";
+  ["scanBtn", "savedBtn", "identifyBtn"].forEach((id) => $(id).disabled = true);
+  progress(0.02, "Starting…");
   try {
     let result;
     if (live) {
       await checkHelper();
       if (!helper) throw new Error("The helper extension isn't installed or enabled in this browser. Install it, or use saved data.");
-      $("progressText").textContent = "Starting…";
       let ids = [];
       try { if (it.search_queries.vinted) ids = (await api("/api/v1/recheck-ids?vinted_query=" + encodeURIComponent(it.search_queries.vinted))).ids || []; } catch {}
       const got = await collect(it.search_queries, ids);
-      $("progressText").textContent = "Working out prices and selling times…"; $("barFill").style.width = "90%";
+      progress(0.9, "Working out prices and selling times…");
       const json = JSON.stringify({ item: it, pages: got.pages, stopped: got.stopped || {} });
       const headers = { "Content-Type": "application/json" };
       let body = json;
@@ -449,155 +777,927 @@ async function scan(live) {
       }
       checkHelper();
     } else {
-      $("progressText").textContent = "Working out prices from saved listings…"; $("barFill").style.width = "60%";
+      progress(0.6, "Working out prices from saved listings…");
       result = await api("/api/v1/market-scan", { method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ item: it, allow_live: false }) });
     }
-    $("barFill").style.width = "100%"; $("progressText").textContent = "Done";
+    progress(1, null);
+    $("scanStatus").textContent = "● Done"; $("scanStatus").className = "done";
+    setTimeout(() => $("progress").classList.add("hidden"), 600);
     render(result);
-  } catch (e) { $("scanErr").textContent = e.message; }
-  finally { ["scanBtn", "savedBtn"].forEach((id) => $(id).disabled = false); }
+  } catch (e) {
+    $("scanErr").textContent = e.message; $("scanStatus").textContent = ""; $("progress").classList.add("hidden");
+  }
+  finally { ["scanBtn", "savedBtn", "identifyBtn"].forEach((id) => $(id).disabled = false); }
 }
 
-// ---- step 3: results
-let R = null;
+// =====================================================================================
+// 2D charts: plain SVG drawn into a container element
+// =====================================================================================
+const Charts = (() => {
+  const NS = "http://www.w3.org/2000/svg";
+  const C = { ebay: "#4f8fe8", vinted: "#ec7a45", ink: "#eeece6", ink2: "#a8a69e", ink3: "#77756f",
+    grid: "rgba(255,255,255,0.06)", axis: "rgba(255,255,255,0.16)", panel: "#1b1d22", sold: "#4fb7a8", listed: "#77756f" };
+  const MONO = "'Geist Mono', ui-monospace, monospace";
+  const pc = (k) => C[k] || C.ink;
+  const dshort = (d) => d < 1 ? (Math.round(d * 10) / 10) + "d" : Math.round(d) + "d";
+  class NoData extends Error {}
+  const need = (ok, msg) => { if (!ok) throw new NoData(msg || "Not enough listings for this chart yet."); };
+  function markerList(m) {
+    if (!m) return [];
+    const out = [];
+    [["Quick sale", m.fast_sale_gbp], ["Best value", m.best_value_gbp], ["Patient", m.patient_gbp]].forEach(([k, v]) => {
+      if (v == null) return; const f = out.find((o) => Math.abs(o.v - v) < 0.01);
+      if (f) f.k += " + " + k.toLowerCase(); else out.push({ k, v });
+    });
+    return out;
+  }
+  function interpGrid(g, price, get) {
+    if (!g || !g.length || price == null) return null;
+    if (price <= g[0].price_gbp) return get(g[0]);
+    for (let i = 0; i < g.length - 1; i++) if (price <= g[i + 1].price_gbp) {
+      const f = (price - g[i].price_gbp) / (g[i + 1].price_gbp - g[i].price_gbp); return get(g[i]) + (get(g[i + 1]) - get(g[i])) * f;
+    }
+    return get(g[g.length - 1]);
+  }
+  const nearestIdx = (g, price) => g.reduce((b, p, i) => Math.abs(p.price_gbp - price) < Math.abs(g[b].price_gbp - price) ? i : b, 0);
+
+  function svg(el, W, H) {
+    el.innerHTML = ""; const s = document.createElementNS(NS, "svg");
+    s.setAttribute("viewBox", `0 0 ${W} ${H}`); s.setAttribute("role", "img");
+    s.style.cssText = "width:100%;height:auto;display:block;overflow:visible;font-family:Geist,system-ui,sans-serif";
+    el.appendChild(s); return s;
+  }
+  function add(p, tag, a, text) { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (text != null) e.textContent = text; p.appendChild(e); return e; }
+  function txt(p, x, y, s, o = {}) {
+    return add(p, "text", { x, y, "font-size": o.size || 10.5, fill: o.fill || C.ink3, "text-anchor": o.anchor || "start",
+      "font-family": o.sans ? "Geist, system-ui, sans-serif" : MONO, "font-weight": o.weight || 400, "letter-spacing": o.ls || 0 }, s);
+  }
+  const lin = (d0, d1, r0, r1) => (v) => r0 + (v - d0) / ((d1 - d0) || 1) * (r1 - r0);
+  const logs = (d0, d1, r0, r1) => { const a = Math.log(d0), b = Math.log(d1); return (v) => r0 + (Math.log(Math.max(v, d0)) - a) / ((b - a) || 1) * (r1 - r0); };
+  function niceStep(range, n) { if (!(range > 0)) return 1; const raw = range / n, p = 10 ** Math.floor(Math.log10(raw)), m = raw / p; return (m < 1.5 ? 1 : m < 3 ? 2 : m < 7 ? 5 : 10) * p; }
+  const fmtTick = (v) => "£" + (Math.abs(v - Math.round(v)) < 1e-6 ? Math.round(v) : v.toFixed(1));
+  function priceTicks(s, x0, x1, X, y) { const st = niceStep(x1 - x0, 6); for (let v = Math.ceil(x0 / st) * st; v <= x1 + 1e-9; v += st) txt(s, X(v), y, fmtTick(v), { anchor: "middle" }); }
+  const path = (pts) => pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join("");
+  function pill(s, x, y, label, stroke) {
+    const w = label.length * 5.9 + 14;
+    add(s, "rect", { x: x - w / 2, y: y - 9, width: w, height: 18, rx: 9, fill: C.panel, stroke: stroke || C.axis });
+    txt(s, x, y + 3.6, label, { anchor: "middle", fill: C.ink, size: 10 });
+  }
+  function endLabels(s, items, x, minGap = 13) { // items: {y,label,color}
+    items.sort((a, b) => a.y - b.y);
+    for (let i = 1; i < items.length; i++) if (items[i].y - items[i - 1].y < minGap) items[i].y = items[i - 1].y + minGap;
+    items.forEach((it) => txt(s, x, it.y + 3.5, it.label, { fill: it.color, size: 10.5, sans: true, weight: 500 }));
+  }
+  let tipEl;
+  function showTip(html, cx, cy) {
+    if (!tipEl) {
+      tipEl = document.createElement("div");
+      tipEl.style.cssText = "position:fixed;z-index:60;pointer-events:none;background:rgba(22,23,27,0.97);border:1px solid rgba(255,255,255,0.14);border-radius:10px;padding:9px 11px;font:12px/1.5 Geist,system-ui,sans-serif;color:#eeece6;box-shadow:0 12px 32px rgba(0,0,0,.45);white-space:nowrap;max-width:calc(100vw - 16px);overflow:hidden;text-overflow:ellipsis";
+      document.body.appendChild(tipEl);
+    }
+    tipEl.innerHTML = html; tipEl.style.display = "block";
+    const w = tipEl.offsetWidth, h = tipEl.offsetHeight;
+    tipEl.style.left = Math.max(8, Math.min(cx + 16, innerWidth - w - 8)) + "px";
+    tipEl.style.top = Math.max(8, cy - h - 14) + "px";
+  }
+  function hideTip() { if (tipEl) tipEl.style.display = "none"; }
+  addEventListener("scroll", hideTip, { passive: true });
+  const vbX = (s, e, W) => { const r = s.getBoundingClientRect(); return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * W / r.width }; };
+  const sw = (c) => `<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${c};margin-right:6px"></span>`;
+  const dim = (s) => `<span style="color:#a8a69e">${s}</span>`;
+  const priceSpan = (arr) => { const x0 = Math.floor(Math.min(...arr) / 5) * 5; let x1 = Math.ceil(Math.max(...arr) / 5) * 5; if (x1 <= x0) x1 = x0 + 5; return [x0, x1]; };
+
+  // 1. chance of selling vs list price
+  function drawProb(el, R, t) {
+    const g = R.price_curve_grid?.[t], m = R.price_markers?.[t], ms = R.market_summary || {};
+    need(g && g.length > 1);
+    const W = 640, H = 300, L = 40, Rr = 70, T = 34, B = 26, s = svg(el, W, H);
+    const x0 = g[0].price_gbp, x1 = g[g.length - 1].price_gbp, X = lin(x0, x1, L, W - Rr), Y = lin(0, 1, H - B, T);
+    [0, .25, .5, .75, 1].forEach((v) => { add(s, "line", { x1: L, x2: W - Rr, y1: Y(v), y2: Y(v), stroke: C.grid }); txt(s, L - 8, Y(v) + 3.5, Math.round(v * 100) + "%", { anchor: "end" }); });
+    priceTicks(s, x0, x1, X, H - 6);
+    const id = "gp" + Math.random().toString(36).slice(2, 7);
+    const gr = add(add(s, "defs", {}), "linearGradient", { id, x1: 0, y1: 0, x2: 0, y2: 1 });
+    add(gr, "stop", { offset: 0, "stop-color": "#eeece6", "stop-opacity": .16 }); add(gr, "stop", { offset: 1, "stop-color": "#eeece6", "stop-opacity": 0 });
+    const p7 = g.map((p) => [X(p.price_gbp), Y(p.prob_sell_7d)]);
+    add(s, "path", { d: path(p7) + `L${X(x1)},${Y(0)}L${X(x0)},${Y(0)}Z`, fill: `url(#${id})` });
+    const ser = [["prob_sell_30d", "30 days", C.ink3, 1.5, "4 4"], ["prob_sell_7d", "7 days", C.ink, 2.4, null], ["prob_sell_24h", "24 hours", C.sold, 2, null]];
+    ser.forEach(([k, , c, w, da]) => add(s, "path", { d: path(g.map((p) => [X(p.price_gbp), Y(p[k])])), fill: "none", stroke: c, "stroke-width": w, "stroke-dasharray": da || "none", "stroke-linejoin": "round" }));
+    endLabels(s, ser.map(([k, lab, c]) => ({ y: Y(g[g.length - 1][k]), label: "within " + lab, color: c })), W - Rr + 8);
+    const sm = ms.sold_median_gbp;
+    if (sm != null && sm >= x0 && sm <= x1) { add(s, "line", { x1: X(sm), x2: X(sm), y1: T, y2: H - B, stroke: C.sold, "stroke-opacity": .5 }); txt(s, X(sm) + 5, H - B - 6, "typical sold " + gbp(sm), { fill: C.sold, size: 9.5 }); }
+    let lastX = -999, row = 0;
+    markerList(m).forEach((mk) => {
+      const x = X(mk.v); if (mk.v < x0 || mk.v > x1) return;
+      row = x - lastX < 110 ? row + 1 : 0; lastX = x;
+      add(s, "line", { x1: x, x2: x, y1: T - 6 + row * 20, y2: H - B, stroke: C.ink2, "stroke-dasharray": "2 4" });
+      pill(s, x, 12 + row * 20, mk.k + " " + gbp(mk.v));
+    });
+    const cross = add(s, "line", { y1: T, y2: H - B, stroke: C.ink2, visibility: "hidden" });
+    const dots = ser.map(([, , c]) => add(s, "circle", { r: 4, fill: c, stroke: "#141518", "stroke-width": 2, visibility: "hidden" }));
+    const hit = add(s, "rect", { x: L, y: T, width: W - L - Rr, height: H - T - B, fill: "transparent" });
+    hit.addEventListener("mousemove", (e) => {
+      const p = vbX(s, e, W), i = Math.max(0, Math.min(g.length - 1, Math.round((p.x - L) / (W - L - Rr) * (g.length - 1)))), q = g[i], cx = X(q.price_gbp);
+      cross.setAttribute("x1", cx); cross.setAttribute("x2", cx); cross.setAttribute("visibility", "visible");
+      ser.forEach(([k], j) => { dots[j].setAttribute("cx", cx); dots[j].setAttribute("cy", Y(q[k])); dots[j].setAttribute("visibility", "visible"); });
+      showTip(`<b>List at ${gbp(q.price_gbp)}</b><br>${sw(C.sold)}Within 24 hours: <b>${pct(q.prob_sell_24h)}</b><br>${sw(C.ink)}Within 7 days: <b>${pct(q.prob_sell_7d)}</b><br>${sw(C.ink3)}Within 30 days: <b>${pct(q.prob_sell_30d)}</b><br>` +
+        dim(Object.entries(q.platforms || {}).map(([k, v]) => `${PLAT[k] || k} 7d ${pct(v.prob_sell_7d)}`).join(" · ")), e.clientX, e.clientY);
+    });
+    hit.addEventListener("mouseleave", () => { cross.setAttribute("visibility", "hidden"); dots.forEach((d) => d.setAttribute("visibility", "hidden")); hideTip(); });
+  }
+
+  // 2. net payout + expected wait per platform
+  function drawPayout(el, R, t) {
+    const g = R.price_curve_grid?.[t], rec = R.platform_recommendations || {};
+    need(g && g.length > 1 && g[0].platforms && Object.keys(g[0].platforms).length);
+    const plats = Object.keys(g[0].platforms).sort();
+    const W = 640, H = 350, L = 44, Rr = 56, T1 = 22, B1 = 158, T2 = 204, B2 = 318, s = svg(el, W, H);
+    const x0 = g[0].price_gbp, x1 = g[g.length - 1].price_gbp, X = lin(x0, x1, L, W - Rr);
+    const ymax = Math.max(1, ...g.flatMap((p) => plats.map((k) => p.platforms[k].net_payout_gbp))) * 1.08, Y1 = lin(0, ymax, B1, T1);
+    const st = niceStep(ymax, 4);
+    for (let v = 0; v <= ymax; v += st) { add(s, "line", { x1: L, x2: W - Rr, y1: Y1(v), y2: Y1(v), stroke: C.grid }); txt(s, L - 8, Y1(v) + 3.5, fmtTick(v), { anchor: "end" }); }
+    txt(s, L, T1 - 10, "CASH IN YOUR POCKET", { fill: C.ink2, size: 9.5, ls: ".08em" });
+    const dmin = 0.3, dmax = Math.max(dmin * 4, Math.min(365, Math.max(...g.flatMap((p) => plats.map((k) => p.platforms[k].expected_days_high))) * 1.2)), Y2 = logs(dmin, dmax, B2, T2);
+    [0.5, 1, 3, 7, 30, 90, 365].filter((v) => v <= dmax && v >= dmin).forEach((v) => { add(s, "line", { x1: L, x2: W - Rr, y1: Y2(v), y2: Y2(v), stroke: C.grid }); txt(s, L - 8, Y2(v) + 3.5, v >= 365 ? "1y" : v + "d", { anchor: "end" }); });
+    txt(s, L, T2 - 10, "AVERAGE WAIT, WITH RANGE (LOG SCALE)", { fill: C.ink2, size: 9.5, ls: ".08em" });
+    priceTicks(s, x0, x1, X, H - 8);
+    const ends1 = [], ends2 = [];
+    plats.forEach((k) => {
+      const c = pc(k);
+      add(s, "path", { d: path(g.map((p) => [X(p.price_gbp), Y2(p.platforms[k].expected_days_high)])) + g.slice().reverse().map((p) => `L${X(p.price_gbp).toFixed(1)},${Y2(p.platforms[k].expected_days_low).toFixed(1)}`).join("") + "Z", fill: c, "fill-opacity": .14 });
+      add(s, "path", { d: path(g.map((p) => [X(p.price_gbp), Y2(p.platforms[k].expected_days)])), fill: "none", stroke: c, "stroke-width": 2 });
+      add(s, "path", { d: path(g.map((p) => [X(p.price_gbp), Y1(p.platforms[k].net_payout_gbp)])), fill: "none", stroke: c, "stroke-width": 2.2 });
+      const last = g[g.length - 1].platforms[k];
+      ends1.push({ y: Y1(last.net_payout_gbp), label: PLAT[k] || k, color: c }); ends2.push({ y: Y2(last.expected_days), label: PLAT[k] || k, color: c });
+      const r = rec[k]; if (r && r.recommended_list_gbp >= x0 && r.recommended_list_gbp <= x1) {
+        const x = X(r.recommended_list_gbp), y = Y1(interpGrid(g, r.recommended_list_gbp, (p) => p.platforms[k].net_payout_gbp));
+        add(s, "line", { x1: x, x2: x, y1: y, y2: B2, stroke: c, "stroke-opacity": .35, "stroke-dasharray": "2 3" });
+        add(s, "circle", { cx: x, cy: y, r: 4.5, fill: c, stroke: "#141518", "stroke-width": 2 });
+      }
+    });
+    endLabels(s, ends1, W - Rr + 8); endLabels(s, ends2, W - Rr + 8);
+    const best = rec[R.best_platform];
+    if (best && best.recommended_list_gbp >= x0 && best.recommended_list_gbp <= x1) pill(s, X(best.recommended_list_gbp), T1 + 8, "suggested list " + gbp(best.recommended_list_gbp));
+    const cross = add(s, "line", { y1: T1, y2: B2, stroke: C.ink2, visibility: "hidden" });
+    const hit = add(s, "rect", { x: L, y: T1, width: W - L - Rr, height: B2 - T1, fill: "transparent" });
+    hit.addEventListener("mousemove", (e) => {
+      const p = vbX(s, e, W), i = Math.max(0, Math.min(g.length - 1, Math.round((p.x - L) / (W - L - Rr) * (g.length - 1)))), q = g[i], cx = X(q.price_gbp);
+      cross.setAttribute("x1", cx); cross.setAttribute("x2", cx); cross.setAttribute("visibility", "visible");
+      showTip(`<b>List at ${gbp(q.price_gbp)}</b><br>` + plats.map((k) => { const v = q.platforms[k];
+        return `${sw(pc(k))}${PLAT[k] || k}: you get <b>${gbp(v.net_payout_gbp)}</b> · ${days(v.expected_days)} ${dim(`(${dshort(v.expected_days_low)}–${dshort(v.expected_days_high)})`)}`; }).join("<br>"), e.clientX, e.clientY);
+    });
+    hit.addEventListener("mouseleave", () => { cross.setAttribute("visibility", "hidden"); hideTip(); });
+  }
+
+  // 3. survivorship: sold vs still-listed price distribution
+  function drawBias(el, R) {
+    const ls = (R.comparable_listings || []).filter((x) => !x.is_outlier && !x.related), ms = R.market_summary || {};
+    const sold = ls.filter((x) => x.obs_type !== "active"), act = ls.filter((x) => x.obs_type === "active");
+    need(sold.length && act.length, "Needs both sold and still-listed exact matches.");
+    const [x0, x1] = priceSpan(ls.map((x) => x.price_gbp));
+    const bw = niceStep(x1 - x0, 24), nb = Math.max(1, Math.ceil((x1 - x0) / bw)), cs = Array(nb).fill(0), ca = Array(nb).fill(0);
+    const bin = (p) => Math.max(0, Math.min(nb - 1, Math.floor((p - x0) / bw)));
+    sold.forEach((x) => cs[bin(x.price_gbp)]++); act.forEach((x) => ca[bin(x.price_gbp)]++);
+    const maxc = Math.max(1, ...cs, ...ca);
+    const W = 640, H = 270, L = 24, Rr = 16, T = 34, mid = 140, B = 26, s = svg(el, W, H);
+    const X = lin(x0, x1, L, W - Rr), Yu = lin(0, maxc, mid - 1, T), Yd = lin(0, maxc, mid + 1, H - B - 4 - (T - 10));
+    const bwPx = Math.max(1, X(x0 + bw) - X(x0) - 1.5);
+    function hov(r, i) {
+      r.addEventListener("mousemove", (e) => showTip(`<b>${gbp(x0 + i * bw)}–${gbp(x0 + (i + 1) * bw)}</b><br>${sw(C.sold)}${cs[i]} sold<br>${sw(C.listed)}${ca[i]} still listed`, e.clientX, e.clientY));
+      r.addEventListener("mouseleave", hideTip);
+    }
+    cs.forEach((c, i) => { const r = add(s, "rect", { x: X(x0 + i * bw) + .75, y: Yu(c), width: bwPx, height: mid - 1 - Yu(c), rx: 1.5, fill: C.sold, "fill-opacity": .85 }); hov(r, i); });
+    ca.forEach((c, i) => { const r = add(s, "rect", { x: X(x0 + i * bw) + .75, y: mid + 1, width: bwPx, height: Yd(c) - mid - 1, rx: 1.5, fill: C.listed, "fill-opacity": .7 }); hov(r, i); });
+    add(s, "line", { x1: L, x2: W - Rr, y1: mid, y2: mid, stroke: C.axis });
+    txt(s, L, T - 18, "SOLD  ↑  " + sold.length, { fill: C.sold, size: 9.5, ls: ".08em" });
+    txt(s, L, H - B - 2, "STILL LISTED  ↓  " + act.length, { fill: C.ink2, size: 9.5, ls: ".08em" });
+    priceTicks(s, x0, x1, X, H - 6);
+    if (ms.sold_median_gbp != null && ms.active_median_gbp != null) {
+      const xs = X(ms.sold_median_gbp), xa = X(ms.active_median_gbp), dir = xa >= xs ? 1 : -1;
+      add(s, "line", { x1: xs, x2: xs, y1: T - 8, y2: mid, stroke: C.ink, "stroke-width": 1.5 });
+      add(s, "line", { x1: xa, x2: xa, y1: mid, y2: H - B - 14, stroke: C.ink, "stroke-width": 1.5, "stroke-dasharray": "3 3" });
+      txt(s, xs + 6 * (dir > 0 ? 1 : -1), T - 2, "sold median " + gbp(ms.sold_median_gbp), { fill: C.ink, size: 10, anchor: dir > 0 ? "start" : "end" });
+      txt(s, xa + 6 * (dir > 0 ? 1 : -1), H - B - 16, "asking median " + gbp(ms.active_median_gbp), { fill: C.ink, size: 10, anchor: dir > 0 ? "start" : "end" });
+      if (Math.abs(xa - xs) > 8) {
+        add(s, "path", { d: `M${xs},${mid - 10}L${xa},${mid - 10}`, stroke: C.ink, "stroke-width": 1 });
+        add(s, "path", { d: `M${xa - 5 * dir},${mid - 13}L${xa},${mid - 10}L${xa - 5 * dir},${mid - 7}`, stroke: C.ink, fill: "none" });
+      }
+      const gap = ms.survivorship_bias_pct;
+      if (gap != null) pill(s, (xs + xa) / 2, mid - 24, (gap >= 0 ? "+" : "−") + Math.abs(Math.round(gap)) + "% gap", C.ink2);
+    }
+  }
+
+  // 4. evidence scatter: price vs time listed
+  function drawScatter(el, R, t) {
+    const ls = (R.comparable_listings || []).filter((x) => !x.is_outlier && x.t_days != null);
+    need(ls.length, "No listings with known times yet.");
+    const W = 640, H = 310, L = 40, Rr = 16, T = 26, B = 26, s = svg(el, W, H);
+    const [x0, x1] = priceSpan(ls.map((x) => x.price_gbp));
+    const dmin = Math.max(0.05, Math.min(...ls.map((x) => x.t_days || 1)) * 0.8), dmax = Math.max(dmin * 4, Math.max(...ls.map((x) => x.t_upper_days || x.t_days)) * 1.2);
+    const X = lin(x0, x1, L, W - Rr), Y = logs(dmin, dmax, H - B, T);
+    [0.1, 0.3, 1, 3, 7, 14, 30, 90, 365].filter((v) => v >= dmin && v <= dmax).forEach((v) => { add(s, "line", { x1: L, x2: W - Rr, y1: Y(v), y2: Y(v), stroke: C.grid }); txt(s, L - 8, Y(v) + 3.5, dshort(v), { anchor: "end" }); });
+    priceTicks(s, x0, x1, X, H - 6);
+    const sorted = ls.slice().sort((a, b) => (a.condition_tier === t) - (b.condition_tier === t)), hits = [];
+    sorted.forEach((x) => {
+      const on = x.condition_tier === t, c = pc(x.platform), op = on ? 0.95 : 0.16, px = X(x.price_gbp);
+      if (x.obs_type === "active") {
+        const py = Y(x.t_days);
+        add(s, "circle", { cx: px, cy: py, r: 3, fill: "none", stroke: c, "stroke-opacity": op, "stroke-width": 1.3 });
+        add(s, "path", { d: `M${px - 2.5},${py - 6}L${px},${py - 9}L${px + 2.5},${py - 6}`, fill: "none", stroke: c, "stroke-opacity": op * .8, "stroke-width": 1.1 });
+        hits.push({ px, py, x, on });
+      } else {
+        const tu = x.t_upper_days ?? x.t_days, py = Y(Math.sqrt(Math.max(x.t_days, dmin) * tu));
+        if (x.t_upper_days != null) add(s, "line", { x1: px, x2: px, y1: Y(x.t_days), y2: Y(tu), stroke: c, "stroke-opacity": op * .45, "stroke-width": 1.4 });
+        add(s, "circle", { cx: px, cy: py, r: 3, fill: c, "fill-opacity": op });
+        hits.push({ px, py, x, on });
+      }
+    });
+    const lg = add(s, "g", {});
+    add(lg, "circle", { cx: W - Rr - 250, cy: 10, r: 3, fill: C.ink2 }); txt(lg, W - Rr - 242, 13.5, "sold (bar = sold window)", { size: 9.5, fill: C.ink2 });
+    add(lg, "circle", { cx: W - Rr - 60, cy: 10, r: 3, fill: "none", stroke: C.ink2 }); txt(lg, W - Rr - 52, 13.5, "still listed", { size: 9.5, fill: C.ink2 });
+    txt(s, L, 13.5, "DAYS LISTED", { fill: C.ink2, size: 9.5, ls: ".08em" });
+    const ring = add(s, "circle", { r: 7, fill: "none", stroke: C.ink, visibility: "hidden" });
+    s.addEventListener("mousemove", (e) => {
+      const p = vbX(s, e, W); let best = null, bd = 144;
+      hits.forEach((h) => { const d = (h.px - p.x) ** 2 + (h.py - p.y) ** 2 - (h.on ? 40 : 0); if (d < bd) { bd = d; best = h; } });
+      if (!best) { ring.setAttribute("visibility", "hidden"); return hideTip(); }
+      ring.setAttribute("cx", best.px); ring.setAttribute("cy", best.py); ring.setAttribute("visibility", "visible");
+      const x = best.x, sold = x.obs_type !== "active";
+      showTip(`<b>${esc(x.title)}</b><br>${sw(pc(x.platform))}${PLAT[x.platform] || x.platform} · ${TIERS[x.condition_tier] || "–"} · <b>${gbp(x.price_gbp)}</b>${x.related ? dim(" · similar version") : ""}<br>` +
+        (sold ? (x.t_upper_days != null ? `Sold between day ${x.t_days.toFixed(1)} and ${x.t_upper_days.toFixed(1)}` : `Sold after ${x.t_days.toFixed(1)} days`) : `Still listed after ${x.t_days.toFixed(1)} days`) +
+        (x.favourite_count ? dim(` · ${x.favourite_count} favourites`) : ""), e.clientX, e.clientY);
+    });
+    s.addEventListener("mouseleave", () => { ring.setAttribute("visibility", "hidden"); hideTip(); });
+  }
+
+  // 5. chance sold over time at key prices
+  function drawSurvival(el, R, t) {
+    const S = R.sale_surface?.[t], g = R.price_curve_grid?.[t], ms = R.market_summary || {};
+    need(S && S.days?.length > 1 && g?.length);
+    const lines = markerList(R.price_markers?.[t]).map((m, i) => ({ ...m, c: [C.sold, C.ink, "#a6e0a0"][i] || C.ink }));
+    if (ms.active_median_gbp != null) lines.push({ k: "Typical asking", v: ms.active_median_gbp, c: C.ink3, dash: "4 4" });
+    need(lines.length);
+    const W = 640, H = 290, L = 40, Rr = 140, T = 16, B = 26, s = svg(el, W, H);
+    const d0 = Math.max(0.1, S.days[0]), d1 = S.days[S.days.length - 1], X = logs(d0, d1, L, W - Rr), Y = lin(0, 1, H - B, T);
+    [0, .25, .5, .75, 1].forEach((v) => { add(s, "line", { x1: L, x2: W - Rr, y1: Y(v), y2: Y(v), stroke: C.grid }); txt(s, L - 8, Y(v) + 3.5, Math.round(v * 100) + "%", { anchor: "end" }); });
+    add(s, "line", { x1: L, x2: W - Rr, y1: Y(.5), y2: Y(.5), stroke: C.ink2, "stroke-dasharray": "2 4" });
+    txt(s, L + 4, Y(.5) - 5, "half sold", { size: 9.5, fill: C.ink2 });
+    S.days.forEach((d) => txt(s, X(d), H - 6, d + "d", { anchor: "middle" }));
+    const ends = [];
+    lines.forEach((ln) => {
+      ln.i = nearestIdx(g, ln.v);
+      const pts = S.days.map((d, j) => [X(d), Y(S.prob[ln.i][j])]);
+      add(s, "path", { d: path(pts), fill: "none", stroke: ln.c, "stroke-width": 2, "stroke-dasharray": ln.dash || "none" });
+      pts.forEach((p) => add(s, "circle", { cx: p[0], cy: p[1], r: 2, fill: ln.c }));
+      ends.push({ y: pts[pts.length - 1][1], label: `${ln.k} ${gbp(ln.v)}`, color: ln.c });
+    });
+    endLabels(s, ends, W - Rr + 10, 14);
+    const cross = add(s, "line", { y1: T, y2: H - B, stroke: C.ink2, visibility: "hidden" });
+    const hit = add(s, "rect", { x: L, y: T, width: W - L - Rr, height: H - T - B, fill: "transparent" });
+    hit.addEventListener("mousemove", (e) => {
+      const p = vbX(s, e, W); let j = 0; S.days.forEach((d, k) => { if (Math.abs(X(d) - p.x) < Math.abs(X(S.days[j]) - p.x)) j = k; });
+      cross.setAttribute("x1", X(S.days[j])); cross.setAttribute("x2", X(S.days[j])); cross.setAttribute("visibility", "visible");
+      showTip(`<b>Sold within ${S.days[j]} day${S.days[j] > 1 ? "s" : ""}</b><br>` + lines.map((ln) => `${sw(ln.c)}${ln.k} ${gbp(ln.v)}: <b>${pct(S.prob[ln.i][j])}</b>`).join("<br>"), e.clientX, e.clientY);
+    });
+    hit.addEventListener("mouseleave", () => { cross.setAttribute("visibility", "hidden"); hideTip(); });
+  }
+
+  // 6. price by condition
+  function drawCondition(el, R, t) {
+    const b = R.market_summary?.condition_buckets || {}, pm = R.price_markers || {};
+    const order = TIER_ORDER.filter((k) => b[k] && b[k].p25 != null && b[k].p75 != null && b[k].median != null);
+    need(order.length, "No dated sales per condition yet.");
+    const W = 640, rowH = 46, T = 24, B = 26, L = 92, Rr = 24, H = T + order.length * rowH + B, s = svg(el, W, H);
+    let lo = Math.min(...order.map((k) => b[k].p25)) * 0.7, hi = Math.max(...order.map((k) => Math.max(b[k].p75, pm[k]?.best_value_gbp || 0))) * 1.12;
+    if (hi <= lo) hi = lo + 5;
+    const X = lin(lo, hi, L, W - Rr);
+    const st = niceStep(hi - lo, 6); for (let v = Math.ceil(lo / st) * st; v <= hi; v += st) add(s, "line", { x1: X(v), x2: X(v), y1: T - 6, y2: H - B, stroke: C.grid });
+    priceTicks(s, lo, hi, X, H - 6);
+    order.forEach((k, r) => {
+      const q = b[k], on = k === t, cy = T + r * rowH + rowH / 2;
+      if (on) add(s, "rect", { x: 0, y: cy - rowH / 2 + 3, width: W, height: rowH - 6, rx: 8, fill: "rgba(255,255,255,0.035)" });
+      txt(s, L - 14, cy - 1, TIERS[k], { anchor: "end", sans: true, size: 12.5, fill: on ? C.ink : C.ink2, weight: on ? 600 : 400 });
+      txt(s, L - 14, cy + 12, (q.n ?? 0) + " sold", { anchor: "end", size: 9.5 });
+      add(s, "line", { x1: X(q.p25), x2: X(q.p75) + (q.p75 === q.p25 ? 0.01 : 0), y1: cy, y2: cy, stroke: on ? C.ink : C.ink3, "stroke-width": 14, "stroke-linecap": "round", "stroke-opacity": on ? .9 : .35 });
+      add(s, "line", { x1: X(q.median), x2: X(q.median), y1: cy - 10, y2: cy + 10, stroke: on ? "#141518" : C.ink, "stroke-width": 2.5 });
+      txt(s, X(q.p25) - 12, cy + 3.5, gbp(q.p25), { anchor: "end", size: 9.5 });
+      txt(s, X(q.p75) + 12, cy + 3.5, gbp(q.p75), { size: 9.5 });
+      const bv = pm[k]?.best_value_gbp;
+      if (bv) { const x = X(bv); add(s, "path", { d: `M${x},${cy - 19}l5,5l-5,5l-5,-5z`, fill: C.sold }); txt(s, x + 8, cy - 10.5, "list " + gbp(bv), { size: 9.5, fill: C.sold }); }
+    });
+    txt(s, L, 12, "BAR = MIDDLE HALF OF SOLD PRICES · TICK = MEDIAN", { size: 9, fill: C.ink3, ls: ".06em" });
+    add(s, "path", { d: `M${W - Rr - 132},${7}l4,4l-4,4l-4,-4z`, fill: C.sold }); txt(s, W - Rr - 122, 15, "suggested list price", { size: 9.5, fill: C.sold });
+  }
+
+  // 7. markdown plan
+  function drawPlan(el, R, t) {
+    const sch = R.markdown_schedule || [];
+    need(sch.length, "No price plan for this item.");
+    const g = R.price_curve_grid?.[t];
+    const W = 640, H = 230, L = 40, Rr = 24, T = 40, B = 30, s = svg(el, W, H);
+    const dEnd = sch[sch.length - 1].day + 5, ps = sch.map((x) => x.list_price_gbp);
+    let y0 = Math.min(...ps) * 0.8, y1 = Math.max(...ps) * 1.1; if (y1 <= y0) y1 = y0 + 5;
+    const X = lin(0, dEnd, L, W - Rr), Y = lin(y0, y1, H - B, T);
+    const st = niceStep(y1 - y0, 4); for (let v = Math.ceil(y0 / st) * st; v <= y1; v += st) { add(s, "line", { x1: L, x2: W - Rr, y1: Y(v), y2: Y(v), stroke: C.grid }); txt(s, L - 8, Y(v) + 3.5, fmtTick(v), { anchor: "end" }); }
+    const dstep = Math.max(1, niceStep(dEnd, 8));
+    for (let d = 0; d <= dEnd; d += dstep) txt(s, X(d), H - 8, "day " + d, { anchor: "middle", size: 9.5 });
+    let d = ""; sch.forEach((x, i) => { d += (i ? `L${X(x.day)},${Y(sch[i - 1].list_price_gbp)}L` : "M") + `${X(x.day)},${Y(x.list_price_gbp)}`; });
+    d += `L${X(dEnd)},${Y(sch[sch.length - 1].list_price_gbp)}`;
+    const col = pc(R.best_platform);
+    add(s, "path", { d: d + `L${X(dEnd)},${H - B}L${X(0)},${H - B}Z`, fill: col, "fill-opacity": .08 });
+    add(s, "path", { d, fill: "none", stroke: col, "stroke-width": 2.4 });
+    sch.forEach((x, i) => {
+      const cx = X(x.day), cy = Y(x.list_price_gbp), p7 = interpGrid(g, x.list_price_gbp, (p) => p.prob_sell_7d);
+      add(s, "circle", { cx, cy, r: 5.5, fill: "#141518", stroke: C.ink, "stroke-width": 2 });
+      const lab = i === 0 ? "List" : i === sch.length - 1 ? "Floor" : "Drop";
+      const right = cx < W - 150;
+      txt(s, cx + (right ? 10 : -10), cy - 14, `${lab} ${gbp(x.list_price_gbp)}`, { fill: C.ink, size: 11, sans: true, weight: 600, anchor: right ? "start" : "end" });
+      if (p7 != null) txt(s, cx + (right ? 10 : -10), cy - 2, `${pct(p7)} sell within 7 days`, { size: 9.5, fill: C.ink2, anchor: right ? "start" : "end" });
+    });
+  }
+
+  // 8. data mix
+  function drawMix(el, R) {
+    const ls = R.comparable_listings || [], plats = [...new Set(ls.map((x) => x.platform))].sort();
+    need(ls.length, "No listings yet.");
+    const W = 640, rowH = 34, T = 8, L = 64, Rr = 16, H = T + plats.length * rowH + 22, s = svg(el, W, H);
+    const counts = plats.map((p) => { const a = ls.filter((x) => x.platform === p);
+      return { p, sold: a.filter((x) => x.obs_type !== "active" && !x.is_outlier).length, act: a.filter((x) => x.obs_type === "active" && !x.is_outlier).length, out: a.filter((x) => x.is_outlier).length }; });
+    const max = Math.max(1, ...counts.map((c) => c.sold + c.act + c.out)), X = lin(0, max, L, W - Rr - 150);
+    counts.forEach((c, r) => {
+      const y = T + r * rowH; txt(s, L - 10, y + 15, PLAT[c.p] || c.p, { anchor: "end", sans: true, size: 12, fill: C.ink });
+      let x = L; [[c.sold, pc(c.p), 1], [c.act, pc(c.p), .3], [c.out, C.ink3, .3]].forEach(([n, col, op]) => {
+        if (!n) return; const w = X(n) - L; add(s, "rect", { x, y: y + 4, width: Math.max(1, w - 2), height: 16, rx: 3, fill: col, "fill-opacity": op }); x += w;
+      });
+      txt(s, x + 8, y + 15.5, `${c.sold} sold · ${c.act} listed` + (c.out ? ` · ${c.out} left out` : ""), { size: 10, fill: C.ink2 });
+    });
+    txt(s, L, H - 4, "SOLID = SOLD · FAINT = STILL LISTED (CENSORED) · GREY = LEFT OUT", { size: 9, fill: C.ink3, ls: ".06em" });
+  }
+
+  function safe(fn, el, R, t) {
+    try { fn(el, R, t); }
+    catch (e) {
+      if (!(e instanceof NoData)) console.error(e);
+      el.innerHTML = `<div class="chart-empty">${esc(e instanceof NoData ? e.message : "This chart couldn't be drawn for this scan.")}</div>`;
+    }
+  }
+  return { drawProb, drawPayout, drawBias, drawScatter, drawSurvival, drawCondition, drawPlan, drawMix, interpGrid, nearestIdx, markerList, safe };
+})();
+
+// =====================================================================================
+// 3D explorer: three.js scene with projected HTML labels and a hand-rolled orbit
+// =====================================================================================
+const Viz3D = (() => {
+  const THREE_URL = "https://unpkg.com/three@0.160.0/build/three.module.js";
+  const RAMP = ["#1b1e3d", "#27467f", "#2f7fa6", "#4fb7a8", "#a6e0a0", "#f2f5c8"];
+  const ORDER = ["fair", "good", "very_good", "mint"];
+  const TIERCOL = { fair: "#2f7fa6", good: "#4fb7a8", very_good: "#a6e0a0", mint: "#f2f5c8" };
+  const W3 = 10, D3 = 7, H3 = 3.2;
+  const LS = {
+    tick: "position:absolute;left:0;top:0;font:10.5px/1 'Geist Mono',monospace;color:#8a8880;white-space:nowrap;pointer-events:none;will-change:transform",
+    axis: "position:absolute;left:0;top:0;font:600 10px/1 Geist,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#bdbbb3;white-space:nowrap;pointer-events:none",
+    tag: "position:absolute;left:0;top:0;font:500 11px/1 Geist,sans-serif;color:#0d0e10;background:#eeece6;border-radius:99px;padding:4px 8px;white-space:nowrap;pointer-events:none",
+    lane: "position:absolute;left:0;top:0;font:500 12px/1.2 Geist,sans-serif;color:#d8d6cf;white-space:nowrap;pointer-events:none;text-align:right",
+    callout: "position:absolute;left:0;top:0;background:rgba(16,17,20,.9);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:7px 10px;font:12px/1.4 Geist,sans-serif;color:#eeece6;white-space:nowrap;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.35)",
+  };
+  const { markerList } = Charts;
+  function interp(g, price, get) {
+    if (price <= g[0].price_gbp) return get(g[0], 0);
+    for (let i = 0; i < g.length - 1; i++) if (price <= g[i + 1].price_gbp) { const f = (price - g[i].price_gbp) / (g[i + 1].price_gbp - g[i].price_gbp); return get(g[i], i) + (get(g[i + 1], i + 1) - get(g[i], i)) * f; }
+    return get(g[g.length - 1], g.length - 1);
+  }
+  const fracIdx = (g, price) => { if (price <= g[0].price_gbp) return 0; for (let i = 0; i < g.length - 1; i++) if (price <= g[i + 1].price_gbp) return i + (price - g[i].price_gbp) / (g[i + 1].price_gbp - g[i].price_gbp); return g.length - 1; };
+  function niceStep(range, n) { if (!(range > 0)) return 1; const raw = range / n, p = 10 ** Math.floor(Math.log10(raw)), m = raw / p; return (m < 1.5 ? 1 : m < 3 ? 2 : m < 7 ? 5 : 10) * p; }
+
+  async function createViz(host, labelHost, readout, R, o = {}) {
+    const THREE = await import(THREE_URL);
+    const V = (x, y, z) => new THREE.Vector3(x, y, z);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    const dom = renderer.domElement;
+    dom.style.cssText = "display:block;width:100%;height:100%;cursor:grab;touch-action:none";
+    host.appendChild(dom);
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 200);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x1a2233, 1.6));
+    const dl = new THREE.DirectionalLight(0xffffff, 1.3); dl.position.set(-4, 10, 8); scene.add(dl);
+    const st = { mode: o.mode || "surface", tier: o.tier || "good", rotate: o.rotate !== false, view: "iso", annotate: o.annotate !== false };
+    const VIEWS = { iso: { theta: 0.62, phi: 1.0, r: 19 }, top: { theta: 0, phi: 0.05, r: 17.5 }, front: { theta: 0, phi: Math.PI / 2 - 0.04, r: 18 }, side: { theta: Math.PI / 2, phi: Math.PI / 2 - 0.04, r: 16 } };
+    const cur = { ...VIEWS.iso }, goal = { ...VIEWS.iso }, target = V(0, 1.15, 0);
+    let group = null, labels = [], pick = [], onPick = null, defaultReadout = "";
+    const cursor = new THREE.Group();
+    cursor.add(new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffffff })));
+    const drop = new THREE.Line(new THREE.BufferGeometry().setFromPoints([V(0, 0, 0), V(0, -1, 0)]), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: .5 }));
+    cursor.add(drop); cursor.visible = false; scene.add(cursor);
+    const msg = (s) => `<div style="color:#a8a69e">${s}</div>`;
+
+    // --- helpers
+    const mat = (color, opacity = 1) => new THREE.MeshBasicMaterial({ color, transparent: opacity < 1, opacity, depthWrite: opacity >= 1 });
+    function line(pts, color = 0xffffff, opacity = .1) { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color, transparent: true, opacity })); group.add(l); return l; }
+    function tube(pts, r, color, opacity = 1) {
+      if (pts.length < 2) return null;
+      const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), Math.max(8, pts.length * 4), r, 8), mat(color, opacity)); group.add(m); return m;
+    }
+    function label(html, pos, kind = "tick", anchor = "c") {
+      const d = document.createElement("div"); d.innerHTML = html; d.style.cssText = LS[kind];
+      labelHost.appendChild(d); labels.push({ el: d, pos, anchor, kind }); return d;
+    }
+    function clear() {
+      if (group) { group.traverse((x) => { x.geometry && x.geometry.dispose(); x.material && x.material.dispose && x.material.dispose(); }); scene.remove(group); }
+      labels.forEach((l) => l.el.remove()); labels = []; pick = []; onPick = null; cursor.visible = false;
+      group = new THREE.Group(); scene.add(group);
+    }
+    function frame({ xt, yt, zt, titles }) {
+      const x0 = -W3 / 2, x1 = W3 / 2, z0 = -D3 / 2, z1 = D3 / 2;
+      line([V(x0, 0, z0), V(x1, 0, z0), V(x1, 0, z1), V(x0, 0, z1), V(x0, 0, z0)], 0xffffff, .22);
+      xt.forEach((t) => { line([V(t.x, 0, z0), V(t.x, 0, z1)], 0xffffff, .05); line([V(t.x, 0, z0), V(t.x, H3, z0)], 0xffffff, .04); label(t.label, V(t.x, 0, z1 + 0.5)); });
+      zt.forEach((t) => { line([V(x0, 0, t.z), V(x1, 0, t.z)], 0xffffff, .05); label(t.label, V(x1 + 0.55, 0, t.z), t.kind || "tick"); });
+      yt.forEach((t) => { line([V(x0, t.y, z0), V(x1, t.y, z0)], 0xffffff, .07); line([V(x0, t.y, z0), V(x0, t.y, z1)], 0xffffff, .05); label(t.label, V(x0 - 0.45, t.y, z0)); });
+      line([V(x0, 0, z0), V(x0, H3, z0)], 0xffffff, .22);
+      if (st.annotate) {
+        label(titles[0] + " →", V(0, 0, z1 + 1.15), "axis");
+        label(titles[1] + " →", V(x1 + 1.5, 0, 0.2), "axis");
+        label("↑ " + titles[2], V(x0 - 0.2, H3 + 0.45, z0), "axis");
+      }
+    }
+    const fmtP = (v) => "£" + (Math.abs(v - Math.round(v)) < 1e-6 ? Math.round(v) : v.toFixed(1));
+    const priceTicks = (p0, p1, X) => { const s = niceStep(p1 - p0, 6), out = []; for (let v = Math.ceil(p0 / s) * s; v <= p1 + 1e-9; v += s) out.push({ x: X(v), label: fmtP(v) }); return out; };
+    const rampC = (t) => { t = Math.max(0, Math.min(1, t)); const n = RAMP.length - 1, i = Math.min(n - 1, Math.floor(t * n)); return new THREE.Color(RAMP[i]).lerp(new THREE.Color(RAMP[i + 1]), t * n - i); };
+
+    // --- mode: price × days × chance sold
+    function buildSurface() {
+      const g = R.price_curve_grid?.[st.tier], S = R.sale_surface?.[st.tier], m = R.price_markers?.[st.tier];
+      if (!g || g.length < 2 || !S || !S.days || S.days.length < 2) { defaultReadout = msg("No sale surface for this condition yet."); return; }
+      const ni = g.length, nj = S.days.length, p0 = g[0].price_gbp, p1 = g[ni - 1].price_gbp;
+      const Xi = (i) => -W3 / 2 + W3 * i / (ni - 1), Xp = (p) => -W3 / 2 + W3 * (p - p0) / ((p1 - p0) || 1), Zj = (j) => D3 / 2 - D3 * j / (nj - 1), Y = (p) => p * H3;
+      const pos = new Float32Array(ni * nj * 3), col = new Float32Array(ni * nj * 3), idx = [];
+      for (let i = 0; i < ni; i++) for (let j = 0; j < nj; j++) { const k = i * nj + j, v = S.prob[i][j], c = rampC(v); pos.set([Xi(i), Y(v), Zj(j)], k * 3); col.set([c.r, c.g, c.b], k * 3); }
+      for (let i = 0; i < ni - 1; i++) for (let j = 0; j < nj - 1; j++) { const a = i * nj + j, b = (i + 1) * nj + j, c = b + 1, d = a + 1; idx.push(a, b, d, b, c, d); }
+      const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(pos, 3)); geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+      geo.setIndex(idx); geo.computeVertexNormals();
+      const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, transparent: true, opacity: .96 }));
+      group.add(mesh); pick = [mesh];
+      for (let j = 0; j < nj; j++) line(g.map((_, i) => V(Xi(i), Y(S.prob[i][j]) + 0.012, Zj(j))), 0x0d0e10, .35);
+      for (let i = 0; i < ni; i += 3) line(S.days.map((_, j) => V(Xi(i), Y(S.prob[i][j]) + 0.012, Zj(j))), 0x0d0e10, .28);
+      let j7 = S.days.indexOf(7); if (j7 < 0) j7 = S.days.reduce((b, d, k) => Math.abs(d - 7) < Math.abs(S.days[b] - 7) ? k : b, 0);
+      if (st.annotate) {
+        [0.5, 0.8, 0.95].forEach((Lv) => {
+          const pts = [];
+          for (let j = 0; j < nj; j++) for (let i = 0; i < ni - 1; i++) { const a = S.prob[i][j], b = S.prob[i + 1][j]; if (a >= Lv && b < Lv) { pts.push(V(Xi(i + (a - Lv) / (a - b)), Y(Lv) + 0.03, Zj(j))); break; } }
+          if (pts.length >= 2) { tube(pts, 0.022, 0xffffff, .85); label(`${Math.round(Lv * 100)}% sold`, pts[pts.length - 1].clone().add(V(0, 0.28, -0.2)), "tag"); }
+        });
+        tube(g.map((_, i) => V(Xi(i), Y(S.prob[i][j7]) + 0.03, Zj(j7))), 0.03, 0x0d0e10, .9);
+        label(`${S.days[j7]}-day line`, V(Xi(ni - 1) + 0.2, Y(S.prob[ni - 1][j7]) + 0.35, Zj(j7)), "tag");
+        let k = 0;
+        markerList(m).forEach((mk) => {
+          if (mk.v < p0 || mk.v > p1) return;
+          const x = Xp(mk.v), fi = fracIdx(g, mk.v), i0 = Math.floor(fi), f = fi - i0, i1 = Math.min(ni - 1, i0 + 1);
+          const p7 = S.prob[i0][j7] + (S.prob[i1][j7] - S.prob[i0][j7]) * f, y = Y(p7), z = Zj(j7), top = H3 + 0.5 + k * 0.75; k++;
+          line([V(x, 0, z), V(x, top, z)], 0xffffff, .65);
+          const s = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 12), mat(0xffffff)); s.position.set(x, y, z); group.add(s);
+          label(`<b style="font-weight:600">${mk.k}</b> · ${gbp(mk.v)}<br><span style="color:#a8a69e">${pct(p7)} sold within ${S.days[j7]} days</span>`, V(x, top, z), "callout", "b");
+        });
+      }
+      frame({ xt: priceTicks(p0, p1, Xp), zt: [1, 3, 7, 14, 30, 60, 90].map((d) => S.days.indexOf(d)).filter((j) => j >= 0).map((j) => ({ z: Zj(j), label: S.days[j] + "d" })),
+        yt: [0, .25, .5, .75, 1].map((v) => ({ y: Y(v), label: Math.round(v * 100) + "%" })), titles: ["List price", "Days on sale", "Chance sold"] });
+      defaultReadout = msg("Hover the surface. Each point is the chance an item listed at that price has sold by that day.");
+      onPick = (hit) => {
+        const i = Math.max(0, Math.min(ni - 1, Math.round((hit.point.x + W3 / 2) / W3 * (ni - 1)))), j = Math.max(0, Math.min(nj - 1, Math.round((D3 / 2 - hit.point.z) / D3 * (nj - 1))));
+        const v = S.prob[i][j]; place(V(Xi(i), Y(v), Zj(j)));
+        return `<div style="font:600 22px/1.1 Geist;letter-spacing:-.02em">${pct(v)}</div><div style="margin-top:4px">chance sold within <b>${S.days[j]} day${S.days[j] > 1 ? "s" : ""}</b></div><div style="color:#a8a69e">if listed at <b style="color:#eeece6">${gbp(g[i].price_gbp)}</b> · ${TIERS[st.tier]}</div>`;
+      };
+    }
+
+    // --- mode: every comparable listing
+    function buildCloud() {
+      const ls = (R.comparable_listings || []).filter((x) => !x.is_outlier && x.t_days != null), ms = R.market_summary || {};
+      if (!ls.length) { defaultReadout = msg("No listings with known times to plot yet."); return; }
+      const ps = ls.map((x) => x.price_gbp), p0 = Math.floor(Math.min(...ps) / 5) * 5; let p1 = Math.ceil(Math.max(...ps) / 5) * 5; if (p1 <= p0) p1 = p0 + 5;
+      const dv = (x) => x.obs_type === "active" ? x.t_days : Math.sqrt(Math.max(x.t_days, 0.05) * (x.t_upper_days ?? x.t_days));
+      const dmin = Math.max(0.05, Math.min(...ls.map(dv)) * 0.8), dmax = Math.max(dmin * 4, Math.max(...ls.map(dv)) * 1.15), la = Math.log(dmin), lb = Math.log(dmax);
+      const Xp = (p) => -W3 / 2 + W3 * (p - p0) / (p1 - p0), Y = (d) => (Math.log(Math.max(d, dmin)) - la) / (lb - la) * H3, Zl = (k) => D3 / 2 - D3 * (k + 0.5) / ORDER.length;
+      const jit = (s) => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) | 0; return ((h >>> 0) % 1000) / 1000 - 0.5; };
+      const sold = ls.filter((x) => x.obs_type !== "active"), act = ls.filter((x) => x.obs_type === "active");
+      const mk = (arr, geo, material) => {
+        if (!arr.length) return null;
+        const im = new THREE.InstancedMesh(geo, material, arr.length), M = new THREE.Matrix4(), c = new THREE.Color();
+        arr.forEach((x, n) => {
+          const k = Math.max(0, ORDER.indexOf(x.condition_tier)), on = x.condition_tier === st.tier;
+          M.makeTranslation(Xp(x.price_gbp), Y(dv(x)), Zl(k) + jit(x.listing_id) * (D3 / ORDER.length) * 0.7); im.setMatrixAt(n, M);
+          c.set(PCOL[x.platform] || "#eeece6"); if (!on) c.lerp(new THREE.Color("#2a2c31"), 0.55); im.setColorAt(n, c);
+        });
+        im.userData.rows = arr; group.add(im); pick.push(im); return im;
+      };
+      mk(sold, new THREE.SphereGeometry(0.075, 12, 8), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+      mk(act, new THREE.IcosahedronGeometry(0.09, 0), new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true }));
+      ORDER.forEach((t, k) => {
+        if (t === st.tier) { const pl = new THREE.Mesh(new THREE.PlaneGeometry(W3, D3 / ORDER.length), mat(0xffffff, .035)); pl.rotation.x = -Math.PI / 2; pl.position.set(0, 0.002, Zl(k)); group.add(pl); }
+        const n = (ms.condition_buckets?.[t] || {}).n;
+        label(`${TIERS[t]}${n ? `<br><span style="font:10px 'Geist Mono';color:#8a8880">${n} sold</span>` : ""}`, V(W3 / 2 + 0.6, 0, Zl(k)), "lane", "l");
+      });
+      const plane = (price, color, op) => { const x = Xp(price), p = new THREE.Mesh(new THREE.PlaneGeometry(D3, H3), mat(color, op)); p.material.side = THREE.DoubleSide; p.rotation.y = Math.PI / 2; p.position.set(x, H3 / 2, 0); group.add(p);
+        line([V(x, 0, -D3 / 2), V(x, H3, -D3 / 2), V(x, H3, D3 / 2), V(x, 0, D3 / 2)], color, .6); return x; };
+      const inRange = (v) => v != null && v >= p0 && v <= p1;
+      if (st.annotate) {
+        if (inRange(ms.sold_median_gbp)) {
+          const xs = plane(ms.sold_median_gbp, 0x4fb7a8, .1);
+          line([V(xs, H3 + 0.5, -D3 / 2), V(xs, H3, -D3 / 2)], 0x4fb7a8, .8);
+          label(`<b style="font-weight:600;color:#4fb7a8">Sold median</b> · ${gbp(ms.sold_median_gbp)}<br><span style="color:#a8a69e">what buyers actually paid</span>`, V(xs, H3 + 0.5, -D3 / 2), "callout", "b");
+        }
+        if (inRange(ms.active_median_gbp)) {
+          const xa = plane(ms.active_median_gbp, 0xeeece6, .06), gap = ms.survivorship_bias_pct;
+          line([V(xa, H3 + 1.25, -D3 / 2), V(xa, H3, -D3 / 2)], 0xeeece6, .8);
+          const sub = gap == null ? "what unsold sellers are asking" : gap >= 0 ? `unsold ask ${Math.round(gap)}% more: survivorship bias` : `unsold ask ${Math.round(-gap)}% less than recent sales`;
+          label(`<b style="font-weight:600">Asking median</b> · ${gbp(ms.active_median_gbp)}<br><span style="color:#a8a69e">${sub}</span>`, V(xa, H3 + 1.25, -D3 / 2), "callout", "b");
+        }
+      }
+      frame({ xt: priceTicks(p0, p1, Xp), zt: [], yt: [0.1, 0.3, 1, 3, 7, 14, 30, 90, 365].filter((d) => d >= dmin && d <= dmax).map((d) => ({ y: Y(d), label: d + "d" })), titles: ["List price", "Condition", "Days listed (log)"] });
+      defaultReadout = msg("Hover a point to see the listing. Solid = sold, wireframe = still listed (at least this long).");
+      onPick = (hit) => {
+        const x = hit.object.userData.rows?.[hit.instanceId]; if (!x) return null;
+        const M = new THREE.Matrix4(); hit.object.getMatrixAt(hit.instanceId, M); place(V().setFromMatrixPosition(M));
+        const sold = x.obs_type !== "active";
+        return `<div style="font-weight:600;white-space:normal">${esc(x.title)}</div><div style="margin-top:4px"><span style="color:${PCOL[x.platform] || "#eeece6"}">${PLAT[x.platform] || x.platform}</span> · ${TIERS[x.condition_tier] || "–"} · <b>${gbp(x.price_gbp)}</b></div><div style="color:#a8a69e">${sold ? (x.t_upper_days != null ? `Sold between day ${x.t_days.toFixed(1)} and ${x.t_upper_days.toFixed(1)}` : `Sold after ${x.t_days.toFixed(1)} days`) : `Still listed after ${x.t_days.toFixed(1)} days`}${x.favourite_count ? ` · ${x.favourite_count} favourites` : ""}${x.related ? " · similar version" : ""}</div>`;
+      };
+    }
+
+    // --- mode: 7-day curve for each condition
+    function buildRibbons() {
+      const tiers = ORDER.filter((t) => R.price_curve_grid?.[t]?.length > 1);
+      if (!tiers.length) { defaultReadout = msg("No price curves yet."); return; }
+      const all = tiers.flatMap((t) => R.price_curve_grid[t].map((p) => p.price_gbp)), p0 = Math.min(...all), p1 = Math.max(...all);
+      const Xp = (p) => -W3 / 2 + W3 * (p - p0) / ((p1 - p0) || 1), Y = (v) => v * H3, Zl = (k) => D3 / 2 - D3 * (k + 0.5) / tiers.length;
+      tiers.forEach((t, k) => {
+        const g = R.price_curve_grid[t], z = Zl(k), on = t === st.tier, c = new THREE.Color(TIERCOL[t]);
+        const pos = []; g.forEach((p) => { pos.push(Xp(p.price_gbp), Y(p.prob_sell_7d), z, Xp(p.price_gbp), 0, z); });
+        const idx = []; for (let i = 0; i < g.length - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+        const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); geo.setIndex(idx);
+        const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: on ? .42 : .14, side: THREE.DoubleSide, depthWrite: false }));
+        m.userData.tier = t; group.add(m); pick.push(m);
+        tube(g.map((p) => V(Xp(p.price_gbp), Y(p.prob_sell_7d), z)), on ? 0.035 : 0.018, c, on ? 1 : .6);
+        line(g.map((p) => V(Xp(p.price_gbp), Y(p.prob_sell_30d), z)), c, on ? .6 : .25);
+        label(TIERS[t], V(-W3 / 2 - 0.35, 0, z), "lane", "r");
+        const bv = R.price_markers?.[t]?.best_value_gbp;
+        if (bv != null && st.annotate) {
+          const y = Y(interp(g, bv, (p) => p.prob_sell_7d)), x = Xp(bv);
+          const s = new THREE.Mesh(new THREE.SphereGeometry(on ? 0.11 : 0.07, 16, 12), mat(0xffffff)); s.position.set(x, y, z); group.add(s);
+          if (on) { line([V(x, y, z), V(x, H3 + 0.6, z)], 0xffffff, .6); label(`<b style="font-weight:600">${TIERS[t]}</b> · list ${gbp(bv)}<br><span style="color:#a8a69e">${pct(interp(g, bv, (p) => p.prob_sell_7d))} sold within 7 days</span>`, V(x, H3 + 0.6, z), "callout", "b"); }
+          else label(gbp(bv), V(x, y + 0.3, z), "tag");
+        }
+      });
+      if (st.annotate && tiers.length > 1) label(`Better condition shifts the curve right →<br><span style="color:#a8a69e">same selling speed at a higher price</span>`, V(W3 / 2 - 1.2, H3 + 0.2, Zl(tiers.length - 1) - 0.4), "callout", "b");
+      frame({ xt: priceTicks(p0, p1, Xp), zt: [], yt: [0, .25, .5, .75, 1].map((v) => ({ y: Y(v), label: Math.round(v * 100) + "%" })), titles: ["List price", "Condition", "Chance sold in 7 days"] });
+      defaultReadout = msg("Hover a ribbon. Filled = chance sold within 7 days; thin line above = within 30 days.");
+      onPick = (hit) => {
+        const t = hit.object.userData.tier; if (!t) return null;
+        const g = R.price_curve_grid[t], price = p0 + (hit.point.x + W3 / 2) / W3 * (p1 - p0), i = Math.round(Math.max(0, Math.min(g.length - 1, fracIdx(g, price)))), q = g[i];
+        place(V(Xp(q.price_gbp), Y(q.prob_sell_7d), Zl(tiers.indexOf(t))));
+        return `<div style="font:600 22px/1.1 Geist;letter-spacing:-.02em">${pct(q.prob_sell_7d)}</div><div style="margin-top:4px">chance sold within 7 days</div><div style="color:#a8a69e"><b style="color:#eeece6">${TIERS[t]}</b> at ${gbp(q.price_gbp)} · 30 days ${pct(q.prob_sell_30d)} · ${days(q.expected_days_to_sell)} on average</div>`;
+      };
+    }
+
+    function place(p) { cursor.visible = true; cursor.position.copy(p); drop.geometry.setFromPoints([V(0, 0, 0), V(0, -p.y, 0)]); }
+    function build() {
+      clear();
+      ({ surface: buildSurface, cloud: buildCloud, ribbons: buildRibbons }[st.mode] || buildSurface)();
+      readout.innerHTML = defaultReadout;
+      positionLabels();
+    }
+
+    // --- orbit + picking
+    let drag = null, hovering = false, w = 1, h = 1;
+    const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+    dom.addEventListener("pointerdown", (e) => { drag = { x: e.clientX, y: e.clientY }; dom.setPointerCapture(e.pointerId); dom.style.cursor = "grabbing"; });
+    dom.addEventListener("pointerup", () => { drag = null; dom.style.cursor = "grab"; });
+    dom.addEventListener("pointermove", (e) => {
+      if (drag) {
+        const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag = { x: e.clientX, y: e.clientY };
+        goal.theta -= dx * 0.008; goal.phi = Math.max(0.05, Math.min(Math.PI / 2 - 0.02, goal.phi - dy * 0.008)); cur.theta = goal.theta; cur.phi = goal.phi; st.view = "custom"; o.onView?.("custom"); return;
+      }
+      const r = dom.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
+      ray.setFromCamera(ndc, camera); const hit = ray.intersectObjects(pick, false)[0];
+      const html = hit && onPick ? onPick(hit) : null;
+      hovering = !!html; if (!html) cursor.visible = false;
+      readout.innerHTML = html || defaultReadout;
+    });
+    dom.addEventListener("pointerleave", () => { hovering = false; cursor.visible = false; readout.innerHTML = defaultReadout; });
+    dom.addEventListener("wheel", (e) => { e.preventDefault(); goal.r = Math.max(9, Math.min(34, goal.r * (1 + e.deltaY * 0.001))); }, { passive: false });
+
+    const v = new THREE.Vector3();
+    function positionLabels() {
+      labels.forEach((l) => {
+        v.copy(l.pos).project(camera);
+        if (v.z > 1) { l.el.style.display = "none"; return; }
+        l.el.style.display = "";
+        const x = (v.x + 1) / 2 * w, y = (1 - v.y) / 2 * h;
+        const tr = l.anchor === "b" ? "translate(-50%,calc(-100% - 6px))" : l.anchor === "l" ? "translate(0,-50%)" : l.anchor === "r" ? "translate(-100%,-50%)" : "translate(-50%,-50%)";
+        l.el.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) ${tr}`;
+      });
+    }
+    function resize() { w = host.clientWidth || 1; h = host.clientHeight || 1; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+    const ro = new ResizeObserver(resize); ro.observe(host); resize();
+    // only animate while the stage is on screen
+    let visible = true;
+    const io = new IntersectionObserver((es) => { visible = es[0].isIntersecting; }); io.observe(host);
+    let alive = true;
+    (function loop() {
+      if (!alive) return;
+      if (visible && !document.hidden) {
+        if (st.rotate && !drag && !hovering && (st.view === "iso" || st.view === "custom")) goal.theta += 0.0018;
+        cur.theta += (goal.theta - cur.theta) * 0.12; cur.phi += (goal.phi - cur.phi) * 0.12; cur.r += (goal.r - cur.r) * 0.12;
+        camera.position.set(target.x + cur.r * Math.sin(cur.phi) * Math.sin(cur.theta), target.y + cur.r * Math.cos(cur.phi), target.z + cur.r * Math.sin(cur.phi) * Math.cos(cur.theta));
+        camera.lookAt(target); renderer.render(scene, camera); positionLabels();
+      }
+      requestAnimationFrame(loop);
+    })();
+    build();
+
+    return {
+      setMode(m) { st.mode = m; build(); },
+      setTier(t) { st.tier = t; build(); },
+      setAnnotate(b) { st.annotate = b; build(); },
+      setRotate(b) { st.rotate = b; },
+      setView(name) {
+        const g = VIEWS[name]; if (!g) return; st.view = name;
+        const tw = Math.PI * 2; const d = ((g.theta - cur.theta) % tw + tw * 1.5) % tw - tw / 2;
+        goal.theta = cur.theta + d; goal.phi = g.phi; goal.r = g.r;
+      },
+      dispose() { alive = false; ro.disconnect(); io.disconnect(); clear(); renderer.dispose(); renderer.forceContextLoss?.(); dom.remove(); labelHost.innerHTML = ""; },
+    };
+  }
+  return { createViz };
+})();
+
+// =====================================================================================
+// step 3: results
+// =====================================================================================
+let R = null, viz = null, vizToken = 0;
+const ui = { tier: "good", mode: "surface", view: "iso", rotate: true, evPlat: "all", evStatus: "all", evSort: "price" };
+const segHtml = (opts, cur) => opts.map(([v, label, title]) => `<button data-v="${v}"${title ? ` title="${esc(title)}"` : ""} class="${v === cur ? "on" : ""}">${esc(label)}</button>`).join("");
+function bindSeg(el, fn) { el.onclick = (e) => { const b = e.target.closest("button[data-v]"); if (b) fn(b.dataset.v); }; }
+
+const MODES = [["surface", "Sale surface", "List price × days on sale × chance it's sold"], ["cloud", "Listings cloud", "Every comparable listing, sold and unsold"],
+               ["ribbons", "Condition ribbons", "How condition shifts the selling curve"]];
+const MODE_NOTES = {
+  surface: [["#f2f5c8", "transparent", "Height and colour: the chance it's sold. Bright and high means it almost certainly sold by then."],
+    ["transparent", "#eeece6", "White contour lines mark 50%, 80% and 95% sold. Follow one to see the price/time trade-off."],
+    ["#0d0e10", "#a8a69e", "The dark line is the 7-day slice: the same curve as the chart below."],
+    ["#eeece6", "transparent", "Posts mark the three suggested prices. Try the Top and Front views."]],
+  cloud: [["#4f8fe8", "transparent", "Each dot is a real listing. Colour is the site, lane is the condition."],
+    ["transparent", "#a8a69e", "Solid = sold (placed mid-window). Wireframe = still listed, so it has waited at least that long."],
+    ["rgba(79,183,168,0.4)", "#4fb7a8", "The teal plane is what buyers actually paid; the pale plane is what unsold sellers are asking."],
+    ["rgba(255,255,255,0.08)", "transparent", "The selected condition is lit; the others are dimmed."]],
+  ribbons: [["#4fb7a8", "transparent", "One ribbon per condition: the chance it sells within 7 days at each list price."],
+    ["transparent", "#a8a69e", "The thin line above each ribbon is the 30-day chance."],
+    ["#eeece6", "transparent", "Dots mark each condition's best-value price."]],
+};
+const LEGENDS = {
+  surface: `<span>0%</span><span class="ramp"></span><span>100% sold</span>`,
+  cloud: `<span><i style="width:8px;height:8px;border-radius:50%;background:#4f8fe8"></i>eBay</span><span><i style="width:8px;height:8px;border-radius:50%;background:#ec7a45"></i>Vinted</span>` +
+         `<span><i style="width:8px;height:8px;border-radius:50%;background:#a8a69e"></i>sold</span><span><i style="width:8px;height:8px;border-radius:2px;border:1px solid #a8a69e;transform:rotate(45deg)"></i>still listed</span>`,
+  ribbons: `<span><i style="width:14px;height:3px;border-radius:2px;background:#eeece6"></i>7 days</span><span><i style="width:14px;height:1px;background:#a8a69e"></i>30 days</span>` +
+           `<span><i style="width:8px;height:8px;border-radius:50%;background:#eeece6"></i>best value</span>`,
+};
+const VIEWS = [["iso", "3D", "Angled view"], ["top", "Top", "From above: reads like a heatmap"], ["front", "Front", "Price against chance: the selling curves"], ["side", "Side", "Days against chance: how fast it sells"]];
+
+function drawExplorerControls() {
+  $("modes").innerHTML = MODES.map(([k, t, d]) => `<button data-v="${k}" class="${k === ui.mode ? "on" : ""}"><b>${t}</b><span>${d}</span></button>`).join("");
+  $("modeNotes").innerHTML = MODE_NOTES[ui.mode].map(([sw, bd, t]) => `<div><i style="background:${sw};border-color:${bd}"></i><span style="text-wrap:pretty">${t}</span></div>`).join("");
+  $("legend3d").innerHTML = LEGENDS[ui.mode];
+  $("views").innerHTML = segHtml(VIEWS, ui.view);
+  $("rotateBtn").textContent = ui.rotate ? "Auto-spin on" : "Auto-spin off";
+  $("rotateBtn").classList.toggle("off", !ui.rotate);
+}
+bindSeg($("modes"), (v) => { ui.mode = v; drawExplorerControls(); viz?.setMode(v); });
+bindSeg($("views"), (v) => { ui.view = v; viz?.setView(v); drawExplorerControls(); });
+$("rotateBtn").onclick = () => { ui.rotate = !ui.rotate; viz?.setRotate(ui.rotate); drawExplorerControls(); };
+bindSeg($("tierTabs"), (v) => { if (v === ui.tier) return; ui.tier = v; drawTier(); viz?.setTier(v); });
+
+async function start3D() {
+  const token = ++vizToken;
+  if (viz) { viz.dispose(); viz = null; }
+  $("loading3d").textContent = "Building the 3D view…"; $("loading3d").classList.remove("hidden");
+  try {
+    const v = await Viz3D.createViz($("canvas3d"), $("labels3d"), $("readout"), R,
+      { tier: ui.tier, mode: ui.mode, rotate: ui.rotate, annotate: true, onView: (name) => { if (ui.view !== name) { ui.view = name; drawExplorerControls(); } } });
+    if (token !== vizToken) return v.dispose();  // a newer scan arrived meanwhile
+    viz = v; viz.setView(ui.view);
+    $("loading3d").classList.add("hidden");
+  } catch (e) {
+    console.error("3D failed", e);
+    if (token === vizToken) $("loading3d").textContent = "The 3D view isn't available in this browser. The charts below show the same numbers.";
+  }
+}
+
 function render(r) {
   R = r;
+  ui.tier = r.item_metadata?.condition_tier || $("tier").value || "good";
+  ui.evPlat = "all"; ui.evStatus = "all"; ui.evSort = "price";
   $("results").classList.remove("hidden");
-  $("warnings").innerHTML = (r.warnings || []).map((w) => `<div class="warn">${esc(w)}</div>`).join("");
-  const best = r.best_platform, rec = r.platform_recommendations || {};
-  const b = rec[best];
-  $("headline").textContent = b ? `List on ${PLAT[best]} at ${gbp(b.recommended_list_gbp)}` : "Results";
+  drawWarnings([...identifyWarnings, ...(r.warnings || [])]);
   const ms = r.market_summary || {};
+  if (ms.data_source) { $("dataPill").textContent = "DATA: " + String(ms.data_source).toUpperCase(); $("dataPill").classList.remove("hidden"); }
+  $("fetchedAt").textContent = ms.fetched_at ? "fetched " + String(ms.fetched_at).replace("T", " ").slice(0, 16) + " UTC" : "";
+  drawItem();
+  drawHeadline();
+  drawPlatforms();
+  drawSchedule();
+  buildChartCards();
+  drawExplorerControls();
+  drawTier();
+  drawEvidence();
+  $("results").scrollIntoView({ behavior: "smooth", block: "start" });
+  start3D();
+}
+
+function drawItem() {
+  const im = R.item_metadata || {};
+  let src = identifiedFromPhoto && photos.length ? URL.createObjectURL(photos[0]) : R.cleaned_image_url;
+  if (src && src.startsWith("/")) src = API + src;  // server-relative path
+  $("itemPhoto").innerHTML = "";
+  $("itemPhoto").classList.toggle("hidden", !src);
+  if (src) {
+    const img = new Image(); img.alt = "";
+    img.onerror = () => $("itemPhoto").classList.add("hidden");
+    img.src = src; $("itemPhoto").appendChild(img);
+  }
+  $("itemBrand").textContent = [im.brand, im.category].filter(Boolean).join(" · ");
+  $("itemName").textContent = im.title || "";
+  $("itemSize").textContent = im.size_or_storage || "–";
+  const score = im.condition_score;
+  $("itemCond").innerHTML = `${esc(TIERS[im.condition_tier] || "–")}` + (score != null ? ` <span class="mono" style="color:var(--ink-2)">${esc(Number(score).toFixed(1).replace(/\.0$/, ""))}/10</span>` : "");
+  $("itemMeter").style.width = (score != null ? Math.max(0, Math.min(10, score)) * 10 : 0) + "%";
+  $("itemMeter").parentElement.classList.toggle("hidden", score == null);
+  const fl = im.detected_flaws || [];
+  $("itemFlaws").innerHTML = fl.map((f) => `<span class="tag">${esc(f)}</span>`).join("");
+  $("flawBox").classList.toggle("hidden", !fl.length);
+}
+
+function drawHeadline() {
+  const ms = R.market_summary || {}, rec = R.platform_recommendations || {}, bp = R.best_platform, b = rec[bp];
+  const myTier = R.item_metadata?.condition_tier;
+  $("recLabel").textContent = "Recommendation" + (myTier ? " · " + TIERS[myTier] + " condition" : "");
+  $("headline").innerHTML = b ? `List on <span style="color:${PCOL[bp] || "var(--ink)"}">${esc(PLAT[bp] || bp)}</span> at ${gbp(b.recommended_list_gbp)}` : "Not enough data for a recommendation";
   const gap = ms.survivorship_bias_pct;
   $("summary").textContent = `Based on ${ms.sample_size_sold ?? 0} sold and ${ms.sample_size_active ?? 0} unsold listings of this exact item` +
     (gap >= 5 ? `. Unsold listings are priced about ${Math.round(gap)}% higher than what actually sells, so asking prices alone would mislead you.`
      : gap <= -5 ? `. Listings still up are priced about ${Math.round(-gap)}% below recent sales: there's competition at lower prices.` : ".");
-  $("platforms").innerHTML = Object.entries(rec).map(([p, x]) => `
-    <div class="plat ${p === best ? "best" : ""}">
-      <h3><span>${PLAT[p] || p}${p === best ? " · best" : ""}</span><span class="badge" title="${x.n_sales} sales seen">${esc(x.confidence)} confidence</span></h3>
-      <div class="big">${gbp(x.net_payout_gbp)} <span class="muted" style="font-weight:400">in your pocket</span></div>
-      <div class="kv" style="margin-top:6px">
-        <span>List at</span><span>${gbp(x.recommended_list_gbp)}</span>
-        <span>Likely sale price</span><span>${gbp(x.expected_sale_price_gbp)}</span>
-        <span>Half sell within</span><span>${days(x.median_days ?? x.expected_days)}</span>
-        <span>Chance sold in 7 days</span><span>${pct(x.prob_sell_7d)}</span>
-        <span>Average wait</span><span title="The average is pulled up by the few that take ages; range is how sure we are of it">${days(x.expected_days)} <span class="muted">(${Math.round(x.expected_days_low)}–${Math.round(x.expected_days_high)})</span></span>
-        <span>Listings / sales seen</span><span>${x.n_listings} / ${x.n_sales}</span>
-      </div>
-      ${(x.notes || []).map((n) => `<p class="muted" style="margin:6px 0 0">${esc(n)}</p>`).join("")}
-    </div>`).join("");
-  $("viewTier").value = r.item_metadata?.condition_tier || "good";
-  drawTier();
-  $("schedule").innerHTML = (r.markdown_schedule || []).map((s) => `<li>${s.day === 0 ? "Day 0" : "Day " + s.day}: ${esc(s.action)}</li>`).join("");
-  drawEvidence(r.comparable_listings || [], ms.sample_size_excluded || 0);
-  $("results").scrollIntoView({ behavior: "smooth", block: "start" });
+  const range = (x) => x.expected_days_low != null && x.expected_days_high != null ? `range ${Math.round(x.expected_days_low)}–${Math.round(x.expected_days_high)} days` : "";
+  $("heroStats").innerHTML = b ? [["In your pocket", gbp(b.net_payout_gbp), b.expected_sale_price_gbp != null ? `sale ~${gbp(b.expected_sale_price_gbp)}` : ""],
+    ["Sold within 7 days", pct(b.prob_sell_7d), `${b.n_sales ?? 0} sales seen`],
+    ["Half sell within", days(b.median_days ?? b.expected_days), "median time"], ["Average wait", days(b.expected_days), range(b)]]
+    .map(([k, v, s]) => `<div><span class="k">${k}</span><span class="v">${esc(v)}</span><span class="s">${esc(s)}</span></div>`).join("") : "";
+  $("heroStats").classList.toggle("hidden", !b);
 }
-$("viewTier").onchange = drawTier;
 
+// everything that changes with the condition toggle
 function drawTier() {
-  const t = $("viewTier").value, m = R.price_markers?.[t];
-  $("markers").innerHTML = m ? [["Quick sale", m.fast_sale_gbp], ["Best value", m.best_value_gbp], ["Patient", m.patient_gbp]]
-    .map(([k, v]) => `<div><span class="muted">${k}</span><b>${gbp(v)}</b></div>`).join("")
-    + (m.note ? `<p class="muted" style="flex-basis:100%;margin:0">${esc(m.note)}</p>` : "") : "";
-  drawCurve(R.price_curve_grid?.[t] || [], m);
-  drawHeat(R.sale_surface?.[t], R.price_curve_grid?.[t] || []);
+  const t = ui.tier;
+  $("tierTabs").innerHTML = segHtml(TIER_ORDER.slice().reverse().map((k) => [k, TIERS[k]]), t);
+  $("tierLabel").textContent = TIERS[t];
+  const g = R.price_curve_grid?.[t] || [], m = R.price_markers?.[t] || {};
+  const myTier = R.item_metadata?.condition_tier;
+  $("markersHead").textContent = "Three ways to price it" + (t !== myTier ? ` · if it were ${TIERS[t].toLowerCase()}` : "");
+  const p7 = (v) => Charts.interpGrid(g, v, (p) => p.prob_sell_7d);
+  $("markers").innerHTML = [["Quick sale", m.fast_sale_gbp, "Price for a fast sale"], ["Best value", m.best_value_gbp, "Best balance of price and time"],
+    ["Patient", m.patient_gbp, "Higher price if you can wait"]].map(([k, v, d]) => {
+      const p = v != null ? p7(v) : null;
+      return `<div class="${k === "Best value" ? "best" : ""}"><span class="k">${k}</span><span class="v">${gbp(v)}</span><span class="d">${d}${p != null ? ` · ${pct(p)} in 7 days` : ""}</span></div>`;
+    }).join("");
+  $("markerNote").textContent = m.note || "";
+  drawCharts();
 }
 
-const NS = "http://www.w3.org/2000/svg";
-function svgEl(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent && parent.appendChild(e); return e; }
-function tip(box, html, x, y) {
-  let t = box.querySelector(".tip"); if (!t) { t = document.createElement("div"); t.className = "tip"; box.appendChild(t); }
-  if (html == null) return t.remove();
-  t.innerHTML = html;
-  const w = box.clientWidth, tw = t.offsetWidth;
-  t.style.left = Math.min(Math.max(0, x + 12), w - tw) + "px"; t.style.top = Math.max(0, y - 40) + "px";
+// ---- chart cards
+const CHART_FNS = ["drawProb", "drawPayout", "drawBias", "drawScatter", "drawSurvival", "drawCondition", "drawPlan", "drawMix"];
+function buildChartCards() {
+  if ($("charts").children.length) return;
+  $("charts").innerHTML = CHART_FNS.map((_, i) => `<div class="card chart-card">
+      <div class="chart-h"><span class="num">${String(i + 1).padStart(2, "0")}</span><div><b id="chT${i}"></b><span id="chS${i}"></span></div></div>
+      <div class="chart-body" id="ch${i}"></div>
+      ${i === 7 ? `<div class="params" id="params"></div>` : ""}
+      <div class="chart-take" id="chK${i}"></div></div>`).join("");
 }
-
-function drawCurve(pts, markers) {
-  const box = $("curveChart"); box.innerHTML = "";
-  if (!pts.length) return;
-  const W = 680, H = 280, L = 44, Rr = 56, T = 12, B = 34;
-  const xs = pts.map((p) => p.price_gbp), x0 = xs[0], x1 = xs[xs.length - 1];
-  const X = (v) => L + (v - x0) / (x1 - x0) * (W - L - Rr), Y = (v) => T + (1 - v) * (H - T - B);
-  const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Chance of selling within 7 days against list price" }, box);
-  for (const v of [0, .25, .5, .75, 1]) {
-    svgEl("line", { x1: L, x2: W - Rr, y1: Y(v), y2: Y(v), stroke: "var(--grid)" }, svg);
-    svgEl("text", { x: L - 6, y: Y(v) + 4, "text-anchor": "end", "font-size": 11, fill: "var(--ink-3)" }, svg).textContent = Math.round(v * 100) + "%";
-  }
-  const step = Math.max(5, Math.ceil((x1 - x0) / 6 / 5) * 5);
-  for (let v = Math.ceil(x0 / step) * step; v <= x1; v += step)
-    svgEl("text", { x: X(v), y: H - 12, "text-anchor": "middle", "font-size": 11, fill: "var(--ink-3)" }, svg).textContent = "£" + v;
-  if (markers) [["Quick", markers.fast_sale_gbp], ["Best", markers.best_value_gbp], ["Patient", markers.patient_gbp]].forEach(([k, v]) => {
-    if (v < x0 || v > x1) return;
-    svgEl("line", { x1: X(v), x2: X(v), y1: T, y2: H - B, stroke: "var(--ink-3)", "stroke-dasharray": "3 4" }, svg);
-    svgEl("text", { x: X(v) + 3, y: T + 10, "font-size": 10, fill: "var(--ink-2)" }, svg).textContent = k;
+function drawCharts() {
+  const t = ui.tier, ms = R.market_summary || {}, rec = R.platform_recommendations || {}, bp = R.best_platform, b = rec[bp] || {};
+  const g = R.price_curve_grid?.[t] || [], S = R.sale_surface?.[t], m = R.price_markers?.[t] || {};
+  const gap = ms.survivorship_bias_pct;
+  const ip = (price, f) => Charts.interpGrid(g, price, f);
+  const tierBest = m.best_value_gbp ?? b.recommended_list_gbp;
+  const halfDay = (price) => {
+    if (!S || !g.length || price == null) return null;
+    const i = Charts.nearestIdx(g, price), j = S.prob[i].findIndex((v) => v >= 0.5); return j < 0 ? null : S.days[j];
+  };
+  const other = Object.keys(rec).find((k) => k !== bp), o = rec[other] || {};
+  const p7best = ip(tierBest, (p) => p.prob_sell_7d), p7pat = m.patient_gbp != null ? ip(m.patient_gbp, (p) => p.prob_sell_7d) : null;
+  const hd = halfDay(tierBest), hdAsk = halfDay(ms.active_median_gbp);
+  const cb = ms.condition_buckets?.[t] || {};
+  const sch = R.markdown_schedule || [];
+  const mf = R.model_fit || {};
+  const lastDay = S?.days?.[S.days.length - 1];
+  const takes = [
+    ["Chance of selling by list price", "Pooled across both sites. Lines show selling within 24 hours, 7 days and 30 days.",
+      tierBest != null && p7best != null ? `List at ${gbp(tierBest)} and ${pct(p7best)} sell within a week` + (p7pat != null && m.patient_gbp !== tierBest ? `; push to ${gbp(m.patient_gbp)} and it's ${pct(p7pat)}.` : ".") : ""],
+    ["Cash in your pocket and how long you'll wait", "Net payout after fees and offers, with the expected wait and its likely range, per site.",
+      b.net_payout_gbp != null ? `${PLAT[bp] || bp} pays ${gbp(b.net_payout_gbp)} at ${gbp(b.recommended_list_gbp)}` +
+        (other && o.net_payout_gbp != null ? ` against ${gbp(o.net_payout_gbp)} on ${PLAT[other] || other}` +
+          (b.offer_buffer_pct != null && o.offer_buffer_pct != null && b.offer_buffer_pct !== o.offer_buffer_pct ? ` (offer buffers ${b.offer_buffer_pct}% vs ${o.offer_buffer_pct}%).` : ".") : ".") : ""],
+    ["Asking prices vs selling prices", "All exact-match listings. Sold above the line, still listed below.",
+      gap == null || ms.active_median_gbp == null || ms.sold_median_gbp == null ? "" :
+      gap >= 0 ? `Unsold listings ask ${Math.round(gap)}% more than what sells (${gbp(ms.active_median_gbp)} vs ${gbp(ms.sold_median_gbp)}). That gap is survivorship bias: the overpriced ones are the ones still up.`
+               : `Unsold listings ask ${Math.round(-gap)}% less than recent sales (${gbp(ms.active_median_gbp)} vs ${gbp(ms.sold_median_gbp)}): there's competition at lower prices.`],
+    ["Every listing: price against time on sale", "Lit dots match the selected condition. Bars span the window each sale happened in; carets mean still waiting.",
+      "Still-listed items haven't sold yet, so their times are lower bounds. The model counts them that way instead of throwing them out."],
+    ["Chance it's sold, day by day", "How quickly the chance of selling builds up at each suggested price, against the typical asking price.",
+      hd != null ? `At ${gbp(tierBest)}, half are sold by day ${hd}` + (hdAsk != null ? `; at the typical asking price, not until day ${hdAsk}.`
+        : ms.active_median_gbp != null && lastDay != null ? `; at the typical asking price ${gbp(ms.active_median_gbp)}, fewer than half sell within ${lastDay} days.` : ".") : "Hover to compare prices day by day."],
+    ["What each condition sells for", "Middle half of sold prices for each condition, with the median and FlipCurve's suggested list price.",
+      cb.median != null ? `${TIERS[t]} items sold for ${gbp(cb.p25)}–${gbp(cb.p75)} (middle half of ${cb.n} sales), median ${gbp(cb.median)}.` : ""],
+    ["Plan if it doesn't sell", "Price steps over time, with the chance of selling within a week at each step.",
+      sch.length ? `Start at ${gbp(sch[0].list_price_gbp)}; don't go below ${gbp(sch[sch.length - 1].list_price_gbp)}.` : ""],
+    ["How the model was fitted", "A censored Weibull survival model: unsold listings count as 'hasn't sold yet', not as missing.",
+      mf.n_obs != null ? `${mf.n_obs} listings: ${mf.n_interval ?? 0} sold within a known window, ${mf.n_censored ?? 0} still listed. ${mf.used_priors ? "Priors were used to fill gaps." : "Fitted on this item's data alone, no priors."}` : ""],
+  ];
+  takes.forEach(([title, sub, take], i) => {
+    $("chT" + i).textContent = title; $("chS" + i).textContent = sub; $("chK" + i).textContent = take;
+    Charts.safe(Charts[CHART_FNS[i]], $("ch" + i), R, t);
   });
-  const plats = Object.keys(pts[0].platforms || {});
-  plats.forEach((p) => {
-    const d = pts.map((q, i) => `${i ? "L" : "M"}${X(q.price_gbp).toFixed(1)},${Y(q.platforms[p].prob_sell_7d).toFixed(1)}`).join("");
-    svgEl("path", { d, fill: "none", stroke: `var(--${p})`, "stroke-width": 2, "stroke-linejoin": "round" }, svg);
-    const last = pts[pts.length - 1].platforms[p].prob_sell_7d;
-    svgEl("text", { x: W - Rr + 6, y: Y(last) + (p === "ebay" ? -4 : 12), "font-size": 11, fill: "var(--ink-2)" }, svg).textContent = PLAT[p];
-  });
-  const cross = svgEl("line", { y1: T, y2: H - B, stroke: "var(--ink-2)", visibility: "hidden" }, svg);
-  const dots = plats.map((p) => svgEl("circle", { r: 4.5, fill: `var(--${p})`, stroke: "var(--surface)", "stroke-width": 2, visibility: "hidden" }, svg));
-  const hit = svgEl("rect", { x: L, y: T, width: W - L - Rr, height: H - T - B, fill: "transparent" }, svg);
-  hit.addEventListener("mousemove", (e) => {
-    const r = svg.getBoundingClientRect(), sx = (e.clientX - r.left) * W / r.width;
-    const i = Math.max(0, Math.min(pts.length - 1, Math.round((sx - L) / (W - L - Rr) * (pts.length - 1))));
-    const q = pts[i], cx = X(q.price_gbp);
-    cross.setAttribute("x1", cx); cross.setAttribute("x2", cx); cross.setAttribute("visibility", "visible");
-    plats.forEach((p, j) => { dots[j].setAttribute("cx", cx); dots[j].setAttribute("cy", Y(q.platforms[p].prob_sell_7d)); dots[j].setAttribute("visibility", "visible"); });
-    tip(box, `<b>List at ${gbp(q.price_gbp)}</b><br>` + plats.map((p) => {
-      const v = q.platforms[p]; return `${PLAT[p]}: ${pct(v.prob_sell_7d)} in 7 days · ${days(v.expected_days)} · you get ${gbp(v.net_payout_gbp)}`;
-    }).join("<br>"), e.clientX - r.left, e.clientY - r.top);
-  });
-  hit.addEventListener("mouseleave", () => { cross.setAttribute("visibility", "hidden"); dots.forEach((d) => d.setAttribute("visibility", "hidden")); tip(box, null); });
+  const f2 = (x, n) => x == null ? "–" : Number(x).toFixed(n);
+  $("params").innerHTML = [
+    ["Shape k", f2(mf.k, 2), mf.k == null ? "" : mf.k < 1 ? "Below 1: daily chance of selling falls the longer it sits" : "Above 1: chance of selling rises with time"],
+    ["Base rate λ₀", f2(mf.lambda0, 2), "Scale of the time-to-sell distribution"],
+    ["Price effect β₁", f2(mf.beta1, 3), "How much slower it sells per step above the anchor price"],
+    ["Condition effect β₂", f2(mf.beta2, 3), "How much condition moves the curve"],
+    ["Price spread σ", gbp(mf.sigma_p), "Typical price noise between comparable listings"],
+    ["Log-likelihood", f2(mf.log_likelihood, 1), mf.n_obs != null ? `Fit quality over ${mf.n_obs} observations` : "Fit quality"],
+  ].map(([k, v, d]) => `<div><span class="k">${k}</span><span class="v">${esc(v)}</span><span class="d">${esc(d)}</span></div>`).join("");
 }
 
-function mix(a, b, t) { // hex colours from CSS vars
-  const h = (s) => s.trim().replace("#", "").match(/../g).map((x) => parseInt(x, 16));
-  const A = h(a), Bc = h(b); return "rgb(" + A.map((v, i) => Math.round(v + (Bc[i] - v) * t)).join(",") + ")";
-}
-function drawHeat(surf, pts) {
-  const box = $("heatChart"); box.innerHTML = "";
-  if (!surf || !pts.length) return;
-  const cs = getComputedStyle(document.documentElement), c0 = cs.getPropertyValue("--s100"), c1 = cs.getPropertyValue("--s700");
-  const rows = surf.prob.length, cols = surf.days.length;
-  const W = 680, L = 56, T = 8, B = 30, cw = (W - L - 8) / cols, ch = 6, H = T + rows * ch + B;
-  const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Probability sold by day, for each list price" }, box);
-  for (let i = 0; i < rows; i++) {
-    const y = T + (rows - 1 - i) * ch; // higher prices at the top
-    for (let j = 0; j < cols; j++) {
-      const v = surf.prob[i][j];
-      const cell = svgEl("rect", { x: L + j * cw, y, width: cw - 1, height: ch - 0.5, fill: mix(c0, c1, v) }, svg);
-      cell.addEventListener("mousemove", (e) => { const r = box.getBoundingClientRect();
-        tip(box, `List at <b>${gbp(pts[i]?.price_gbp)}</b>: ${pct(v)} chance sold within ${surf.days[j]} day${surf.days[j] > 1 ? "s" : ""}`, e.clientX - r.left, e.clientY - r.top); });
-      cell.addEventListener("mouseleave", () => tip(box, null));
-    }
-    if (i % 7 === 0) svgEl("text", { x: L - 6, y: y + ch, "text-anchor": "end", "font-size": 11, fill: "var(--ink-3)" }, svg).textContent = "£" + Math.round(pts[i]?.price_gbp ?? 0);
-  }
-  surf.days.forEach((d, j) => svgEl("text", { x: L + j * cw + cw / 2, y: H - 12, "text-anchor": "middle", "font-size": 11, fill: "var(--ink-3)" }, svg).textContent = d + "d");
+// ---- platform cards
+function drawPlatforms() {
+  const rec = R.platform_recommendations || {}, bp = R.best_platform;
+  const keys = Object.keys(rec).sort((a, c) => (c === bp) - (a === bp));
+  $("platHead").textContent = keys.length > 1 ? `${keys.map((k) => PLAT[k] || k).join(" vs ")} at the suggested price` : "At the suggested price";
+  const CONF = { high: "var(--ok)", medium: "var(--warn)", low: "var(--low)" };
+  $("platforms").innerHTML = keys.map((k) => {
+    const x = rec[k], col = PCOL[k] || "var(--ink)";
+    const avg = days(x.expected_days) + (x.expected_days_low != null && x.expected_days_high != null ? ` (${Math.round(x.expected_days_low)}–${Math.round(x.expected_days_high)})` : "");
+    const rows = [["List at", gbp(x.recommended_list_gbp)], ["Likely sale price", gbp(x.expected_sale_price_gbp)],
+      ["Offer buffer", x.offer_buffer_pct != null ? x.offer_buffer_pct + "%" : "–"], ["Half sell within", days(x.median_days ?? x.expected_days)],
+      ["Average wait", avg], ["Listings / sales seen", `${x.n_listings ?? 0} / ${x.n_sales ?? 0}`]];
+    return `<div class="card plat${k === bp ? " best" : ""}">
+      <div class="plat-h"><span class="sw" style="background:${col}"></span><b>${esc(PLAT[k] || k)}</b>${k === bp ? `<span class="best-tag">BEST</span>` : ""}
+        <span class="conf" style="color:${CONF[x.confidence] || "var(--ink-2)"}" title="${esc((x.n_sales ?? 0) + " sales seen")}">${esc(x.confidence || "–")} confidence</span></div>
+      <div class="net"><b>${gbp(x.net_payout_gbp)}</b><span>in your pocket</span></div>
+      <div class="p7"><div class="p7-h"><span>Chance sold within 7 days</span><span>${pct(x.prob_sell_7d)}</span></div>
+        <div class="p7-bar"><div style="width:${Math.round((x.prob_sell_7d || 0) * 100)}%;background:${col}"></div></div></div>
+      <div class="rows">${rows.map(([a, v]) => `<span>${a}</span><span>${esc(v)}</span>`).join("")}</div>
+      ${(x.notes || []).map((n) => `<div class="plat-note">${esc(n)}</div>`).join("")}
+    </div>`;
+  }).join("");
 }
 
+function drawSchedule() {
+  const sch = R.markdown_schedule || [];
+  $("planCard").classList.toggle("hidden", !sch.length);
+  $("schedule").innerHTML = sch.map((x) => `<div><div class="h"><span class="day">DAY ${x.day}</span><span class="pr">${gbp(x.list_price_gbp)}</span></div>
+    <span class="a">${esc(x.action)}</span></div>`).join("");
+}
+
+// ---- evidence table
 const RELATED = { mid: "Mid", low: "Low", high: "High", hi: "High", kids: "kids' size", pro: "Pro", max: "Max",
                   plus: "Plus", mini: "Mini", ultra: "Ultra", lite: "Lite", se: "SE" };
-function drawEvidence(list, excluded) {
-  const kind = { sold_exact: "Sold", sold_interval: "Sold", sold_unknown_time: "Sold", active: "Not sold yet" };
-  // exact matches first, then similar versions; sold before unsold; cheapest first
-  const sorted = [...list].sort((a, b) => (!!a.related - !!b.related) || (a.obs_type === "active") - (b.obs_type === "active")
-                                           || a.price_gbp - b.price_gbp);
-  const shown = sorted.filter((x) => !x.is_outlier).slice(0, 40);
-  const nRel = list.filter((x) => x.related).length;
-  $("evNote").textContent = `${list.length} listings used` + (nRel ? ` (${list.length - nRel} exact matches, ${nRel} similar versions used only for selling speed)` : "")
-    + `; showing ${shown.length}` + (excluded ? `. ${excluded} more left out (wrong item, bundles, extreme prices).` : ".");
-  $("evidence").innerHTML = `<tr><th>Site</th><th>Listing</th><th>Condition</th><th class="num">Price</th><th>Status</th><th class="num">Days listed</th></tr>` +
-    shown.map((x) => `<tr${x.related ? ' style="color:var(--ink-2)"' : ""}><td>${PLAT[x.platform] || x.platform}${x.related ? `<br><span class="badge">similar: ${esc(RELATED[x.related] || x.related)}</span>` : ""}</td>
-      <td>${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a>` : esc(x.title)}</td>
-      <td>${TIERS[x.condition_tier] || "–"}</td><td class="num">${gbp(x.price_gbp)}</td>
-      <td>${kind[x.obs_type] || x.obs_type}</td>
-      <td class="num">${x.t_days != null ? (x.t_upper_days != null ? `${x.t_days.toFixed(1)}–${x.t_upper_days.toFixed(1)}` : x.t_days.toFixed(1)) : "–"}</td></tr>`).join("");
+const EV_FILTERS = [["evPlat", [["all", "All sites"], ["ebay", "eBay"], ["vinted", "Vinted"]]], ["evStatus", [["all", "All"], ["sold", "Sold"], ["active", "Not sold"]]],
+                    ["evSort", [["price", "Price"], ["days", "Days"], ["favs", "Favs"]]]];
+$("evFilters").onclick = (e) => {
+  const b = e.target.closest("button[data-v]"); if (!b) return;
+  ui[b.parentElement.dataset.key] = b.dataset.v; drawEvidence();
+};
+function drawEvidence() {
+  const ls = R.comparable_listings || [], ms = R.market_summary || {}, nRel = ls.filter((x) => x.related).length;
+  $("evFilters").innerHTML = EV_FILTERS.map(([key, opts]) => `<div class="seg sm on-panel" data-key="${key}">${segHtml(opts, ui[key])}</div>`).join("");
+  let rows = ls.filter((x) => !x.is_outlier);
+  if (ui.evPlat !== "all") rows = rows.filter((x) => x.platform === ui.evPlat);
+  if (ui.evStatus === "sold") rows = rows.filter((x) => x.obs_type !== "active"); else if (ui.evStatus === "active") rows = rows.filter((x) => x.obs_type === "active");
+  // exact matches first, then similar versions
+  rows.sort((a, c) => (!!a.related - !!c.related) || (ui.evSort === "days" ? (c.t_days ?? -1) - (a.t_days ?? -1)
+    : ui.evSort === "favs" ? (c.favourite_count ?? -1) - (a.favourite_count ?? -1) : a.price_gbp - c.price_gbp));
+  const shown = rows.slice(0, 80);
+  $("evNote").textContent = `${ls.length} listings used` + (nRel ? ` (${ls.length - nRel} exact, ${nRel} similar versions used only for selling speed)` : "") +
+    `; showing ${shown.length} of ${rows.length}` + (ms.sample_size_excluded ? `. ${ms.sample_size_excluded} more left out (wrong item, bundles, extreme prices).` : ".");
+  $("evRows").innerHTML = shown.length ? shown.map((x) => {
+    const sold = x.obs_type !== "active", col = PCOL[x.platform] || "var(--ink)";
+    const t = x.t_days != null ? (x.t_upper_days != null ? `${x.t_days.toFixed(1)}–${x.t_upper_days.toFixed(1)}` : x.t_days.toFixed(1)) : "–";
+    const title = x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener" title="${esc(x.title)}">${esc(x.title)}</a>` : `<span title="${esc(x.title)}">${esc(x.title)}</span>`;
+    return `<div class="ev-row${x.related ? " rel" : ""}">
+      <span class="site"><i style="background:${col}"></i>${esc(PLAT[x.platform] || x.platform)}</span>
+      <span class="t">${title}${x.related ? `<span class="sim">similar: ${esc(RELATED[x.related] || x.related)}</span>` : ""}</span>
+      <span style="color:var(--ink-2)">${esc(TIERS[x.condition_tier] || "–")}</span>
+      <span class="r mono">${gbp(x.price_gbp)}</span>
+      <span class="st" style="color:${sold ? "var(--sold)" : "var(--ink-2)"}"><i style="background:${sold ? "var(--sold)" : "transparent"}"></i>${sold ? "Sold" : "Not sold yet"}</span>
+      <span class="r mono" style="color:var(--ink-soft)">${t}</span>
+      <span class="r mono" style="color:var(--ink-3)">${x.favourite_count ?? "–"}</span></div>`;
+  }).join("") : `<div class="ev-row" style="color:var(--ink-3)"><span></span><span>No listings match these filters.</span></div>`;
 }
 </script>
 </body>
