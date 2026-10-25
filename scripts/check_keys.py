@@ -46,6 +46,10 @@ def check_gemini() -> bool:
     except ValueError:
         msg = r.text[:200]
     print(f"GEMINI: HTTP {r.status_code} with model '{model}' - {msg}")
+    if r.status_code in (429, 503):
+        flash = sorted([m for m in list_models(key) if "flash" in m and m != model
+                        and not any(k in m for k in ("image", "tts", "audio", "live", "embedding"))], reverse=True)[:2]
+        print("  (busy, not broken) when it's busy the app tries these instead:", ", ".join(flash) or "none found")
     if r.status_code in (400, 404):
         flash = [m for m in list_models(key) if "flash" in m and "image" not in m and "tts" not in m]
         if flash:

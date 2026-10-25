@@ -74,3 +74,35 @@ def test_api_falls_back_when_gemini_unset(monkeypatch):
     r = TestClient(app).post("/api/v1/identify-text", json={"query": "Sony WH-1000XM4 Black"})
     assert r.status_code == 200 and r.json()["item"]["search_queries"]["ebay"] == "sony wh-1000xm4 black"
     assert r.json()["warnings"]
+
+
+def test_switches_to_another_flash_model_when_busy(monkeypatch):
+    monkeypatch.delenv("GEMINI_FALLBACK_MODELS", raising=False)
+    tried = []
+
+    def handler(req):
+        if req.method == "GET":  # the models list
+            return httpx.Response(200, json={"models": [
+                {"name": "models/m", "supportedGenerationMethods": ["generateContent"]},
+                {"name": "models/gemini-9-flash", "supportedGenerationMethods": ["generateContent"]},
+                {"name": "models/gemini-9-flash-image", "supportedGenerationMethods": ["generateContent"]}]})
+        model = req.url.path.split("/models/")[1].split(":")[0]
+        tried.append(model)
+        return httpx.Response(503, text="high demand") if model == "m" else reply(GOOD)
+
+    out = make(handler).from_text("air force 1")
+    assert out["item"]["brand"] == "Nike"
+    assert tried[-1] == "gemini-9-flash" and "gemini-9-flash-image" not in tried
+
+
+def test_bad_key_does_not_try_other_models(monkeypatch):
+    monkeypatch.setenv("GEMINI_FALLBACK_MODELS", "other")
+    tried = []
+
+    def handler(req):
+        tried.append(req.url.path)
+        return httpx.Response(403, text="API key not valid")
+
+    with pytest.raises(IdentifyError):
+        make(handler).from_text("x")
+    assert all("/models/m:" in t for t in tried)

@@ -9,6 +9,7 @@ Owner: Person 2.
 from __future__ import annotations
 
 import base64
+import logging
 import json
 import os
 import time
@@ -16,8 +17,10 @@ import time
 import httpx
 
 API = "https://generativelanguage.googleapis.com/v1beta"
+log = logging.getLogger("flipcurve")
 RETRY_STATUS = {429, 500, 502, 503, 504}
-BACKOFF_S = (1.0, 2.5, 5.0, 10.0)
+BACKOFF_S = (1.0, 2.5, 5.0)     # per model; then the next model
+SKIP_IN_FALLBACK = ("image", "tts", "audio", "live", "embedding", "thinking-exp", "native")
 
 PROMPT = """You are helping someone in the UK price a secondhand item they own, to sell on eBay or Vinted.
 Look at the photo(s) (or read the description) and identify the exact product.
@@ -127,29 +130,67 @@ class GeminiIdentifier:
         if not self.key:
             raise IdentifyError("GEMINI_API_KEY is not set")
 
+    def fallback_models(self) -> list[str]:
+        """Other Flash models to try when the main one is overloaded (503 "high demand", 25 Oct).
+        GEMINI_FALLBACK_MODELS (comma-separated) if set; otherwise the newest Flash models this key
+        can use, from the models list. Never raises."""
+        env = os.getenv("GEMINI_FALLBACK_MODELS")
+        if env is not None:
+            return [m.strip() for m in env.split(",") if m.strip() and m.strip() != self.model][:3]
+        try:
+            r = self.http.get(f"{API}/models", headers={"x-goog-api-key": self.key}, params={"pageSize": 200},
+                              timeout=10)
+            if r.status_code != 200:
+                return []
+            names = [m["name"].split("/", 1)[-1] for m in r.json().get("models", [])
+                     if "generateContent" in m.get("supportedGenerationMethods", [])]
+        except Exception:  # noqa: BLE001
+            return []
+        flash = [n for n in names if "flash" in n and n != self.model and not any(k in n for k in SKIP_IN_FALLBACK)]
+        return sorted(flash, reverse=True)[:2]  # newest versions sort last alphabetically
+
     def _call(self, parts: list[dict], use_schema: bool = True) -> dict:
+        errors, fallbacks = [], None
+        model = self.model
+        while model:
+            out, err, busy = self._call_model(model, parts, use_schema)
+            if out is not None:
+                return out
+            errors.append(f"{model}: {err}")
+            if not busy and not err.startswith("HTTP 404"):
+                break  # a real error (bad key, bad request): another model won't help
+            if fallbacks is None:
+                fallbacks = self.fallback_models()
+            model = fallbacks.pop(0) if fallbacks else None
+        raise IdentifyError("Gemini failed (" + "; ".join(errors) + ")")
+
+    def _call_model(self, model: str, parts: list[dict], use_schema: bool) -> tuple[dict | None, str, bool]:
+        """(response, last error, was it 'busy') for one model, with retries and backoff."""
         cfg = {"responseMimeType": "application/json", "temperature": 0.2}
         if use_schema:
             cfg["responseSchema"] = SCHEMA
         body = {"contents": [{"role": "user", "parts": parts}], "generationConfig": cfg}
-        url = f"{API}/models/{self.model}:generateContent"
-        last = None
+        url = f"{API}/models/{model}:generateContent"
+        last, busy = None, False
         for attempt in range(len(BACKOFF_S) + 1):
             try:
                 r = self.http.post(url, json=body, headers={"x-goog-api-key": self.key})
             except httpx.HTTPError as e:
-                last = f"network error: {type(e).__name__}"
+                last, busy = f"network error: {type(e).__name__}", True
             else:
                 if r.status_code == 200:
-                    return r.json()
+                    if model != self.model:
+                        log.warning("Gemini %s was busy; used %s", self.model, model)
+                    return r.json(), "", False
                 last = f"HTTP {r.status_code}: {r.text[:200]}"
                 if r.status_code == 400 and use_schema and "schema" in r.text.lower():
-                    return self._call(parts, use_schema=False)  # older/newer model without schema support
-                if r.status_code not in RETRY_STATUS:
+                    return self._call_model(model, parts, use_schema=False)  # model without schema support
+                busy = r.status_code in RETRY_STATUS
+                if not busy:
                     break
             if attempt < len(BACKOFF_S):
                 self.sleep(BACKOFF_S[attempt])
-        raise IdentifyError(f"Gemini failed ({self.model}): {last}")
+        return None, last, busy
 
     def _parse(self, resp: dict) -> dict:
         try:
