@@ -114,7 +114,9 @@ def estimate_anchors(rows) -> dict[str, float]:
         ref = float(np.median([float(_get(r, "price_gbp")) / DEFAULT_TIER_RATIO[_tier(r)] for r in sold]))
         return {t: round(ref * DEFAULT_TIER_RATIO[t], 2) for t in TIERS}
     if not good:  # (almost) nothing sold: use every listing, scaled down a little for survivorship
-        prices = [float(_get(r, "price_gbp")) for r in rows if not _get(r, "is_outlier")]
+        # condition-adjusted like the sold path below: treating the raw median as the "Good" price
+        # made Very good iPhones listed at £380-500 come out at £449 (+32% on top), 25 Oct
+        prices = [float(_get(r, "price_gbp")) / DEFAULT_TIER_RATIO[_tier(r)] for r in rows if not _get(r, "is_outlier")]
         base = 0.85 * float(np.median(prices)) if prices else 30.0
         return {t: round(base * DEFAULT_TIER_RATIO[t], 2) for t in TIERS}
     # pooled 'Good' level from every sale (condition-adjusted); a tier's own median is used only

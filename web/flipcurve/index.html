@@ -1095,7 +1095,7 @@ const Charts = (() => {
   // 6. price by condition
   function drawCondition(el, R, t) {
     const b = R.market_summary?.condition_buckets || {}, pm = R.price_markers || {};
-    const order = TIER_ORDER.filter((k) => b[k] && b[k].p25 != null && b[k].p75 != null && b[k].median != null);
+    const order = TIER_ORDER.filter((k) => b[k] && b[k].n > 0 && b[k].p25 != null && b[k].p75 != null && b[k].median != null);
     need(order.length, "No dated sales per condition yet.");
     const W = 640, rowH = 46, T = 24, B = 26, L = 92, Rr = 24, H = T + order.length * rowH + B, s = svg(el, W, H);
     let lo = Math.min(...order.map((k) => b[k].p25)) * 0.7, hi = Math.max(...order.map((k) => Math.max(b[k].p75, pm[k]?.best_value_gbp || 0))) * 1.12;
@@ -1638,7 +1638,7 @@ function drawHeadline() {
      : gap <= -5 ? `. Listings still up are priced about ${Math.round(-gap)}% below recent sales: there's competition at lower prices.` : ".");
   const range = (x) => x.expected_days_low != null && x.expected_days_high != null ? `range ${Math.round(x.expected_days_low)}–${Math.round(x.expected_days_high)} days` : "";
   $("heroStats").innerHTML = b ? [["In your pocket", gbp(b.net_payout_gbp), b.expected_sale_price_gbp != null ? `sale ~${gbp(b.expected_sale_price_gbp)}` : ""],
-    ["Sold within 7 days", pct(b.prob_sell_7d), `${b.n_sales ?? 0} sales seen`],
+    ["Sold within 7 days", pct(b.prob_sell_7d), salesText(b.n_sales, salesSeen(bp))],
     ["Half sell within", days(b.median_days ?? b.expected_days), "median time"], ["Average wait", days(b.expected_days), range(b)]]
     .map(([k, v, s]) => `<div><span class="k">${k}</span><span class="v">${esc(v)}</span><span class="s">${esc(s)}</span></div>`).join("") : "";
   $("heroStats").classList.toggle("hidden", !b);
@@ -1678,8 +1678,12 @@ function drawCharts() {
   const gap = ms.survivorship_bias_pct;
   const ip = (price, f) => Charts.interpGrid(g, price, f);
   const tierBest = m.best_value_gbp ?? b.recommended_list_gbp;
+  // median days to sell at a price: exact from the fitted model when there is one, else the first
+  // day on the server's surface grid where half have sold
   const halfDay = (price) => {
-    if (!S || !g.length || price == null) return null;
+    if (price == null) return null;
+    if (Model.ok(R, t)) { const d = Model.lam(R, price, t) * Math.pow(Math.LN2, 1 / R.model_fit.k); return d > 365 ? null : Math.max(1, Math.round(d)); }
+    if (!S || !g.length) return null;
     const i = Charts.nearestIdx(g, price), j = S.prob[i].findIndex((v) => v >= 0.5); return j < 0 ? null : S.days[j];
   };
   const other = Object.keys(rec).find((k) => k !== bp), o = rec[other] || {};
@@ -1688,7 +1692,7 @@ function drawCharts() {
   const cb = ms.condition_buckets?.[t] || {};
   const sch = R.markdown_schedule || [];
   const mf = R.model_fit || {};
-  const lastDay = S?.days?.[S.days.length - 1];
+  const sales = salesSeen(), simNames = [...new Set((R.comparable_listings || []).filter((x) => x.related).map((x) => RELATED[x.related] || x.related))].join(", ");
   const takes = [
     ["Chance of selling by list price", "Pooled across both sites. Lines show selling within 24 hours, 7 days and 30 days.",
       tierBest != null && p7best != null ? `List at ${gbp(tierBest)} and ${pct(p7best)} sell within a week` + (p7pat != null && m.patient_gbp !== tierBest ? `; push to ${gbp(m.patient_gbp)} and it's ${pct(p7pat)}.` : ".") : ""],
@@ -1703,14 +1707,21 @@ function drawCharts() {
     ["Every listing: price against time on sale", "Lit dots match the selected condition. Bars span the window each sale happened in; carets mean still waiting.",
       "Still-listed items haven't sold yet, so their times are lower bounds. The model counts them that way instead of throwing them out."],
     ["Chance it's sold, day by day", "How quickly the chance of selling builds up at each suggested price, against the typical asking price.",
-      hd != null ? `At ${gbp(tierBest)}, half are sold by day ${hd}` + (hdAsk != null ? `; at the typical asking price, not until day ${hdAsk}.`
-        : ms.active_median_gbp != null && lastDay != null ? `; at the typical asking price ${gbp(ms.active_median_gbp)}, fewer than half sell within ${lastDay} days.` : ".") : "Hover to compare prices day by day."],
+      hd != null ? `At ${gbp(tierBest)}, half are sold by day ${hd}` + (ms.active_median_gbp == null ? "." : hdAsk == null
+          ? `; at the typical asking price of ${gbp(ms.active_median_gbp)}, fewer than half sell within a year.`
+          : ms.active_median_gbp > tierBest ? `; at the typical asking price of ${gbp(ms.active_median_gbp)}, not until day ${hdAsk}.`
+          : ms.active_median_gbp < tierBest ? `; the typical asking price, ${gbp(ms.active_median_gbp)}, is lower and half sell by day ${hdAsk}.`
+          : ".") : "Hover to compare prices day by day."],
     ["What each condition sells for", "Middle half of sold prices for each condition, with the median and FlipCurve's suggested list price.",
-      cb.median != null ? `${TIERS[t]} items sold for ${gbp(cb.p25)}–${gbp(cb.p75)} (middle half of ${cb.n} sales), median ${gbp(cb.median)}.` : ""],
+      cb.n > 0 && cb.median != null ? `${TIERS[t]} items sold for ${gbp(cb.p25)}–${gbp(cb.p75)} (middle half of ${cb.n} sales), median ${gbp(cb.median)}.`
+        : `No ${TIERS[t].toLowerCase()} sales of this exact item seen yet, so there's no sold price range for that condition.`],
     ["Plan if it doesn't sell", "Price steps over time, with the chance of selling within a week at each step.",
       sch.length ? `Start at ${gbp(sch[0].list_price_gbp)}; don't go below ${gbp(sch[sch.length - 1].list_price_gbp)}.` : ""],
     ["How the model was fitted", "A censored Weibull survival model: unsold listings count as 'hasn't sold yet', not as missing.",
-      mf.n_obs != null ? `${mf.n_obs} listings: ${mf.n_interval ?? 0} sold within a known window, ${mf.n_censored ?? 0} still listed. ${mf.used_priors ? "Priors were used to fill gaps." : "Fitted on this item's data alone, no priors."}` : ""],
+      mf.n_obs != null ? `${mf.n_obs} listings: ${mf.n_interval ?? 0} sold within a known window, ${mf.n_censored ?? 0} still listed` +
+        (mf.n_obs - (mf.n_interval ?? 0) - (mf.n_censored ?? 0) > 0 ? `, ${mf.n_obs - (mf.n_interval ?? 0) - (mf.n_censored ?? 0)} counted from how long listings in Vinted's catalogue have been up` : "") +
+        `. ${mf.used_priors ? "Priors were used to fill gaps." : "No priors needed."}` +
+        (sales.rel ? ` ${sales.rel} of the ${sales.exact + sales.rel} sales are similar versions (${simNames}), used for speed only.` : "") : ""],
   ];
   takes.forEach(([title, sub, take], i) => {
     $("chT" + i).textContent = title; $("chS" + i).textContent = sub; $("chK" + i).textContent = take;
@@ -1726,6 +1737,14 @@ function drawCharts() {
     ["Log-likelihood", f2(mf.log_likelihood, 1), mf.n_obs != null ? `Fit quality over ${mf.n_obs} observations` : "Fit quality"],
   ].map(([k, v, d]) => `<div><span class="k">${k}</span><span class="v">${esc(v)}</span><span class="d">${esc(d)}</span></div>`).join("");
 }
+
+// sales seen, split into this exact item and similar versions (which only inform speed)
+function salesSeen(site) {
+  const ls = (R.comparable_listings || []).filter((x) => !x.is_outlier && x.obs_type !== "active" && (!site || x.platform === site));
+  const rel = ls.filter((x) => x.related).length;
+  return { exact: ls.length - rel, rel };
+}
+const salesText = (n, ss) => ss.rel ? `${ss.exact} exact + ${ss.rel} similar` : `${n ?? ss.exact} sales seen`;
 
 // ---- platform cards
 bindSeg($("daySeg"), (v) => { ui.cardDays = +v; $("dayInput").value = ""; drawPlatforms(); });
@@ -1750,7 +1769,7 @@ function drawPlatforms() {
     const avg = days(x.expected_days) + (x.expected_days_low != null && x.expected_days_high != null ? ` (${Math.round(x.expected_days_low)}–${Math.round(x.expected_days_high)})` : "");
     const rows = [["List at", gbp(x.recommended_list_gbp)], ["Likely sale price", gbp(x.expected_sale_price_gbp)],
       ["Offer buffer", x.offer_buffer_pct != null ? x.offer_buffer_pct + "%" : "–"], ["Half sell within", days(x.median_days ?? x.expected_days)],
-      ["Average wait", avg], ["Listings / sales seen", `${x.n_listings ?? 0} / ${x.n_sales ?? 0}`]];
+      ["Average wait", avg], ["Listings / sales seen", `${x.n_listings ?? 0} / ${x.n_sales ?? 0}` + (salesSeen(k).rel ? ` (${salesSeen(k).exact} exact)` : "")]];
     return `<div class="card plat${k === bp ? " best" : ""}">
       <div class="plat-h"><span class="sw" style="background:${col}"></span><b>${esc(PLAT[k] || k)}</b>${k === bp ? `<span class="best-tag">BEST</span>` : ""}
         <span class="conf" style="color:${CONF[x.confidence] || "var(--ink-2)"}" title="${esc((x.n_sales ?? 0) + " sales seen")}">${esc(x.confidence || "–")} confidence</span></div>

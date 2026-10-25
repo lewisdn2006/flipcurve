@@ -88,3 +88,15 @@ def test_stock_sample_recovers_speed_from_catalogue_alone(lam0):
     true_mean = float(sm.expected_days(lam0, 0.9))
     assert 0.6 * true_mean < mean[0] < 1.6 * true_mean, (mean, true_mean)
     assert f.beta1 > 0.8  # pricier listings linger
+
+
+
+def test_listings_only_price_level_is_condition_adjusted():
+    """25 Oct, iPhone 15 Pro: 2 sales and ~150 asks, nearly all Very good at £380-500. The fallback
+    treated their median as the Good price and added 32% for Very good: £449."""
+    rows = [{"obs_type": "active", "is_outlier": False, "price_gbp": p, "condition_tier": "very_good"}
+            for p in [380, 390, 400, 400, 420, 450, 480, 500]]
+    rows.append({"obs_type": "sold_interval", "is_outlier": False, "price_gbp": 187.9, "condition_tier": "good"})
+    a = sm.estimate_anchors(rows)
+    assert 320 <= a["very_good"] <= 370   # ~0.85 x the Very good asks, not above them
+    assert a["good"] < a["very_good"] < a["mint"]
