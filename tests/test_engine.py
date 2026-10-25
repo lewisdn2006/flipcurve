@@ -88,3 +88,31 @@ def test_slow_market_markers_stay_near_real_prices():
         assert m.fast_sale_gbp > out.price_range.min_gbp + 0.01, (tier, m, anchor)  # never the axis floor
         assert m.best_value_gbp > 0.8 * anchor, (tier, m, anchor)
     assert out.markdown_schedule[-1].list_price_gbp > out.price_range.min_gbp + 0.01
+
+
+def test_other_colourways_collabs_and_must_terms_are_excluded():
+    from backend.engine.outlier_filter import other_item_reason
+    q, item = "nike air jordan 1 low triple black", "Nike Air Jordan 1 Low Triple Black UK 10.5"
+    assert other_item_reason("Nike Air Jordan 1 Low Black White UK 9", q, item) == "different colour: white"
+    assert other_item_reason("Nike Air Jordan 1 Low Triple Black UK 11", q, item) is None
+    assert other_item_reason("Nike Air Jordan 1 Low OG SP x Travis Scott Black", q, item) == "collaboration"
+    assert other_item_reason("Nike Air Force 1 '07 Low Triple Black", q, item, must_have=["jordan", "low"]) == "missing 'jordan'"
+    assert other_item_reason("Jordan 1 Low Travis Scott Phantom Black", q, item, must_not_have=["travis", "mid"]) == "different item: travis"
+    # "mid" in must_not_have is left to the related-version logic
+    assert other_item_reason("Nike Air Jordan 1 Mid Triple Black", q, item, must_not_have=["mid"]) is None
+    # "mint" is a condition, not a colour
+    assert other_item_reason("Nike Air Jordan 1 Low Triple Black mint condition", q, item) is None
+
+
+def test_recommended_prices_stay_within_what_actually_sold():
+    # 25 Oct: price looked barely linked to speed, so "best value" ran to the top of the chart
+    # (£121 for trainers that sell at £20-60)
+    rows = simulate_listings(TrueParams(beta1=0.2), n_per_platform=150, now=NOW, seed=11)
+    for r in rows:
+        r["title"] = "Nike Air Force 1 white"
+    out = MarketScanResponse.model_validate(run(ITEM, rows, now=NOW, data_source="seed"))
+    sold = sorted(r["price_gbp"] for r in rows if r["obs_type"] != "active" and r["condition_tier"] == "good")
+    med = sold[len(sold) // 2]
+    m = out.price_markers["good"]
+    assert m.best_value_gbp <= 1.36 * med and m.patient_gbp <= 1.61 * med, (m, med)
+    assert out.platform_recommendations["ebay"].recommended_list_gbp <= 1.36 * med

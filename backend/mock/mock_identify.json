@@ -17,7 +17,9 @@
       "ebay": "nike air force 1 07 white",
       "vinted": "air force 1 white"
     },
-    "is_broken": false
+    "is_broken": false,
+    "must_have": [],
+    "must_not_have": []
   },
   "source": "vision",
   "cleaned_image_url": "/static/mock/cleaned_item_01.png",

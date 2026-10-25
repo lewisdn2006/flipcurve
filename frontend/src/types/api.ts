@@ -31,6 +31,14 @@ export type Vinted = string;
  * If true, the outlier filter keeps 'spares/repairs' listings
  */
 export type IsBroken = boolean;
+/**
+ * Words a matching listing title must contain ("a|b" = either), e.g. ["jordan", "low"]
+ */
+export type MustHave = string[];
+/**
+ * Words that mean a different item (other colourways, collabs, replicas), e.g. ["white", "travis"]
+ */
+export type MustNotHave = string[];
 export type Source = "vision" | "text";
 export type CleanedImageUrl = string | null;
 export type Confidence = number | null;
@@ -286,6 +294,8 @@ export interface ItemSpec {
   detected_flaws?: DetectedFlaws;
   search_queries: SearchQueries;
   is_broken?: IsBroken;
+  must_have?: MustHave;
+  must_not_have?: MustNotHave;
 }
 /**
  * This interface was referenced by `FlipCurveApi`'s JSON-Schema

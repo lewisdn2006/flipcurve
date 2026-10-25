@@ -73,15 +73,36 @@ def price_axis(f: sm.FitResult) -> np.ndarray:
     return np.round(np.linspace(lo, hi, GRID_POINTS), 2)
 
 
-def _platform_points(f, tier, prices):
+def price_ceilings(rows, tier: str, anchors: dict) -> tuple[float, float]:
+    """Highest list prices we'll recommend for this condition, from what exact matches actually
+    sold for (same-condition sales if there are 3+, else all sales converted by the typical
+    condition ratios): best value <= 1.35x the median sale (and <= the 90th percentile); patient
+    <= 1.6x the median (and <= 1.15x the 90th percentile). Under 3 sales: 1.3x / 1.5x the anchor.
+    The model extrapolates smoothly, so when price looks only weakly linked to speed, every "best"
+    price ran to the top of the chart (£121 for trainers that sell at £20-60, 25 Oct)."""
+    ratio = sm.DEFAULT_TIER_RATIO
+    exact = [r for r in rows if r["obs_type"] != "active" and not r["is_outlier"] and not r.get("related")]
+    same = [r["price_gbp"] for r in exact if sm._tier(r) == tier]
+    # same-condition sales if there are a few (new special editions say little about used prices)
+    sold = same if len(same) >= 3 else [r["price_gbp"] * ratio[tier] / ratio[sm._tier(r)] for r in exact]
+    if len(sold) >= 3:
+        med, p90 = float(np.median(sold)), float(np.percentile(sold, 90))
+        return min(1.35 * med, p90), min(1.6 * med, 1.15 * p90)
+    return 1.3 * anchors[tier], 1.5 * anchors[tier]
+
+
+def _platform_points(f, tier, prices, ceilings=(np.inf, np.inf)):
     out = {}
     for pl in f.platforms:
         lam = f.scale(prices, tier, pl)
         mean, lo, hi = f.mean_days_range(prices, tier, pl)
+        val = value(prices, lam, f.k, pl)
         out[pl] = {
             "lam": lam, "mean": mean, "lo": lo, "hi": hi,
             "sale": expected_sale_price(prices, pl), "net": net_payout(prices, pl),
-            "p7": sm.cdf(7, lam, f.k), "value": value(prices, lam, f.k, pl),
+            "p7": sm.cdf(7, lam, f.k),
+            # prices above what has ever sold aren't candidates for a recommendation
+            "value": np.where(prices <= ceilings[0], val, 0.0), "ok_patient": prices <= ceilings[1],
         }
     return out
 
@@ -114,7 +135,7 @@ def _grid(f, tier, prices, pp):
     return pts
 
 
-PATIENT_GAMMA_PER_DAY = 0.003  # "happy to wait": a month's wait costs under 10%
+PATIENT_GAMMA_PER_DAY = 0.005  # "happy to wait": a month's wait costs ~15%
 
 
 def _markers(grid, pp, platforms, anchor, k):
@@ -128,7 +149,8 @@ def _markers(grid, pp, platforms, anchor, k):
     prices = np.array([g["price_gbp"] for g in grid])
     best_pl = max(platforms, key=lambda pl: pp[pl]["value"].max())
     best = float(prices[int(np.argmax(pp[best_pl]["value"]))])
-    patient_value = pp[best_pl]["net"] * sm.discounted_sale_value(pp[best_pl]["lam"], k, PATIENT_GAMMA_PER_DAY)
+    patient_value = np.where(pp[best_pl]["ok_patient"], pp[best_pl]["net"]
+                             * sm.discounted_sale_value(pp[best_pl]["lam"], k, PATIENT_GAMMA_PER_DAY), 0.0)
     patient = max(float(prices[int(np.argmax(patient_value))]), best)
     p7 = prices[np.array([g["prob_sell_7d"] for g in grid]) >= 0.5]
     note = None
@@ -194,7 +216,8 @@ def run(item: dict, rows: list[dict], now: datetime | None = None, data_source: 
     now = now or datetime.now(timezone.utc)
     platforms = platforms or list(PLATFORMS)
     item_text = " ".join(str(item.get(k) or "") for k in ("title", "model_name"))
-    rows = filter_rows(rows, item["search_queries"], item.get("is_broken", False), item_text=item_text)
+    rows = filter_rows(rows, item["search_queries"], item.get("is_broken", False), item_text=item_text,
+                       must_have=item.get("must_have") or (), must_not_have=item.get("must_not_have") or ())
     rows, fit_rows, related = _with_related(rows)
     f = sm.fit(fit_rows, platforms=platforms, prior=prior, anchors=sm.estimate_anchors(
         [r for r in rows if not r.get("related")]))
@@ -202,7 +225,7 @@ def run(item: dict, rows: list[dict], now: datetime | None = None, data_source: 
 
     grids, surfaces, markers, pps = {}, {}, {}, {}
     for t in TIERS:
-        pps[t] = _platform_points(f, t, prices)
+        pps[t] = _platform_points(f, t, prices, price_ceilings(rows, t, f.anchors))
         grids[t] = _grid(f, t, prices, pps[t])
         lam = f.scale(prices, t)
         surfaces[t] = {"days": [float(x) for x in SURFACE_DAYS],
@@ -252,6 +275,9 @@ def run(item: dict, rows: list[dict], now: datetime | None = None, data_source: 
         warnings.append("Few exact matches, so selling speed also uses similar items ("
                         + ", ".join(f"{k}: {v}" for k, v in related.items())
                         + " listings), each scaled to this item's price level")
+    if f.beta1 <= sm.BETA1_MIN + 1e-3:
+        warnings.append("In these listings price barely changes how fast things sell, so the suggested "
+                        "prices stay within the range that recent sales actually reached")
     if not f.converged:
         warnings.append("Model fit did not fully converge; treat the numbers as rough")
     platforms_ok = sorted({r["platform"] for r in rows})

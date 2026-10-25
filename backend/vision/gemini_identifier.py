@@ -30,6 +30,12 @@ Return JSON only, matching the schema. Rules:
 - detected_flaws: short phrases for visible wear, e.g. "light creasing on toe box"; [] if none
 - search_queries.ebay: 3-7 words, brand + model + key attribute, no size, e.g. "nike air force 1 07 white"
 - search_queries.vinted: 2-5 casual words, e.g. "air force 1 white"
+- must_have: 1-4 lowercase words that nearly every correct listing title includes, naming the model
+  (not the brand alone, not the colour unless it's part of the name). Give alternatives with "|".
+  e.g. Jordan 1 Low Triple Black -> ["jordan", "low"]; iPhone 13 Pro 128GB -> ["iphone 13", "pro"]
+- must_not_have: lowercase words that would mean a different item: other colourways or
+  collaborations of the same model, a different version, replicas. e.g. Jordan 1 Low Triple Black
+  -> ["white", "red", "blue", "grey", "panda", "travis", "psg", "toe", "replica"]
 - is_broken: true only if it looks broken or for parts
 - confidence: 0-1, how sure you are of the exact product
 """
@@ -48,6 +54,8 @@ SCHEMA = {
         "detected_flaws": {"type": "ARRAY", "items": {"type": "STRING"}},
         "search_queries": {"type": "OBJECT", "properties": {"ebay": {"type": "STRING"}, "vinted": {"type": "STRING"}},
                            "required": ["ebay", "vinted"]},
+        "must_have": {"type": "ARRAY", "items": {"type": "STRING"}},
+        "must_not_have": {"type": "ARRAY", "items": {"type": "STRING"}},
         "is_broken": {"type": "BOOLEAN"},
         "confidence": {"type": "NUMBER"},
     },
@@ -77,6 +85,15 @@ def _shrink(data: bytes, max_side: int = 1600) -> tuple[bytes, str]:
         return data, "image/jpeg"
 
 
+def _terms(v, n: int) -> list[str]:
+    out = []
+    for t in (v or [])[:n]:
+        t = " ".join(str(t).lower().split())
+        if t and t not in out:
+            out.append(t)
+    return out
+
+
 def _clean(raw: dict) -> dict:
     """Coerce Gemini's JSON into a valid ItemSpec dict (+ confidence)."""
     tier = raw.get("condition_tier") if raw.get("condition_tier") in ("fair", "good", "very_good", "mint") else "good"
@@ -93,6 +110,8 @@ def _clean(raw: dict) -> dict:
         "detected_flaws": [str(f) for f in (raw.get("detected_flaws") or [])][:6],
         "search_queries": {"ebay": ebay_q, "vinted": vinted_q},
         "is_broken": bool(raw.get("is_broken", False)),
+        "must_have": _terms(raw.get("must_have"), 4),
+        "must_not_have": _terms(raw.get("must_not_have"), 15),
     }
     conf = raw.get("confidence")
     return {"item": item, "confidence": float(min(max(conf, 0.0), 1.0)) if isinstance(conf, (int, float)) else None}
@@ -142,7 +161,7 @@ class GeminiIdentifier:
 
     def from_images(self, images: list[bytes], hint: str | None = None) -> dict:
         parts = [{"text": PROMPT + (f"\nThe seller adds: {hint}" if hint else "")}]
-        for data in images[:2]:
+        for data in images[:4]:
             small, mime = _shrink(data)
             parts.append({"inline_data": {"mime_type": mime, "data": base64.b64encode(small).decode()}})
         return self._parse(self._call(parts))

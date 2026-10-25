@@ -77,10 +77,10 @@ def _identify_fallback(source: str, why: str) -> dict:
 
 @app.post("/api/v1/identify", response_model=IdentifyResponse)
 async def identify(
-    images: list[UploadFile] = File(..., description="1-2 photos: overview + optional label close-up"),
+    images: list[UploadFile] = File(..., description="1-4 photos: overview, other angles, label close-up"),
     hint: Optional[str] = Form(None, description="Optional typed hint, e.g. 'size 9'"),
 ):
-    blobs = [await f.read() for f in images[:2]]
+    blobs = [await f.read() for f in images[:4]]
     try:
         out = GeminiIdentifier().from_images(blobs, hint=hint)
     except IdentifyError as e:

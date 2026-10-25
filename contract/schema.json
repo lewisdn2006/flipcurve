@@ -346,6 +346,22 @@
           "description": "If true, the outlier filter keeps 'spares/repairs' listings",
           "title": "Is Broken",
           "type": "boolean"
+        },
+        "must_have": {
+          "description": "Words a matching listing title must contain (\"a|b\" = either), e.g. [\"jordan\", \"low\"]",
+          "items": {
+            "type": "string"
+          },
+          "title": "Must Have",
+          "type": "array"
+        },
+        "must_not_have": {
+          "description": "Words that mean a different item (other colourways, collabs, replicas), e.g. [\"white\", \"travis\"]",
+          "items": {
+            "type": "string"
+          },
+          "title": "Must Not Have",
+          "type": "array"
         }
       },
       "required": [

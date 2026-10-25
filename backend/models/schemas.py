@@ -106,6 +106,10 @@ class ItemSpec(_Model):
     detected_flaws: list[str] = Field(default_factory=list)
     search_queries: SearchQueries
     is_broken: bool = Field(False, description="If true, the outlier filter keeps 'spares/repairs' listings")
+    must_have: list[str] = Field(default_factory=list, description="Words a matching listing title must "
+                                 "contain (\"a|b\" = either), e.g. [\"jordan\", \"low\"]")
+    must_not_have: list[str] = Field(default_factory=list, description="Words that mean a different item "
+                                     "(other colourways, collabs, replicas), e.g. [\"white\", \"travis\"]")
 
 
 class IdentifyResponse(_Model):

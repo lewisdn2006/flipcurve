@@ -76,8 +76,11 @@ The app takes the photo, runs the search, and shows charts. The x-axis is the li
 
 Markers on the charts (`price_markers`), always quick ≤ best ≤ patient (revised 25 Oct):
 * quick sale: highest price with P(sold within 7 days) ≥ 50%;
-* best value: maximises net × E[e^(−γT)] with γ = 0.01/day (waiting a month costs ~25%);
-* patient: the same with γ = 0.003/day.
+* best value: maximises net × E[e^(−γT)] with γ = 0.02/day (waiting a month costs ~45%), but
+  never above 1.35× the median price exact matches sold for (or their 90th percentile);
+* patient: the same with γ = 0.005/day, never above 1.6× that median (or 1.15× the 90th pct).
+The ceilings use same-condition sales when there are 3+. Without them, a fit where price looked
+barely linked to speed sent every "best" price to the top of the chart (£121, 25 Oct).
 If no price reaches the quick-sale target (a slow market), quick sale = 85% of the typical sold
 price for the condition, with a `note`, and the markdown floor uses it too. Before this, a slow
 market made every marker fall to the bottom of the chart: a user's £30 Jordans showed £10.
@@ -171,6 +174,22 @@ from priors. Three changes:
 * Relevance now needs 70% of the query's words (50% let "Air Force 1 Triple Black" through).
 * Survivorship gap is measured within one platform (mixing Vinted asks with eBay sales made it
   negative).
+
+## D13. Matching the exact item (25 Oct, second Jordan scan)
+
+The eBay search "nike air jordan 1 low triple black" returned every Jordan 1 Low colourway and
+collab (Panda, Game Royal, Travis Scott at £300-780) and an Air Force 1, all passing the 70%
+word-overlap test, so prices came out ~4x too high. Now:
+* The identifier (Gemini) also returns `must_have` (words every correct title contains, e.g.
+  jordan, low) and `must_not_have` (other colourways, collabs, replicas). Both are editable on
+  the confirm step. Version words (mid, kids, pro...) in must_not_have are left to D12.
+* Without those, two generic checks still apply: a colour in the title the item doesn't have
+  ("different colour: white"), and a standalone "x" ("Travis Scott x Nike": a collaboration).
+  OG / SP count as versions.
+* Price fences are robust (median / MAD of condition-adjusted log prices); anchors pool all
+  sales and keep each condition's own median only within 0.7-1.5x of the pooled level; the
+  price spread σ_p uses MAD too; β1 is bounded ≥ 0.75 (price must matter somewhat).
+* Up to 4 photos go to the identifier; photos can be removed one by one; "Start again" resets.
 
 ## TEAM — still to decide
 

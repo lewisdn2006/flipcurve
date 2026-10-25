@@ -9,7 +9,7 @@ what was excluded and why. Three passes:
      `related` ("mid", "kids"...): the pipeline uses it for selling speed with its price rescaled,
      never for the price level. (Found 25 Oct: eBay's "air jordan 1 low triple black" search was
      ~75% Jordan 1 Mid and ~25% kids' sizes.)
-  3. Price: two-sided Tukey fences on log price relative to its condition's median, per platform
+  3. Price: robust (median/MAD) fences on condition-adjusted log price, per platform
 
 Owner: Person 1.
 """
@@ -28,13 +28,23 @@ STOP = {"the", "a", "an", "and", "or", "for", "with", "of", "in", "size", "uk", 
 # Mutually exclusive versions: if the search names one, a title naming another is a different item
 EXCLUSIVE = [{"low", "mid", "high", "hi"}]
 # Model-tier words: a title with one the search doesn't have is a different (usually pricier) item
-TIER_WORDS = {"pro", "max", "plus", "mini", "ultra", "lite", "se", "xl"}
+TIER_WORDS = {"pro", "max", "plus", "mini", "ultra", "lite", "se", "xl", "og", "sp"}
 KIDS = {"gs", "junior", "junior's", "kids", "kid's", "infant", "infants", "toddler", "baby", "youth",
         "boys", "girls", "td", "ps", "child", "childs", "children", "children's", "jnr", "bgs"}
+# Colour words: a title naming a colour the item doesn't have is another colourway (25 Oct:
+# "nike air jordan 1 low triple black" matched Panda, Game Royal, Travis Scott... at 70% overlap)
+COLOURS = {"black", "white", "red", "blue", "royal", "navy", "green", "grey", "gray", "pink", "purple", "lilac",
+           "orange", "yellow", "brown", "beige", "tan", "cream", "sail", "ivory", "gold", "silver",
+           "bronze", "teal", "turquoise", "olive", "khaki", "burgundy", "maroon", "violet",
+           "multi", "multicolour", "multicolor", "panda", "bred", "chicago", "mocha", "smoke",
+           "volt", "lime", "coral", "peach", "camo", "rose", "aqua", "cyan", "magenta", "neon"}
+# words that are versions (handled as `related`), so must_not_have doesn't throw those away
+VERSION_WORDS = set().union(*EXCLUSIVE) | TIER_WORDS | KIDS
 # share of the query's words a title needs (0.5 let 'Air Force 1 Triple Black' through for
 # 'jordan 1 low triple black'; 25 Oct)
 RELEVANCE = 0.7
-TUKEY_K = 1.5
+FENCE_K = 3.0
+TIER_RATIO = {"fair": 0.65, "good": 1.0, "very_good": 1.32, "mint": 1.9}  # = survival_model.DEFAULT_TIER_RATIO
 MIN_FOR_FENCES = 8
 
 
@@ -68,10 +78,42 @@ def version_mismatch(title: str, query: str, item_text: str = "") -> str | None:
     return None
 
 
+def _has(text_words: list[str], term: str) -> bool:
+    """term may be several words ("iphone 13") and alternatives ("triple black|all black")."""
+    padded = " " + " ".join(text_words) + " "
+    return any(" " + " ".join(_ordered_words(alt)) + " " in padded for alt in term.split("|") if alt.strip())
+
+
+def _ordered_words(text: str) -> list[str]:
+    return re.findall(r"[a-z0-9']+", (text or "").lower().replace("/", " "))
+
+
+def other_item_reason(title: str, query: str, item_text: str = "", must_have=(), must_not_have=()) -> str | None:
+    """Why this title is a different item (not just a different version), or None."""
+    words = _ordered_words(title)
+    for term in must_have:
+        if not _has(words, term):
+            return f"missing '{term.split('|')[0]}'"
+    for term in must_not_have:
+        if set(_ordered_words(term)) <= VERSION_WORDS:
+            continue  # Mid / kids / Pro... are kept as related versions instead
+        if _has(words, term):
+            return f"different item: {term}"
+    q_all = _all_words(query) | _all_words(item_text)
+    if "x" in words and "x" not in q_all:  # "Travis Scott x Nike ...": a collaboration
+        return "collaboration"
+    mine = q_all & COLOURS
+    if mine:
+        other = (set(words) & COLOURS) - mine
+        if other:
+            return f"different colour: {sorted(other)[0]}"
+    return None
+
+
 def filter_rows(rows: list[dict], queries: dict[str, str], item_is_broken: bool = False,
-                item_text: str = "") -> list[dict]:
-    """queries: platform -> search query used; item_text: the item's title/model (helps the
-    version check). Returns the same rows (copied) with outliers marked."""
+                item_text: str = "", must_have=(), must_not_have=()) -> list[dict]:
+    """queries: platform -> search query used; item_text: the item's title/model; must_have /
+    must_not_have: the identifier's title rules. Returns the same rows (copied) with outliers marked."""
     rows = [dict(r, is_outlier=False, outlier_reason=None, related=None) for r in rows]
     bad_words = NEGATIVE + ([] if item_is_broken else REPAIR)
     for r in rows:
@@ -88,27 +130,27 @@ def filter_rows(rows: list[dict], queries: dict[str, str], item_is_broken: bool 
         if q and len(q & _words(r["title"])) < RELEVANCE * len(q):
             _mark(r, "not a close title match")
             continue
+        why = other_item_reason(r["title"], queries.get(r["platform"], ""), item_text, must_have, must_not_have)
+        if why:
+            _mark(r, why)
+            continue
         r["related"] = version_mismatch(r["title"], queries.get(r["platform"], ""), item_text)
 
-    # price fences on log(price / condition median), per platform: Vinted is usually cheaper than
-    # eBay, so pooling them flagged ordinary Vinted listings as "far below" (found 24 Oct).
-    # Tiers are pooled within a platform so thin tiers still get checked.
-    # (and per related version: a Jordan 1 Mid has its own price level)
+    # Price fences, per platform (Vinted is usually cheaper than eBay; pooling them flagged
+    # ordinary Vinted listings, 24 Oct) and per related version (a Mid has its own level).
+    # Prices are first put on a common footing with the typical condition ratios (per-condition
+    # medians were fragile: two pricey "new" collabs made the mint median £157, 25 Oct), then a
+    # robust centre and spread (median / MAD) flag anything 3 spreads away.
     for platform, rel in {(r["platform"], r.get("related")) for r in rows}:
         keep = [r for r in rows if r["platform"] == platform and r.get("related") == rel and not r["is_outlier"]]
         if len(keep) < MIN_FOR_FENCES:
             continue
-        tiers: dict[str, list[float]] = {}
-        for r in keep:
-            tiers.setdefault(r.get("condition_tier") or "good", []).append(r["price_gbp"])
-        med = {t: float(np.median(v)) for t, v in tiers.items()}
-        resid = np.array([np.log(r["price_gbp"] / med[r.get("condition_tier") or "good"]) for r in keep])
-        q1, q3 = np.percentile(resid, [25, 75])
-        spread = max(q3 - q1, 0.15)  # floor: a tight cluster shouldn't make normal prices look extreme
-        lo, hi = q1 - TUKEY_K * spread, q3 + TUKEY_K * spread
-        for r, z in zip(keep, resid):
-            if z < lo:
+        z = np.array([np.log(r["price_gbp"] / TIER_RATIO.get(r.get("condition_tier") or "good", 1.0)) for r in keep])
+        centre = float(np.median(z))
+        spread = max(1.4826 * float(np.median(np.abs(z - centre))), 0.15)
+        for r, zi in zip(keep, z):
+            if zi < centre - FENCE_K * spread:
                 _mark(r, "price far below similar listings")
-            elif z > hi:
+            elif zi > centre + FENCE_K * spread:
                 _mark(r, "price far above similar listings")
     return rows

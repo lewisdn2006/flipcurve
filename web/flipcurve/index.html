@@ -69,6 +69,12 @@ button:disabled { opacity: .5; cursor: default; }
 .kv { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; font-size: 14px; }
 .kv span:nth-child(odd) { color: var(--ink-2); }
 .badge { font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--ink-2); }
+.thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.thumb { position: relative; width: 72px; height: 72px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb button { position: absolute; top: 2px; right: 2px; width: 22px; height: 22px; padding: 0; border-radius: 50%;
+  border: none; background: rgba(0,0,0,.65); color: #fff; font-size: 14px; line-height: 22px; }
+button.small { padding: 4px 10px; font-size: 13px; font-weight: 500; }
 .markers { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
 .markers div { flex: 1 1 120px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
 .markers b { display: block; font-size: 18px; }
@@ -116,12 +122,15 @@ ol.sched { margin: 0; padding-left: 20px; }
     </div>
     <div id="tabPhoto" class="hidden">
       <div class="row">
-        <div class="grow"><label for="photos">One or two photos (whole item, plus a label close-up if there is one)</label>
-          <input type="file" id="photos" accept="image/*" multiple></div>
+        <div class="grow"><label for="photos">Up to 4 photos (whole item, other angles, a label close-up if there is one)</label>
+          <input type="file" id="photos" accept="image/*" multiple>
+          <div class="thumbs" id="thumbs"></div>
+          <button class="ghost small hidden" id="clearPhotos" style="margin-top:8px">Remove all photos</button></div>
         <div class="grow"><label for="hint">Anything the photo won't show (optional)</label><input type="text" id="hint" placeholder="e.g. size 9, small scuff on heel"></div>
       </div>
     </div>
-    <div class="row" style="margin-top:12px"><button id="identifyBtn">Identify</button><span class="muted" id="identifyMsg"></span></div>
+    <div class="row" style="margin-top:12px"><button id="identifyBtn">Identify</button><span class="muted" id="identifyMsg"></span>
+      <button class="ghost small" id="resetBtn" style="margin-left:auto">Start again</button></div>
     <div class="err" id="identifyErr"></div>
   </div>
 
@@ -137,6 +146,10 @@ ol.sched { margin: 0; padding-left: 20px; }
     <div class="row" style="margin-top:8px">
       <div class="grow"><label for="qEbay">eBay search</label><input type="text" id="qEbay"></div>
       <div class="grow"><label for="qVinted">Vinted search</label><input type="text" id="qVinted"></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div class="grow"><label for="mustHave">Listing titles must include (comma-separated; a|b = either)</label><input type="text" id="mustHave" placeholder="e.g. jordan, low"></div>
+      <div class="grow"><label for="mustNot">Leave out listings mentioning</label><input type="text" id="mustNot" placeholder="e.g. white, travis, replica"></div>
     </div>
     <p class="muted" id="flaws"></p>
     <div class="row"><button id="scanBtn">Scan eBay and Vinted</button>
@@ -252,10 +265,9 @@ $("identifyBtn").onclick = async () => {
       out = await api("/api/v1/identify-text", { method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query, condition_tier: $("qTier").value || null }) });
     } else {
-      const files = [...$("photos").files].slice(0, 2);
-      if (!files.length) throw new Error("Choose a photo first.");
+      if (!photos.length) throw new Error("Choose a photo first.");
       const fd = new FormData();
-      files.forEach((f) => fd.append("images", f));
+      photos.forEach((f) => fd.append("images", f));
       if ($("hint").value.trim()) fd.append("hint", $("hint").value.trim());
       out = await api("/api/v1/identify", { method: "POST", body: fd });
     }
@@ -270,6 +282,8 @@ function showConfirm(out) {
   $("tier").value = item.condition_tier || "good";
   $("qEbay").value = item.search_queries?.ebay || "";
   $("qVinted").value = item.search_queries?.vinted || "";
+  $("mustHave").value = (item.must_have || []).join(", ");
+  $("mustNot").value = (item.must_not_have || []).join(", ");
   const bits = [];
   if (item.detected_flaws?.length) bits.push("Noticed: " + item.detected_flaws.join("; "));
   (out.warnings || []).forEach((w) => bits.push(w));
@@ -278,10 +292,42 @@ function showConfirm(out) {
   $("stepConfirm").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+const terms = (v) => v.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
 function confirmedItem() {
   return { ...item, title: $("title").value.trim() || item.title, condition_tier: $("tier").value,
-           search_queries: { ebay: $("qEbay").value.trim(), vinted: $("qVinted").value.trim() } };
+           search_queries: { ebay: $("qEbay").value.trim(), vinted: $("qVinted").value.trim() },
+           must_have: terms($("mustHave").value), must_not_have: terms($("mustNot").value) };
 }
+
+// ---- photos: keep our own list so single photos can be removed
+let photos = [];
+const MAX_PHOTOS = 4;
+function drawThumbs() {
+  $("thumbs").innerHTML = "";
+  photos.forEach((f, i) => {
+    const d = document.createElement("div"); d.className = "thumb";
+    const img = document.createElement("img"); img.alt = f.name; img.src = URL.createObjectURL(f);
+    img.onload = () => URL.revokeObjectURL(img.src);
+    const x = document.createElement("button"); x.type = "button"; x.textContent = "×"; x.title = "Remove this photo";
+    x.setAttribute("aria-label", "Remove " + f.name);
+    x.onclick = () => { photos.splice(i, 1); drawThumbs(); };
+    d.append(img, x); $("thumbs").appendChild(d);
+  });
+  $("clearPhotos").classList.toggle("hidden", photos.length === 0);
+}
+$("photos").addEventListener("change", () => {
+  photos = [...photos, ...$("photos").files].slice(0, MAX_PHOTOS);
+  $("photos").value = "";  // so choosing the same file again still fires
+  drawThumbs();
+});
+$("clearPhotos").onclick = () => { photos = []; drawThumbs(); };
+$("resetBtn").onclick = () => {
+  photos = []; drawThumbs(); item = null; R = null;
+  ["q", "hint"].forEach((id) => $(id).value = ""); $("qTier").value = "";
+  ["identifyErr", "scanErr"].forEach((id) => $(id).textContent = "");
+  $("stepConfirm").classList.add("hidden"); $("results").classList.add("hidden"); $("progress").classList.add("hidden");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
 
 // ---- step 2: scan (helper collects pages in this browser -> server fits the model)
 function collect(queries, recheckIds) {

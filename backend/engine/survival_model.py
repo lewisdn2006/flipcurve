@@ -33,6 +33,7 @@ DEFAULT_TIER_RATIO = {"fair": 0.65, "good": 1.0, "very_good": 1.32, "mint": 1.9}
 MIN_SOLD_PER_ANCHOR = 5
 PRIOR_MIN_N = 12          # fewer observed sales than this -> flagged as leaning on priors
 T_MIN = 1e-3              # days; avoids ln(0) for listings seen the moment they went up
+BETA1_MIN = 0.75
 
 # ------------------------------------------------------------------ closed forms (section 3)
 
@@ -115,20 +116,28 @@ def estimate_anchors(rows) -> dict[str, float]:
         prices = [float(_get(r, "price_gbp")) for r in rows if not _get(r, "is_outlier")]
         base = 0.85 * float(np.median(prices)) if prices else 30.0
         return {t: round(base * DEFAULT_TIER_RATIO[t], 2) for t in TIERS}
-    # implied 'Good' level from each well-populated tier, then rebuild all tiers from it
-    ref = float(np.median([m / DEFAULT_TIER_RATIO[t] for t, m in good.items()]))
-    return {t: round(good.get(t, ref * DEFAULT_TIER_RATIO[t]), 2) for t in TIERS}
+    # pooled 'Good' level from every sale (condition-adjusted); a tier's own median is used only
+    # within 0.7-1.5x of what the pooled level implies (a few pricey collabs made "mint" £157
+    # for £30 trainers, 25 Oct)
+    ref = float(np.median([float(_get(r, "price_gbp")) / DEFAULT_TIER_RATIO[_tier(r)] for r in sold]))
+    out = {}
+    for t in TIERS:
+        implied = ref * DEFAULT_TIER_RATIO[t]
+        out[t] = round(float(np.clip(good.get(t, implied), 0.7 * implied, 1.5 * implied)), 2)
+    return out
 
 
 def estimate_sigma(rows, anchors) -> float:
-    """sigma_p: robust spread (IQR / 1.349) of sold prices around their condition's anchor."""
+    """sigma_p: robust spread of sold prices around their condition's anchor, measured relative to
+    the anchor (median absolute deviation x 1.4826) and expressed in 'Good' pounds. A few pricey
+    special editions used to inflate the IQR-based spread to ~£30 on £30 trainers, which made price
+    look irrelevant to speed (25 Oct)."""
     sold = [r for r in rows if _get(r, "obs_type") != "active" and not _get(r, "is_outlier")]
-    resid = [float(_get(r, "price_gbp")) - anchors[_tier(r)] for r in sold]
-    floor = 0.1 * anchors["good"]
-    if len(resid) < 4:
-        return max(0.3 * anchors["good"], floor)
-    q75, q25 = np.percentile(resid, [75, 25])
-    return float(max((q75 - q25) / 1.349, floor))
+    rel = np.array([float(_get(r, "price_gbp")) / anchors[_tier(r)] - 1.0 for r in sold])
+    if len(rel) < 4:
+        return 0.3 * anchors["good"]
+    mad = 1.4826 * float(np.median(np.abs(rel - np.median(rel))))
+    return float(np.clip(mad, 0.1, 0.6) * anchors["good"])
 
 
 @dataclass
@@ -331,7 +340,12 @@ def fit(rows, platforms=("ebay", "vinted"), prior: Prior | None = None,
     eta_start = np.log(np.median(ages)) if len(ages) else np.log(prior.lambda0_days)
     x0 = np.concatenate([[eta_start, prior.beta1, prior.beta2],
                          [prior.theta_mean.get(p, 0.0) for p in platforms], [np.log(prior.k)]])
-    res = minimize(objective, x0, method="L-BFGS-B")
+    # beta1 >= 0.75: a listing priced one spread above the market sells ~2x slower at least. With
+    # mixed listings the data can make price look almost irrelevant, and then every "best price"
+    # ran to the top of the chart (25 Oct). k kept in a sane range too.
+    bounds = [(None, None), (BETA1_MIN, 8.0), (None, None)] + [(None, None)] * n_plat + [(np.log(0.3), np.log(3.0))]
+    x0[1] = max(x0[1], BETA1_MIN)
+    res = minimize(objective, x0, method="L-BFGS-B", bounds=bounds)
     H = _hessian(objective, res.x)
     try:
         cov = np.linalg.inv(H)
