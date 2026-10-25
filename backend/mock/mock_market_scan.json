@@ -28,7 +28,7 @@
     "sample_size_excluded": 4,
     "active_median_gbp": 50.99,
     "sold_median_gbp": 36.99,
-    "survivorship_bias_pct": 37.8,
+    "survivorship_bias_pct": 27.6,
     "condition_buckets": {
       "fair": {
         "p25": 18.99,
@@ -8821,12 +8821,13 @@
       "expected_days": 7.4,
       "expected_days_low": 3.8,
       "expected_days_high": 14.6,
+      "median_days": 4.7,
       "offer_buffer_pct": 13.0,
       "n_listings": 84,
       "n_sales": 5,
       "confidence": "low",
       "notes": [
-        "5 observed sales on Vinted; speed estimate leans on the average across platforms"
+        "Only 5 Vinted sales seen, so treat the timing as rough"
       ]
     },
     "ebay": {
@@ -8837,6 +8838,7 @@
       "expected_days": 7.6,
       "expected_days_low": 6.5,
       "expected_days_high": 9.0,
+      "median_days": 4.8,
       "offer_buffer_pct": 4.0,
       "n_listings": 298,
       "n_sales": 205,

@@ -190,6 +190,15 @@ word-overlap test, so prices came out ~4x too high. Now:
   sales and keep each condition's own median only within 0.7-1.5x of the pooled level; the
   price spread σ_p uses MAD too; β1 is bounded ≥ 0.75 (price must matter somewhat).
 * Up to 4 photos go to the identifier; photos can be removed one by one; "Start again" resets.
+* Third Jordan scan (4 pages): exact matches priced over 2.5× (or under 0.3×) the median
+  condition-adjusted sold price are dropped (a £228 "Black Lace-Up", a Cactus Jack pair); for
+  footwear, UK 6-and-under listings count as kids' sizing for an adult pair (related, D12).
+* Vinted's stock window A is now the typical age of the last 5% of cards in catalogue order: the
+  4 pages for a rarely listed item reached back ~300 days and the 90th-percentile rule cut it at 191.
+* Platform cards show "half sell within" (median); the average is pulled up by the long tail.
+  Parameters on a bound (β1 at its floor) are held fixed for the ranges, which were 0-365 days.
+* The survivorship gap needs 5+ sold and 5+ unsold exact matches on one platform and compares
+  condition-adjusted prices (brand-new asks next to used sales showed +154%).
 
 ## TEAM — still to decide
 

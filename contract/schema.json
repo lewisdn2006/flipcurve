@@ -1109,6 +1109,21 @@
           "title": "Expected Days High",
           "type": "number"
         },
+        "median_days": {
+          "anyOf": [
+            {
+              "maximum": 365.0,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Half sell within this many days (the average is pulled up by the few that take ages)",
+          "title": "Median Days"
+        },
         "offer_buffer_pct": {
           "title": "Offer Buffer Pct",
           "type": "number"

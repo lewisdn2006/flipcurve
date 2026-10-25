@@ -173,11 +173,14 @@ def _summary(rows, now, data_source, platforms_ok):
     a, s = med(active), med(sold)
     # survivorship gap within one platform: Vinted asks are lower than eBay sales, so mixing
     # platforms made the gap negative (25 Oct)
+    # ...and like for like on condition (brand-new asks next to used sales made it +154%): each
+    # price is converted to 'Good' by the typical condition ratios first
+    norm = lambda xs: float(np.median([x["price_gbp"] / sm.DEFAULT_TIER_RATIO[sm._tier(x)] for x in xs]))  # noqa: E731
     by_pl = {}
     for pl in {r["platform"] for r in sold}:
         ps, pa = [r for r in sold if r["platform"] == pl], [r for r in active if r["platform"] == pl]
-        if len(ps) >= 3 and len(pa) >= 3:
-            by_pl[pl] = (len(ps), med(pa), med(ps))
+        if len(ps) >= 5 and len(pa) >= 5:
+            by_pl[pl] = (len(ps), norm(pa), norm(ps))
     gap = None
     if by_pl:
         _, pa, ps = max(by_pl.values())
@@ -215,7 +218,7 @@ def run(item: dict, rows: list[dict], now: datetime | None = None, data_source: 
         platforms: list[str] | None = None, prior: sm.Prior | None = None) -> dict:
     now = now or datetime.now(timezone.utc)
     platforms = platforms or list(PLATFORMS)
-    item_text = " ".join(str(item.get(k) or "") for k in ("title", "model_name"))
+    item_text = " ".join(str(item.get(k) or "") for k in ("title", "model_name", "category", "size_or_storage"))
     rows = filter_rows(rows, item["search_queries"], item.get("is_broken", False), item_text=item_text,
                        must_have=item.get("must_have") or (), must_not_have=item.get("must_not_have") or ())
     rows, fit_rows, related = _with_related(rows)
@@ -250,9 +253,10 @@ def run(item: dict, rows: list[dict], now: datetime | None = None, data_source: 
             conf = "low"
             notes.append(f"No {site} sales seen yet: speed comes from how long the {n_stock[pl]} "
                          f"current {site} listings have been up (scan again later to catch sales)")
-        elif conf in ("low", "estimated"):
-            notes.append(f"{f.n_sales[pl]} observed sales on {site}; "
-                         "speed estimate leans on the average across platforms")
+        elif conf == "estimated":
+            notes.append(f"No {site} sales seen yet: speed leans on the other platform and typical values")
+        elif conf == "low":
+            notes.append(f"Only {f.n_sales[pl]} {site} sales seen, so treat the timing as rough")
         if n_rel_sales[pl]:
             notes.append(f"{n_rel_sales[pl]} of the {site} sales are similar items "
                          f"({', '.join(related)}), with prices scaled to this one")
@@ -260,6 +264,7 @@ def run(item: dict, rows: list[dict], now: datetime | None = None, data_source: 
             "recommended_list_gbp": _r(prices[i]), "expected_sale_price_gbp": _r(pp[pl]["sale"][i]),
             "net_payout_gbp": _r(pp[pl]["net"][i]), "prob_sell_7d": _r(pp[pl]["p7"][i], 3),
             "expected_days": _d(pp[pl]["mean"][i]), "expected_days_low": _d(lo), "expected_days_high": _d(hi),
+            "median_days": _d(sm.quantile_days(0.5, pp[pl]["lam"][i], f.k)),
             "offer_buffer_pct": _r(PLATFORMS[pl]["offer_buffer"] * 100, 1),
             "n_listings": n_list[pl], "n_sales": f.n_sales[pl], "confidence": conf, "notes": notes,
         }

@@ -77,13 +77,16 @@ def active_rows(cards: list[dict], cal: VintedCalibration, now: datetime) -> lis
                      "t_entry_days": round(age_min, 4), "start_source": "id_calibration",
                      "listed_at": b.mid.isoformat()})
     # Newest-first catalogue read back to age A: the age spread of what's still listed tells us how
-    # fast things go (stock sampling, survival_model). A = 90th percentile of ages, so the odd
-    # bumped old listing doesn't stretch the window; it needs a day or more to average over.
+    # fast things go (stock sampling, survival_model). It needs a day or more to average over.
     # Ages here use the best-guess start (interpolated), not the youngest bound.
     if len(rows) >= STOCK_MIN_ROWS:
         ages = {r["listing_id"]: max((now - datetime.fromisoformat(r["listed_at"])).total_seconds() / 86400, 0.0)
                 for r in rows}
-        window = float(np.percentile(list(ages.values()), 90))
+        # A = how far back the pages reach: the typical age of the last 5% of cards in catalogue
+        # order (newest first). A percentile of all ages cut it short when a rarely listed item's
+        # pages went back a year (25 Oct); bumped old listings scattered earlier don't move this.
+        in_order = [ages[r["listing_id"]] for r in rows]
+        window = float(np.median(in_order[-max(3, len(in_order) // 20):]))
         if window >= 1.0:
             for r in rows:
                 a = round(ages[r["listing_id"]], 4)

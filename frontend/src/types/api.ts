@@ -164,6 +164,10 @@ export type ProbSell7D2 = number;
 export type ExpectedDays1 = number;
 export type ExpectedDaysLow1 = number;
 export type ExpectedDaysHigh1 = number;
+/**
+ * Half sell within this many days (the average is pulled up by the few that take ages)
+ */
+export type MedianDays = number | null;
 export type OfferBufferPct = number;
 export type NListings = number;
 /**
@@ -493,6 +497,7 @@ export interface PlatformRecommendation {
   expected_days: ExpectedDays1;
   expected_days_low: ExpectedDaysLow1;
   expected_days_high: ExpectedDaysHigh1;
+  median_days?: MedianDays;
   offer_buffer_pct: OfferBufferPct;
   n_listings: NListings;
   n_sales: NSales;

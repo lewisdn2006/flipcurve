@@ -294,6 +294,8 @@ class PlatformRecommendation(_Model):
     expected_days: float = Field(..., ge=0, le=MAX_DAYS)
     expected_days_low: float = Field(..., ge=0, le=MAX_DAYS)
     expected_days_high: float = Field(..., ge=0, le=MAX_DAYS)
+    median_days: Optional[float] = Field(None, ge=0, le=MAX_DAYS, description="Half sell within this many days "
+                                         "(the average is pulled up by the few that take ages)")
     offer_buffer_pct: float
     n_listings: int = Field(..., ge=0)
     n_sales: int = Field(..., ge=0, description="Observed sales behind this platform's speed estimate")

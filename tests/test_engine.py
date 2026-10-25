@@ -116,3 +116,12 @@ def test_recommended_prices_stay_within_what_actually_sold():
     m = out.price_markers["good"]
     assert m.best_value_gbp <= 1.36 * med and m.patient_gbp <= 1.61 * med, (m, med)
     assert out.platform_recommendations["ebay"].recommended_list_gbp <= 1.36 * med
+
+
+def test_small_shoe_sizes_count_as_kids_for_an_adult_pair():
+    from backend.engine.outlier_filter import uk_size, version_mismatch
+    assert uk_size("Nike Air Jordan 1 Low UK 10.5") == 10.5 and uk_size("trainers 4.5uk") == 4.5
+    q, item = "jordan 1 low triple black", "Nike Air Jordan 1 Low Triple Black UK 10.5 Footwear"
+    assert version_mismatch("Nike Air Jordan 1 Low Triple Black UK 4", q, item, footwear=True) == "kids"
+    assert version_mismatch("Nike Air Jordan 1 Low Triple Black UK 9", q, item, footwear=True) is None
+    assert version_mismatch("Ladies coat UK 6", "coat", "Coat UK 10", footwear=False) is None

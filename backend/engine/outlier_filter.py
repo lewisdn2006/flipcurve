@@ -44,6 +44,7 @@ VERSION_WORDS = set().union(*EXCLUSIVE) | TIER_WORDS | KIDS
 # 'jordan 1 low triple black'; 25 Oct)
 RELEVANCE = 0.7
 FENCE_K = 3.0
+SOLD_HI, SOLD_LO = 2.5, 0.3
 TIER_RATIO = {"fair": 0.65, "good": 1.0, "very_good": 1.32, "mint": 1.9}  # = survival_model.DEFAULT_TIER_RATIO
 MIN_FOR_FENCES = 8
 
@@ -61,8 +62,20 @@ def _all_words(text: str) -> set[str]:
     return set(re.findall(r"[a-z0-9']+", (text or "").lower()))
 
 
-def version_mismatch(title: str, query: str, item_text: str = "") -> str | None:
-    """Which different version of the searched item this title is ("mid", "pro", "kids"), or None."""
+UK_SIZE = re.compile(r"\buk\s*-?\s*(\d{1,2}(?:\.5)?)\b|\b(\d{1,2}(?:\.5)?)\s*uk\b")
+FOOTWEAR = {"trainers", "trainer", "shoes", "shoe", "sneakers", "sneaker", "boots", "boot", "footwear",
+            "jordan", "dunk", "yeezy", "loafers", "heels", "sandals", "slides"}
+
+
+def uk_size(text: str) -> float | None:
+    m = UK_SIZE.search((text or "").lower())
+    return float(m.group(1) or m.group(2)) if m else None
+
+
+def version_mismatch(title: str, query: str, item_text: str = "", footwear: bool = False) -> str | None:
+    """Which different version of the searched item this title is ("mid", "pro", "kids"), or None.
+    For footwear, an adult item (UK 7+) vs a listing in UK 6 or under counts as kids' sizing
+    (25 Oct: UK 3.5-5 Jordans, priced as grade-school pairs, sat among the UK 10.5 comparisons)."""
     t, q = _all_words(title), _all_words(query) | _all_words(item_text)
     for group in EXCLUSIVE:
         mine = q & group
@@ -75,6 +88,10 @@ def version_mismatch(title: str, query: str, item_text: str = "") -> str | None:
         return sorted(extra)[0]
     if (t & KIDS) and not (q & KIDS):
         return "kids"
+    if footwear:
+        mine, theirs = uk_size(item_text), uk_size(title)
+        if mine is not None and theirs is not None and mine >= 7 and theirs <= 6:
+            return "kids"
     return None
 
 
@@ -111,10 +128,12 @@ def other_item_reason(title: str, query: str, item_text: str = "", must_have=(),
 
 
 def filter_rows(rows: list[dict], queries: dict[str, str], item_is_broken: bool = False,
-                item_text: str = "", must_have=(), must_not_have=()) -> list[dict]:
+                item_text: str = "", must_have=(), must_not_have=(), footwear: bool | None = None) -> list[dict]:
     """queries: platform -> search query used; item_text: the item's title/model; must_have /
     must_not_have: the identifier's title rules. Returns the same rows (copied) with outliers marked."""
     rows = [dict(r, is_outlier=False, outlier_reason=None, related=None) for r in rows]
+    if footwear is None:
+        footwear = bool(_all_words(item_text + " " + " ".join(queries.values())) & FOOTWEAR)
     bad_words = NEGATIVE + ([] if item_is_broken else REPAIR)
     for r in rows:
         title = r["title"].lower()
@@ -134,7 +153,7 @@ def filter_rows(rows: list[dict], queries: dict[str, str], item_is_broken: bool 
         if why:
             _mark(r, why)
             continue
-        r["related"] = version_mismatch(r["title"], queries.get(r["platform"], ""), item_text)
+        r["related"] = version_mismatch(r["title"], queries.get(r["platform"], ""), item_text, footwear)
 
     # Price fences, per platform (Vinted is usually cheaper than eBay; pooling them flagged
     # ordinary Vinted listings, 24 Oct) and per related version (a Mid has its own level).
@@ -153,4 +172,19 @@ def filter_rows(rows: list[dict], queries: dict[str, str], item_is_broken: bool 
                 _mark(r, "price far below similar listings")
             elif zi > centre + FENCE_K * spread:
                 _mark(r, "price far above similar listings")
+    # Against what actually sold: an exact match priced over 2.5x (or under 0.3x) the median
+    # condition-adjusted sold price is a different item or a fantasy ask (25 Oct: a £228 "Black
+    # Lace-Up" and a Cactus Jack pair among £30 sales; too few rows for the fences above).
+    ref = [np.log(r["price_gbp"] / TIER_RATIO.get(r.get("condition_tier") or "good", 1.0)) for r in rows
+           if r["obs_type"] != "active" and not r["is_outlier"] and not r.get("related")]
+    if len(ref) >= 3:
+        mid = float(np.median(ref))
+        for r in rows:
+            if r["is_outlier"] or r.get("related"):
+                continue
+            zi = np.log(r["price_gbp"] / TIER_RATIO.get(r.get("condition_tier") or "good", 1.0)) - mid
+            if zi > np.log(SOLD_HI):
+                _mark(r, "priced far above what this item sells for")
+            elif zi < np.log(SOLD_LO):
+                _mark(r, "priced far below what this item sells for")
     return rows

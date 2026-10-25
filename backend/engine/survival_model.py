@@ -347,14 +347,21 @@ def fit(rows, platforms=("ebay", "vinted"), prior: Prior | None = None,
     x0[1] = max(x0[1], BETA1_MIN)
     res = minimize(objective, x0, method="L-BFGS-B", bounds=bounds)
     H = _hessian(objective, res.x)
+    # parameters sitting on a bound are treated as fixed: the curvature there isn't a valid
+    # uncertainty (it made every range 0-365 days when beta1 hit its floor, 25 Oct)
+    free = np.array([not ((lo is not None and abs(x - lo) < 1e-6) or (hi is not None and abs(x - hi) < 1e-6))
+                     for x, (lo, hi) in zip(res.x, bounds)])
+    cov = np.zeros_like(H)
+    Hf = H[np.ix_(free, free)]
     try:
-        cov = np.linalg.inv(H)
-        if np.any(np.diag(cov) < 0):
+        cf = np.linalg.inv(Hf)
+        if np.any(np.diag(cf) < 0):
             raise np.linalg.LinAlgError
     except np.linalg.LinAlgError:
-        cov = np.linalg.pinv(H)
-        cov = (cov + cov.T) / 2
-        np.fill_diagonal(cov, np.abs(np.diag(cov)))
+        cf = np.linalg.pinv(Hf)
+        cf = (cf + cf.T) / 2
+        np.fill_diagonal(cf, np.abs(np.diag(cf)))
+    cov[np.ix_(free, free)] = cf
     sales_mask = (d.kind == 1) | (d.kind == 2)
     n_sales = {p: int(((d.j == i) & sales_mask).sum()) for i, p in enumerate(platforms)}
     return FitResult(

@@ -409,9 +409,9 @@ function render(r) {
       <div class="kv" style="margin-top:6px">
         <span>List at</span><span>${gbp(x.recommended_list_gbp)}</span>
         <span>Likely sale price</span><span>${gbp(x.expected_sale_price_gbp)}</span>
-        <span>Average time to sell</span><span>${days(x.expected_days)}</span>
-        <span>Range</span><span>${x.expected_days_low?.toFixed(1)}–${x.expected_days_high?.toFixed(1)} days</span>
+        <span>Half sell within</span><span>${days(x.median_days ?? x.expected_days)}</span>
         <span>Chance sold in 7 days</span><span>${pct(x.prob_sell_7d)}</span>
+        <span>Average wait</span><span title="The average is pulled up by the few that take ages; range is how sure we are of it">${days(x.expected_days)} <span class="muted">(${Math.round(x.expected_days_low)}–${Math.round(x.expected_days_high)})</span></span>
         <span>Listings / sales seen</span><span>${x.n_listings} / ${x.n_sales}</span>
       </div>
       ${(x.notes || []).map((n) => `<p class="muted" style="margin:6px 0 0">${esc(n)}</p>`).join("")}
