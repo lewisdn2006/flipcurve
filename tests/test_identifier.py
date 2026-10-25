@@ -415,3 +415,73 @@ def test_429_is_not_retried_on_the_same_model(monkeypatch):
         return httpx.Response(429, json={"error": {"message": "quota"}}) if order[-1] == "m" else reply(GOOD)
 
     assert make(handler).from_text("x")["item"]["brand"] == "Nike" and order == ["m", "other"]
+
+
+
+# ---- Gemma: Google's open models, with a far bigger free allowance than Flash (25 Oct)
+
+MODELS = {"models": [{"name": f"models/{n}", "supportedGenerationMethods": ["generateContent"]} for n in
+                     ["m", "gemini-9-flash", "gemma-3-27b-it", "gemma-4-26b-a4b-it", "gemma-4-31b-it", "gemma-4-31b-it-image"]]}
+
+
+def test_gemma_is_found_and_tried_after_flash(monkeypatch):
+    monkeypatch.delenv("GEMINI_FALLBACK_MODELS", raising=False)
+    monkeypatch.delenv("GEMMA_MODEL", raising=False)
+    order, gets = [], []
+
+    def handler(req):
+        if req.method == "GET":
+            gets.append(1)
+            return httpx.Response(200, json=MODELS)
+        order.append(_model_of(req))
+        if order[-1].startswith("gemma"):
+            return reply(GOOD)
+        return httpx.Response(429, json={"error": {"message": "quota"}})
+
+    out = make(handler).from_images([_jpeg(400)])
+    assert order == ["m", "gemini-9-flash", "gemma-4-31b-it"] and out["model"] == "gemma-4-31b-it"
+    assert len(gets) == 1  # the models list is fetched once
+
+
+def test_gemma_gets_json_asked_for_in_the_prompt(monkeypatch):
+    monkeypatch.setenv("GEMINI_FALLBACK_MODELS", "")
+    monkeypatch.setenv("GEMMA_MODEL", "gemma-4-31b-it")
+    monkeypatch.setenv("PHOTO_AI_FIRST", "gemma")
+    seen = {}
+
+    def handler(req):
+        body = json.loads(req.content)
+        seen["model"] = _model_of(req)
+        seen["cfg"] = body["generationConfig"]
+        seen["text"] = body["contents"][0]["parts"][0]["text"]
+        seen["image"] = "inline_data" in body["contents"][0]["parts"][1]
+        return httpx.Response(200, json={"candidates": [{"content": {"parts": [
+            {"text": "```json\n" + json.dumps(GOOD) + "\n```"}]}}]})
+
+    out = make(handler).from_images([_jpeg(400)])
+    assert seen["model"] == "gemma-4-31b-it" and seen["image"] and out["item"]["brand"] == "Nike"
+    assert "responseMimeType" not in seen["cfg"] and "responseSchema" not in seen["cfg"] and "thinkingConfig" not in seen["cfg"]
+    assert "Reply with only one JSON object" in seen["text"]
+
+
+def test_model_that_refuses_json_mode_is_asked_in_the_prompt(monkeypatch):
+    monkeypatch.setenv("GEMINI_FALLBACK_MODELS", "")
+    cfgs = []
+
+    def handler(req):
+        cfg = json.loads(req.content)["generationConfig"]
+        cfgs.append("responseMimeType" in cfg)
+        if "responseMimeType" in cfg:
+            return httpx.Response(400, json={"error": {"message": "JSON mode is not enabled for models/m"}})
+        return reply(GOOD)
+
+    assert make(handler).from_text("x")["item"]["brand"] == "Nike" and cfgs == [True, False]
+
+
+def test_gemma_counts_as_a_backup_in_the_message(monkeypatch):
+    monkeypatch.setenv("GEMINI_FALLBACK_MODELS", "")
+    monkeypatch.setenv("GEMMA_MODEL", "gemma-4-31b-it")
+    with pytest.raises(IdentifyError) as e:
+        make(lambda req: httpx.Response(429, json={"error": {"message": "quota"}})).from_text("x")
+    why = e.value.reason()
+    assert "gemma-4-31b-it: usage limit reached" in why and "no backup AI" not in why

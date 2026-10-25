@@ -89,8 +89,8 @@ class IdentifyError(RuntimeError):
         if not self.attempts:
             return str(self)
         bits = [f"{pretty_model(m)}: {r[:140]}" for m, r in self.attempts]
-        if not claude_configured():
-            bits.append("no backup AI set up (add ANTHROPIC_API_KEY to .env)")
+        if not claude_configured() and not any(m.startswith("gemma") for m, _ in self.attempts):
+            bits.append("no backup AI set up (add ANTHROPIC_API_KEY to .env, or GEMMA_MODEL)")
         return "; ".join(bits)
 
 
@@ -337,29 +337,63 @@ class GeminiIdentifier:
         self._deadline = None
         self.light_thinking = True
         self.used_model = None
+        self._names = None             # models list, fetched at most once
+        self._no_json_mode = set()     # models that refused the JSON response setting
         if not self.key and not claude_configured():
             raise IdentifyError("GEMINI_API_KEY is not set")
 
+    def _list_models(self) -> list[str]:
+        """Models this key can call generateContent on (asked once per identify). Never raises."""
+        if self._names is not None:
+            return self._names
+        self._names = []
+        if not self.key:
+            return self._names
+        try:
+            r = self.http.get(f"{API}/models", headers={"x-goog-api-key": self.key}, params={"pageSize": 200},
+                              timeout=min(10, max(1, self._left() - 2)))
+            if r.status_code == 200:
+                self._names = [m["name"].split("/", 1)[-1] for m in r.json().get("models", [])
+                               if "generateContent" in m.get("supportedGenerationMethods", [])]
+        except Exception:  # noqa: BLE001
+            pass
+        return self._names
+
+    def gemma_model(self) -> str | None:
+        """Google's open Gemma model, which has a far bigger free allowance than the Flash models
+        (25 Oct, AI Studio: 14.4K requests a day for Gemma 4 against a handful for Flash).
+        GEMMA_MODEL if set ("" turns it off); with an explicit GEMINI_FALLBACK_MODELS list, only that
+        list is used; otherwise the newest, largest Gemma this key can use."""
+        env = os.getenv("GEMMA_MODEL")
+        if env is not None:
+            return env.strip() or None
+        if os.getenv("GEMINI_FALLBACK_MODELS") is not None:
+            return None
+        best, key = None, None
+        for n in self._list_models():
+            m = re.match(r"gemma-(\d+(?:\.\d+)?)\D.*?(\d+)b", n)
+            if not m or not any(k in n for k in ("-it", "gemma-4", "gemma-5")) or any(k in n for k in SKIP_IN_FALLBACK):
+                continue
+            k = (float(m.group(1)), int(m.group(2)))   # newest version, then most parameters
+            if key is None or k > key:
+                best, key = n, k
+        return best
+
     def fallback_models(self) -> list[str]:
-        """Other Flash models to try when the main one is overloaded (503 "high demand", 25 Oct).
+        """Other models to try when the main one is overloaded or out of allowance (25 Oct).
         GEMINI_FALLBACK_MODELS (comma-separated) if set; otherwise the newest Flash models this key
-        can use, from the models list. Never raises."""
+        can use, then Gemma (bigger free allowance, a bit less accurate). Never raises."""
         if not self.key:
             return []
         env = os.getenv("GEMINI_FALLBACK_MODELS")
         if env is not None:
-            return [m.strip() for m in env.split(",") if m.strip() and m.strip() != self.model][:3]
-        try:
-            r = self.http.get(f"{API}/models", headers={"x-goog-api-key": self.key}, params={"pageSize": 200},
-                              timeout=min(10, max(1, self._left() - 2)))
-            if r.status_code != 200:
-                return []
-            names = [m["name"].split("/", 1)[-1] for m in r.json().get("models", [])
-                     if "generateContent" in m.get("supportedGenerationMethods", [])]
-        except Exception:  # noqa: BLE001
-            return []
-        flash = [n for n in names if "flash" in n and n != self.model and not any(k in n for k in SKIP_IN_FALLBACK)]
-        return sorted(flash, reverse=True)[:2]  # newest versions sort last alphabetically
+            out = [m.strip() for m in env.split(",") if m.strip() and m.strip() != self.model][:3]
+        else:
+            names = self._list_models()
+            flash = [n for n in names if "flash" in n and n != self.model and not any(k in n for k in SKIP_IN_FALLBACK)]
+            out = sorted(flash, reverse=True)[:2]  # newest versions sort last alphabetically
+        g = self.gemma_model()
+        return out + ([g] if g and g not in out and g != self.model else [])
 
     def _left(self) -> float:
         return self._deadline - time.monotonic() if self._deadline else self.budget_s
@@ -367,14 +401,16 @@ class GeminiIdentifier:
     def _start(self):
         self._deadline = time.monotonic() + self.budget_s
 
-    def _call(self, parts: list[dict], use_schema: bool = True, claude_first: bool = False) -> dict:
+    def _call(self, parts: list[dict], use_schema: bool = True, first: str = "gemini") -> dict:
         """Try models in turn until one gives a usable answer -> cleaned item dict.
-        Order: the main Gemini model (or Claude first if asked), then Claude, then other Flash models."""
+        Order: the main Gemini model (or Claude / Gemma first if asked), then Claude, then other
+        Flash models, then Gemma."""
         if self._deadline is None:
             self._start()
         claude = f"claude:{os.getenv('CLAUDE_MODEL', CLAUDE_DEFAULT_MODEL)}" if claude_configured() else None
-        queue = [m for m in ([claude, self.model if self.key else None] if claude_first and claude
-                             else [self.model if self.key else None]) if m]
+        main = self.model if self.key else None
+        lead = claude if first == "claude" else (self.gemma_model() if first == "gemma" and self.key else None)
+        queue = [m for m in dict.fromkeys([lead, main]) if m]
         attempts, tried, partial, gemini_ok, extended = [], [], None, bool(self.key), False
         while True:
             if not queue:
@@ -460,9 +496,16 @@ class GeminiIdentifier:
         kind: ok | busy (429/5xx/slow/network) | auth (key refused) | error (anything else)."""
         if model.startswith("claude:"):
             return self._call_claude(model.split(":", 1)[1], parts, cap)
-        cfg = {"responseMimeType": "application/json", "temperature": 0.2}
-        if use_schema:
-            cfg["responseSchema"] = SCHEMA
+        # Gemma (and any model that refused it before) doesn't take the JSON response setting: ask
+        # for JSON in the prompt instead, as with Claude.
+        json_mode = not model.startswith("gemma") and model not in self._no_json_mode
+        cfg = {"temperature": 0.2}
+        if json_mode:
+            cfg["responseMimeType"] = "application/json"
+            if use_schema:
+                cfg["responseSchema"] = SCHEMA
+        else:
+            parts = [dict(p, text=p["text"] + CLAUDE_JSON_NOTE) if i == 0 and "text" in p else p for i, p in enumerate(parts)]
         think = _thinking_config(model) if self.light_thinking else None
         if think:
             # Gemini 3 Flash thinks at "high" by default, which can take a long time before it
@@ -491,7 +534,10 @@ class GeminiIdentifier:
                 if r.status_code == 400 and self.light_thinking and "think" in r.text.lower():
                     self.light_thinking = False  # model without that setting: ask again without it
                     return self._call_model(model, parts, use_schema, cap)
-                if r.status_code == 400 and use_schema and "schema" in r.text.lower():
+                if r.status_code == 400 and json_mode and re.search(r"json mode|response_?mime_?type", r.text.lower()):
+                    self._no_json_mode.add(model)  # model without the JSON setting: ask in the prompt instead
+                    return self._call_model(model, parts, use_schema, cap)
+                if r.status_code == 400 and json_mode and use_schema and "schema" in r.text.lower():
                     return self._call_model(model, parts, False, cap)  # model without schema support
                 if r.status_code == 429:
                     # not "busy": this key has used up its allowance (requests per minute or per day)
@@ -528,9 +574,9 @@ class GeminiIdentifier:
 
     def from_images(self, images: list[bytes], hint: str | None = None) -> dict:
         self._start()
-        claude_first = os.getenv("PHOTO_AI_FIRST", "gemini").strip().lower() == "claude"
+        first = os.getenv("PHOTO_AI_FIRST", "gemini").strip().lower()  # gemini | claude | gemma
         try:
-            out = self._call(self._photo_parts(images, hint, GEMINI_MAX_SIDE), claude_first=claude_first)
+            out = self._call(self._photo_parts(images, hint, GEMINI_MAX_SIDE), first=first)
         except IdentifyError as e:
             # One more round with smaller photos, unless every model was simply busy (smaller photos
             # won't help that) or there isn't time left for it.
@@ -539,7 +585,7 @@ class GeminiIdentifier:
                 raise
             log.warning("identify: retrying with %d px photos after: %s", SMALL_RETRY_SIDE, e.attempts)
             try:
-                out = self._call(self._photo_parts(images, hint, SMALL_RETRY_SIDE), claude_first=claude_first)
+                out = self._call(self._photo_parts(images, hint, SMALL_RETRY_SIDE), first=first)
             except IdentifyError as e2:
                 raise IdentifyError(str(e2), e.attempts + [(m, r + " (smaller photos)") for m, r in e2.attempts]) from e2
         out.update(model=self.used_model, fallback=self.used_model != self.model)

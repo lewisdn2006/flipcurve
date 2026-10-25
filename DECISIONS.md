@@ -287,6 +287,17 @@ identify without trying the backups, and all of them showed the same "busy or un
 * The warning now says what happened to each model, e.g. "gemini-3.8-flash: no answer within 40 s;
   Claude: busy (HTTP 529)", and says so if no backup AI is set up (no ANTHROPIC_API_KEY).
 
+* **Gemma as a free backup** (same day): the Gemini key is on the free tier (a Gemini Pro
+  subscription doesn't cover API use, and paid API use needs a prepaid top-up), and Flash's free
+  allowance ran out: 429 on all three Flash models. AI Studio lists Gemma 4 (26B / 31B) at 30
+  requests a minute and 14.4K a day free. The newest, largest Gemma this key can use is found from
+  the models list and tried after the Flash models; `PHOTO_AI_FIRST=gemma` asks it first for photos;
+  `GEMMA_MODEL` pins or disables it. Gemma doesn't take the JSON response setting, so it (and any
+  model that refuses that setting) is asked for JSON in the prompt instead. A 429 is reported as
+  "usage limit reached" with Google's own message, and isn't retried on the same model.
+* Don't link the project to the "My Billing Account" prepay account while it's at £0: a paid-tier
+  project with no prepaid balance stops serving requests altogether.
+
 ## TEAM — still to decide
 
 - [ ] Demo items: fill in `backend/scrapers/cache_seed/demo_items.csv` with the things on the table.
