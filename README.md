@@ -26,6 +26,9 @@ The API currently serves **mock data** (`backend/mock/`, contract v1.1) so the f
 3. **Online:** `brew install cloudflared`, then `scripts/tunnel.sh quick` for a throwaway
    address, or `scripts/tunnel.sh setup` once and `scripts/tunnel.sh run` each time for
    https://flipcurve.lewisdn.com/flipcurve/ (API at https://api.lewisdn.com).
+4. **The page on lewisdn.com/flipcurve:** `cd web/worker && npx wrangler@3 login` (once), then
+   `npx wrangler@3 deploy` after any change to `web/flipcurve/index.html`. A small Cloudflare
+   Worker serves just that path, so the rest of lewisdn.com is untouched.
 
 ## Read first
 

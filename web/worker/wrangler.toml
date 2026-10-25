@@ -1,0 +1,10 @@
+# Deploy (from this folder, on the laptop):  npx wrangler login   (once)  then  npx wrangler deploy
+name = "flipcurve-page"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+workers_dev = false
+routes = [
+  { pattern = "lewisdn.com/flipcurve*", zone_name = "lewisdn.com" },
+  { pattern = "www.lewisdn.com/flipcurve*", zone_name = "lewisdn.com" },
+]
+rules = [{ type = "Text", globs = ["**/*.html"], fallthrough = true }]
