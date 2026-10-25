@@ -88,7 +88,7 @@ class IdentifyError(RuntimeError):
         Claude: busy (HTTP 529)"."""
         if not self.attempts:
             return str(self)
-        bits = [f"{pretty_model(m)}: {r[:90]}" for m, r in self.attempts]
+        bits = [f"{pretty_model(m)}: {r[:140]}" for m, r in self.attempts]
         if not claude_configured():
             bits.append("no backup AI set up (add ANTHROPIC_API_KEY to .env)")
         return "; ".join(bits)
@@ -445,7 +445,7 @@ class GeminiIdentifier:
             return None, f"network error ({type(e).__name__})", "busy"
         if r.status_code != 200:
             kind = "busy" if r.status_code in RETRY_STATUS | {529} else "auth" if r.status_code in (401, 403) else "error"
-            label = {"busy": "busy", "auth": "API key refused"}.get(kind, "rejected the request")
+            label = {"busy": "usage limit reached" if r.status_code == 429 else "busy", "auth": "API key refused"}.get(kind, "rejected the request")
             return None, f"{label} (HTTP {r.status_code}: {_google_error(r)})" if kind == "error" else f"{label} (HTTP {r.status_code})", kind
         body = r.json()
         out = "".join(b.get("text", "") for b in body.get("content", []) if b.get("type") == "text")
@@ -493,7 +493,10 @@ class GeminiIdentifier:
                     return self._call_model(model, parts, use_schema, cap)
                 if r.status_code == 400 and use_schema and "schema" in r.text.lower():
                     return self._call_model(model, parts, False, cap)  # model without schema support
-                if r.status_code in RETRY_STATUS:
+                if r.status_code == 429:
+                    # not "busy": this key has used up its allowance (requests per minute or per day)
+                    last, kind = f"usage limit reached (HTTP 429: {_google_error(r)})", "busy"
+                elif r.status_code in RETRY_STATUS:
                     last, kind = f"busy (HTTP {r.status_code})", "busy"
                 elif r.status_code in (401, 403):
                     return None, f"API key refused (HTTP {r.status_code})", "auth"
@@ -530,7 +533,7 @@ class GeminiIdentifier:
         except IdentifyError as e:
             # One more round with smaller photos, unless every model was simply busy (smaller photos
             # won't help that) or there isn't time left for it.
-            not_busy = any(not r.startswith("busy") for _, r in e.attempts)
+            not_busy = any(not r.startswith(("busy", "usage limit")) for _, r in e.attempts)
             if not (not_busy and self._left() >= 25 and images):
                 raise
             log.warning("identify: retrying with %d px photos after: %s", SMALL_RETRY_SIDE, e.attempts)

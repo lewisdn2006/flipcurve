@@ -393,3 +393,14 @@ def test_failed_photo_identify_tells_the_user_why(monkeypatch):
     r = TestClient(main.app).post("/api/v1/identify", files=[("images", ("a.jpg", _jpeg(300), "image/jpeg"))])
     w = r.json()["warnings"][0]
     assert r.status_code == 200 and "gemini-test: busy (HTTP 503)" in w and "ANTHROPIC_API_KEY" in w
+
+
+def test_quota_429_is_called_a_usage_limit_not_busy(monkeypatch):
+    monkeypatch.setenv("GEMINI_FALLBACK_MODELS", "")
+    msg = {"error": {"code": 429, "status": "RESOURCE_EXHAUSTED",
+                     "message": "You exceeded your current quota. Quota exceeded for metric: generate_content_free_tier_requests"}}
+    with pytest.raises(IdentifyError) as e:
+        GeminiIdentifier(api_key="k", model="m", sleep=lambda s: None, budget_s=170,
+                         client=httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(429, json=msg)))).from_images([_jpeg(400)])
+    why = e.value.reason()
+    assert "usage limit reached (HTTP 429: You exceeded your current quota" in why and "busy" not in why
