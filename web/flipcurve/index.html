@@ -213,6 +213,10 @@ select.field { padding: 12px; font-size: 14px; }
 .rows { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; font-size: 13.5px; }
 .rows > span:nth-child(odd) { color: var(--ink-2); }
 .rows > span:nth-child(even) { font-family: var(--mono); font-size: 13px; text-align: right; }
+.daypick { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); }
+.daypick input { width: 76px; padding: 6px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: var(--panel);
+                 font: 12px var(--mono); color: var(--ink); outline: none; }
+.daypick input:focus { border-color: var(--line-3); }
 .plat-note { font-size: 12.5px; color: var(--warn); padding: 9px 12px; border-radius: 10px; background: rgba(240,207,134,0.07); }
 
 /* charts */
@@ -431,7 +435,10 @@ select.field { padding: 12px; font-size: 14px; }
 
     <!-- platforms -->
     <div class="sec">
-      <div class="sec-h"><div><span class="eyebrow">Head to head</span><h2 id="platHead">eBay vs Vinted at the suggested price</h2></div></div>
+      <div class="sec-h"><div><span class="eyebrow">Head to head</span><h2 id="platHead">eBay vs Vinted at the suggested price</h2></div>
+        <div class="right daypick hidden" id="dayPick"><span>Chance sold within</span><div class="seg sm on-panel" id="daySeg"></div>
+          <label style="display:flex;align-items:center;gap:6px">or<input type="number" id="dayInput" min="1" max="365" step="1" inputmode="numeric" aria-label="Number of days"> days</label></div>
+      </div>
       <div class="plats" id="platforms"></div>
     </div>
 
@@ -482,6 +489,8 @@ const $ = (id) => document.getElementById(id);
 const gbp = (x) => x == null || isNaN(x) ? "–" : "£" + Number(x).toFixed(2);
 const pct = (x) => x == null || isNaN(x) ? "–" : Math.round(x * 100) + "%";
 const days = (x) => x == null ? "–" : x >= 365 ? "1 year+" : x < 1 ? "under a day" : x < 1.5 ? "about 1 day" : `about ${Math.round(x)} days`;
+// a model can't promise certainty either way
+const pctCap = (x) => x == null || isNaN(x) ? "–" : x >= 0.995 ? "99%+" : x > 0 && x < 0.005 ? "under 1%" : pct(x);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } },
                 set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
@@ -794,6 +803,27 @@ async function scan(live) {
 // =====================================================================================
 // 2D charts: plain SVG drawn into a container element
 // =====================================================================================
+// The fitted model the scan sends back (model_fit), so the page can answer "chance sold within
+// N days at price P" for any N and P. Same formula as backend/engine/survival_model.py:
+//   lambda = lambda0 * exp(beta1 * (P - anchor[tier]) / sigma_p - beta2 * (cond - 2) + theta[site])
+//   P(sold within t days) = 1 - exp(-(t / lambda)^k)
+// with theta = the average of the sites' terms when pooled. Matches the server's numbers to 0.1 points.
+const Model = (() => {
+  const CIDX = { fair: 1, good: 2, very_good: 3, mint: 4 };
+  function ok(R, tier) {
+    const m = R?.model_fit;
+    return !!(m && m.k > 0 && m.lambda0 > 0 && m.sigma_p > 0 && m.beta1 != null && m.beta2 != null && m.platform_theta &&
+              Object.keys(m.platform_theta).length && (!tier || m.anchor_gbp?.[tier] != null));
+  }
+  function lam(R, price, tier, site) {
+    const m = R.model_fit, th = m.platform_theta, vals = Object.values(th);
+    const theta = site && th[site] != null ? th[site] : vals.reduce((a, b) => a + b, 0) / vals.length;
+    return m.lambda0 * Math.exp(m.beta1 * (price - m.anchor_gbp[tier]) / m.sigma_p - m.beta2 * (CIDX[tier] - 2) + theta);
+  }
+  const cdf = (R, days, price, tier, site) => 1 - Math.exp(-Math.pow(days / lam(R, price, tier, site), R.model_fit.k));
+  return { ok, lam, cdf };
+})();
+
 const Charts = (() => {
   const NS = "http://www.w3.org/2000/svg";
   const C = { ebay: "#4f8fe8", vinted: "#ec7a45", ink: "#eeece6", ink2: "#a8a69e", ink3: "#77756f",
@@ -1181,7 +1211,9 @@ const Viz3D = (() => {
     const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 200);
     scene.add(new THREE.HemisphereLight(0xffffff, 0x1a2233, 1.6));
     const dl = new THREE.DirectionalLight(0xffffff, 1.3); dl.position.set(-4, 10, 8); scene.add(dl);
-    const st = { mode: o.mode || "surface", tier: o.tier || "good", rotate: o.rotate !== false, view: "iso", annotate: o.annotate !== false };
+    const st = { mode: o.mode || "surface", tier: o.tier || "good", rotate: o.rotate !== false, view: "iso", annotate: o.annotate !== false, maxDays: 90 };
+    const MIN_DAYS = 14, MAX_DAYS = 365;
+    let handle = null, axisDrag = null;
     const VIEWS = { iso: { theta: 0.62, phi: 1.0, r: 19 }, top: { theta: 0, phi: 0.05, r: 17.5 }, front: { theta: 0, phi: Math.PI / 2 - 0.04, r: 18 }, side: { theta: Math.PI / 2, phi: Math.PI / 2 - 0.04, r: 16 } };
     const cur = { ...VIEWS.iso }, goal = { ...VIEWS.iso }, target = V(0, 1.15, 0);
     let group = null, labels = [], pick = [], onPick = null, defaultReadout = "";
@@ -1226,10 +1258,19 @@ const Viz3D = (() => {
 
     // --- mode: price × days × chance sold
     function buildSurface() {
-      const g = R.price_curve_grid?.[st.tier], S = R.sale_surface?.[st.tier], m = R.price_markers?.[st.tier];
+      const g = R.price_curve_grid?.[st.tier], m = R.price_markers?.[st.tier];
+      // With the fitted model the page works out the surface itself, so the days axis can run to any
+      // limit (drag the dot at its end). Without it, fall back to the server's fixed 90-day surface.
+      const live = Model.ok(R, st.tier) && g?.length > 1;
+      let S = R.sale_surface?.[st.tier];
+      if (live) {
+        const D = st.maxDays, dl = [1, 2, 3, 5, 7, 10, 14, 21, 30, 45, 60, 90, 120, 180, 270, 365].filter((d) => d < D - 0.5).concat([D]);
+        S = { days: dl, prob: g.map((q) => dl.map((d) => Model.cdf(R, d, q.price_gbp, st.tier))) };
+      }
       if (!g || g.length < 2 || !S || !S.days || S.days.length < 2) { defaultReadout = msg("No sale surface for this condition yet."); return; }
-      const ni = g.length, nj = S.days.length, p0 = g[0].price_gbp, p1 = g[ni - 1].price_gbp;
-      const Xi = (i) => -W3 / 2 + W3 * i / (ni - 1), Xp = (p) => -W3 / 2 + W3 * (p - p0) / ((p1 - p0) || 1), Zj = (j) => D3 / 2 - D3 * j / (nj - 1), Y = (p) => p * H3;
+      const ni = g.length, nj = S.days.length, p0 = g[0].price_gbp, p1 = g[ni - 1].price_gbp, dMax = S.days[nj - 1];
+      const zOf = (d) => D3 / 2 - D3 * Math.log(Math.max(d, 1)) / Math.log(Math.max(dMax, 2));  // log days: day 1 at the front
+      const Xi = (i) => -W3 / 2 + W3 * i / (ni - 1), Xp = (p) => -W3 / 2 + W3 * (p - p0) / ((p1 - p0) || 1), Zj = (j) => zOf(S.days[j]), Y = (p) => p * H3;
       const pos = new Float32Array(ni * nj * 3), col = new Float32Array(ni * nj * 3), idx = [];
       for (let i = 0; i < ni; i++) for (let j = 0; j < nj; j++) { const k = i * nj + j, v = S.prob[i][j], c = rampC(v); pos.set([Xi(i), Y(v), Zj(j)], k * 3); col.set([c.r, c.g, c.b], k * 3); }
       for (let i = 0; i < ni - 1; i++) for (let j = 0; j < nj - 1; j++) { const a = i * nj + j, b = (i + 1) * nj + j, c = b + 1, d = a + 1; idx.push(a, b, d, b, c, d); }
@@ -1258,11 +1299,20 @@ const Viz3D = (() => {
           label(`<b style="font-weight:600">${mk.k}</b> · ${gbp(mk.v)}<br><span style="color:#a8a69e">${pct(p7)} sold within ${S.days[j7]} days</span>`, V(x, top, z), "callout", "b");
         });
       }
-      frame({ xt: priceTicks(p0, p1, Xp), zt: [1, 3, 7, 14, 30, 60, 90].map((d) => S.days.indexOf(d)).filter((j) => j >= 0).map((j) => ({ z: Zj(j), label: S.days[j] + "d" })),
+      // ticks, leaving room for the end of the axis (labelled by its handle when draggable)
+      const ticks = [1, 3, 7, 14, 30, 60, 90, 180, 365].filter((d) => S.days.includes(d) && (!live || Math.log(dMax / d) > 0.25));
+      frame({ xt: priceTicks(p0, p1, Xp), zt: ticks.map((d) => ({ z: zOf(d), label: d + "d" })),
         yt: [0, .25, .5, .75, 1].map((v) => ({ y: Y(v), label: Math.round(v * 100) + "%" })), titles: ["List price", "Days on sale", "Chance sold"] });
-      defaultReadout = msg("Hover the surface. Each point is the chance an item listed at that price has sold by that day.");
+      if (live) {  // the draggable end of the days axis
+        handle = new THREE.Mesh(new THREE.SphereGeometry(0.16, 20, 14), mat(0xffffff)); handle.position.set(W3 / 2 + 0.55, 0.02, zOf(dMax)); group.add(handle);
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.025, 8, 32), mat(0xffffff, axisDrag ? .9 : .45)); ring.rotation.x = -Math.PI / 2; ring.position.copy(handle.position); group.add(ring);
+        label(`${dMax}d <span style="opacity:.6">⟷</span>`, V(W3 / 2 + 0.95, 0, zOf(dMax)), "tag", "l");
+      }
+      defaultReadout = msg("Hover the surface. Each point is the chance an item listed at that price has sold by that day." +
+        (live ? " Drag the white dot at the end of the days axis to show anything from 14 days to a year." : ""));
       onPick = (hit) => {
-        const i = Math.max(0, Math.min(ni - 1, Math.round((hit.point.x + W3 / 2) / W3 * (ni - 1)))), j = Math.max(0, Math.min(nj - 1, Math.round((D3 / 2 - hit.point.z) / D3 * (nj - 1))));
+        const dz = Math.exp((D3 / 2 - hit.point.z) / D3 * Math.log(Math.max(dMax, 2)));
+        const i = Math.max(0, Math.min(ni - 1, Math.round((hit.point.x + W3 / 2) / W3 * (ni - 1)))), j = S.days.reduce((b, d, k) => Math.abs(Math.log(d / dz)) < Math.abs(Math.log(S.days[b] / dz)) ? k : b, 0);
         const v = S.prob[i][j]; place(V(Xi(i), Y(v), Zj(j)));
         return `<div style="font:600 22px/1.1 Geist;letter-spacing:-.02em">${pct(v)}</div><div style="margin-top:4px">chance sold within <b>${S.days[j]} day${S.days[j] > 1 ? "s" : ""}</b></div><div style="color:#a8a69e">if listed at <b style="color:#eeece6">${gbp(g[i].price_gbp)}</b> · ${TIERS[st.tier]}</div>`;
       };
@@ -1367,7 +1417,7 @@ const Viz3D = (() => {
 
     function place(p) { cursor.visible = true; cursor.position.copy(p); drop.geometry.setFromPoints([V(0, 0, 0), V(0, -p.y, 0)]); }
     function build() {
-      clear();
+      clear(); handle = null;
       ({ surface: buildSurface, cloud: buildCloud, ribbons: buildRibbons }[st.mode] || buildSurface)();
       readout.innerHTML = defaultReadout;
       positionLabels();
@@ -1376,15 +1426,49 @@ const Viz3D = (() => {
     // --- orbit + picking
     let drag = null, hovering = false, w = 1, h = 1;
     const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
-    dom.addEventListener("pointerdown", (e) => { drag = { x: e.clientX, y: e.clientY }; dom.setPointerCapture(e.pointerId); dom.style.cursor = "grabbing"; });
-    dom.addEventListener("pointerup", () => { drag = null; dom.style.cursor = "grab"; });
+    const toNdc = (e) => { const r = dom.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); };
+    const onHandle = (e) => { if (!handle) return false; toNdc(e); ray.setFromCamera(ndc, camera); return ray.intersectObject(handle, false).length > 0 || nearHandle(e); };
+    function nearHandle(e) {  // a generous 18 px grab radius, since the dot is small on screen
+      const r = dom.getBoundingClientRect(), q = handle.position.clone().project(camera);
+      return Math.hypot((q.x + 1) / 2 * r.width - (e.clientX - r.left), (1 - q.y) / 2 * r.height - (e.clientY - r.top)) < 18;
+    }
+    function axisDir() {  // on-screen direction of the days axis (towards more days), in px
+      const r = dom.getBoundingClientRect(), a = V(W3 / 2, 0, D3 / 2).project(camera), b = V(W3 / 2, 0, -D3 / 2).project(camera);
+      const dx = (b.x - a.x) / 2 * r.width, dy = -(b.y - a.y) / 2 * r.height, n = Math.hypot(dx, dy);
+      return n > 60 ? { x: dx / n, y: dy / n } : { x: 1, y: 0 };  // axis pointing at the camera: plain left/right
+    }
+    let rebuildQueued = false;
+    dom.addEventListener("pointerdown", (e) => {
+      dom.setPointerCapture(e.pointerId);
+      if (onHandle(e)) { axisDrag = { x: e.clientX, y: e.clientY, dir: axisDir(), days: st.maxDays }; dom.style.cursor = "ew-resize"; build(); return; }
+      drag = { x: e.clientX, y: e.clientY }; dom.style.cursor = "grabbing";
+    });
+    dom.addEventListener("pointerup", () => {
+      if (axisDrag) { axisDrag = null; build(); }
+      drag = null; dom.style.cursor = "grab";
+    });
     dom.addEventListener("pointermove", (e) => {
+      if (axisDrag) {
+        // along the axis (or right) = more days; log scale so 14 -> 365 is about 400 px
+        const t = (e.clientX - axisDrag.x) * axisDrag.dir.x + (e.clientY - axisDrag.y) * axisDrag.dir.y;
+        const d = Math.round(Math.max(MIN_DAYS, Math.min(MAX_DAYS, axisDrag.days * Math.exp(t * 0.008))));
+        if (d !== st.maxDays) {
+          st.maxDays = d;
+          if (!rebuildQueued) { rebuildQueued = true; requestAnimationFrame(() => { rebuildQueued = false; build(); readout.innerHTML = msg(`Days axis now runs to <b style="color:#eeece6">${st.maxDays} days</b>. Release to keep it.`); }); }
+        }
+        return;
+      }
       if (drag) {
         const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag = { x: e.clientX, y: e.clientY };
         goal.theta -= dx * 0.008; goal.phi = Math.max(0.05, Math.min(Math.PI / 2 - 0.02, goal.phi - dy * 0.008)); cur.theta = goal.theta; cur.phi = goal.phi; st.view = "custom"; o.onView?.("custom"); return;
       }
-      const r = dom.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
-      ray.setFromCamera(ndc, camera); const hit = ray.intersectObjects(pick, false)[0];
+      if (onHandle(e)) {
+        dom.style.cursor = "ew-resize"; hovering = true; cursor.visible = false;
+        readout.innerHTML = msg(`Drag left or right to change how far the days axis goes (now <b style="color:#eeece6">${st.maxDays} days</b>; 14 days to a year).`);
+        return;
+      }
+      dom.style.cursor = "grab";
+      toNdc(e); ray.setFromCamera(ndc, camera); const hit = ray.intersectObjects(pick, false)[0];
       const html = hit && onPick ? onPick(hit) : null;
       hovering = !!html; if (!html) cursor.visible = false;
       readout.innerHTML = html || defaultReadout;
@@ -1412,7 +1496,7 @@ const Viz3D = (() => {
     (function loop() {
       if (!alive) return;
       if (visible && !document.hidden) {
-        if (st.rotate && !drag && !hovering && (st.view === "iso" || st.view === "custom")) goal.theta += 0.0018;
+        if (st.rotate && !drag && !axisDrag && !hovering && (st.view === "iso" || st.view === "custom")) goal.theta += 0.0018;
         cur.theta += (goal.theta - cur.theta) * 0.12; cur.phi += (goal.phi - cur.phi) * 0.12; cur.r += (goal.r - cur.r) * 0.12;
         camera.position.set(target.x + cur.r * Math.sin(cur.phi) * Math.sin(cur.theta), target.y + cur.r * Math.cos(cur.phi), target.z + cur.r * Math.sin(cur.phi) * Math.cos(cur.theta));
         camera.lookAt(target); renderer.render(scene, camera); positionLabels();
@@ -1441,7 +1525,7 @@ const Viz3D = (() => {
 // step 3: results
 // =====================================================================================
 let R = null, viz = null, vizToken = 0;
-const ui = { tier: "good", mode: "surface", view: "iso", rotate: true, evPlat: "all", evStatus: "all", evSort: "price" };
+const ui = { cardDays: 7, tier: "good", mode: "surface", view: "iso", rotate: true, evPlat: "all", evStatus: "all", evSort: "price" };
 const segHtml = (opts, cur) => opts.map(([v, label, title]) => `<button data-v="${v}"${title ? ` title="${esc(title)}"` : ""} class="${v === cur ? "on" : ""}">${esc(label)}</button>`).join("");
 function bindSeg(el, fn) { el.onclick = (e) => { const b = e.target.closest("button[data-v]"); if (b) fn(b.dataset.v); }; }
 
@@ -1451,7 +1535,8 @@ const MODE_NOTES = {
   surface: [["#f2f5c8", "transparent", "Height and colour: the chance it's sold. Bright and high means it almost certainly sold by then."],
     ["transparent", "#eeece6", "White contour lines mark 50%, 80% and 95% sold. Follow one to see the price/time trade-off."],
     ["#0d0e10", "#a8a69e", "The dark line is the 7-day slice: the same curve as the chart below."],
-    ["#eeece6", "transparent", "Posts mark the three suggested prices. Try the Top and Front views."]],
+    ["#eeece6", "transparent", "Posts mark the three suggested prices. Try the Top and Front views."],
+    ["#eeece6", "#eeece6", "Drag the white dot at the end of the days axis to show anything from 14 days to a year."]],
   cloud: [["#4f8fe8", "transparent", "Each dot is a real listing. Colour is the site, lane is the condition."],
     ["transparent", "#a8a69e", "Solid = sold (placed mid-window). Wireframe = still listed, so it has waited at least that long."],
     ["rgba(79,183,168,0.4)", "#4fb7a8", "The teal plane is what buyers actually paid; the pale plane is what unsold sellers are asking."],
@@ -1643,11 +1728,23 @@ function drawCharts() {
 }
 
 // ---- platform cards
+bindSeg($("daySeg"), (v) => { ui.cardDays = +v; $("dayInput").value = ""; drawPlatforms(); });
+$("dayInput").addEventListener("input", () => {
+  const d = Math.round(+$("dayInput").value);
+  if (d >= 1 && d <= 365) { ui.cardDays = d; drawPlatforms(); }
+});
 function drawPlatforms() {
   const rec = R.platform_recommendations || {}, bp = R.best_platform;
   const keys = Object.keys(rec).sort((a, c) => (c === bp) - (a === bp));
   $("platHead").textContent = keys.length > 1 ? `${keys.map((k) => PLAT[k] || k).join(" vs ")} at the suggested price` : "At the suggested price";
   const CONF = { high: "var(--ok)", medium: "var(--warn)", low: "var(--low)" };
+  // any number of days when the scan sent its fitted model; otherwise only the server's 7-day figure
+  const tier = R.item_metadata?.condition_tier, live = Model.ok(R, tier);
+  $("dayPick").classList.toggle("hidden", !live);
+  const nd = live ? ui.cardDays : 7;
+  const pN = (k, x) => nd === 7 || x.recommended_list_gbp == null ? x.prob_sell_7d : Model.cdf(R, nd, x.recommended_list_gbp, tier, k);
+  $("daySeg").innerHTML = segHtml([1, 3, 7, 14, 30, 90].map((d) => [String(d), d + "d"]), String(nd));
+  if (document.activeElement !== $("dayInput")) $("dayInput").value = [1, 3, 7, 14, 30, 90].includes(nd) ? "" : nd;
   $("platforms").innerHTML = keys.map((k) => {
     const x = rec[k], col = PCOL[k] || "var(--ink)";
     const avg = days(x.expected_days) + (x.expected_days_low != null && x.expected_days_high != null ? ` (${Math.round(x.expected_days_low)}–${Math.round(x.expected_days_high)})` : "");
@@ -1658,8 +1755,8 @@ function drawPlatforms() {
       <div class="plat-h"><span class="sw" style="background:${col}"></span><b>${esc(PLAT[k] || k)}</b>${k === bp ? `<span class="best-tag">BEST</span>` : ""}
         <span class="conf" style="color:${CONF[x.confidence] || "var(--ink-2)"}" title="${esc((x.n_sales ?? 0) + " sales seen")}">${esc(x.confidence || "–")} confidence</span></div>
       <div class="net"><b>${gbp(x.net_payout_gbp)}</b><span>in your pocket</span></div>
-      <div class="p7"><div class="p7-h"><span>Chance sold within 7 days</span><span>${pct(x.prob_sell_7d)}</span></div>
-        <div class="p7-bar"><div style="width:${Math.round((x.prob_sell_7d || 0) * 100)}%;background:${col}"></div></div></div>
+      <div class="p7"><div class="p7-h"><span>Chance sold within ${nd} day${nd === 1 ? "" : "s"}</span><span>${pctCap(pN(k, x))}</span></div>
+        <div class="p7-bar"><div style="width:${Math.round((pN(k, x) || 0) * 100)}%;background:${col}"></div></div></div>
       <div class="rows">${rows.map(([a, v]) => `<span>${a}</span><span>${esc(v)}</span>`).join("")}</div>
       ${(x.notes || []).map((n) => `<div class="plat-note">${esc(n)}</div>`).join("")}
     </div>`;
