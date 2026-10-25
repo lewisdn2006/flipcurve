@@ -404,3 +404,14 @@ def test_quota_429_is_called_a_usage_limit_not_busy(monkeypatch):
                          client=httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(429, json=msg)))).from_images([_jpeg(400)])
     why = e.value.reason()
     assert "usage limit reached (HTTP 429: You exceeded your current quota" in why and "busy" not in why
+
+
+def test_429_is_not_retried_on_the_same_model(monkeypatch):
+    monkeypatch.setenv("GEMINI_FALLBACK_MODELS", "other")
+    order = []
+
+    def handler(req):
+        order.append(_model_of(req))
+        return httpx.Response(429, json={"error": {"message": "quota"}}) if order[-1] == "m" else reply(GOOD)
+
+    assert make(handler).from_text("x")["item"]["brand"] == "Nike" and order == ["m", "other"]

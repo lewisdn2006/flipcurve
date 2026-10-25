@@ -496,6 +496,7 @@ class GeminiIdentifier:
                 if r.status_code == 429:
                     # not "busy": this key has used up its allowance (requests per minute or per day)
                     last, kind = f"usage limit reached (HTTP 429: {_google_error(r)})", "busy"
+                    break  # retrying the same model only spends more of the allowance: next model
                 elif r.status_code in RETRY_STATUS:
                     last, kind = f"busy (HTTP {r.status_code})", "busy"
                 elif r.status_code in (401, 403):
