@@ -257,6 +257,16 @@ each call at most 45 s; it runs in a worker thread so the server keeps answering
 the page shrinks photos to 1600 px JPEG before upload, and the server converts iPhone HEIC photos
 (pillow-heif) that the browser can't read. If it still fails, the user gets a blank item to type
 in, not the sample trainers.
+* Second try (same day): Gemini 3.8 Flash didn't answer photos within 45 s at all. Now:
+  - identify is a background job (`POST /api/v1/identify/start`, `/identify-text/start`, then
+    `GET /api/v1/identify/job/{id}` every 2 s), so no request is long enough for Cloudflare to cut
+    and the budget is 170 s; the page shows the seconds ticking;
+  - Gemini is asked to think "low" (Gemini 3 defaults to "high", which Google says can take
+    much longer to answer; 2.5 Flash gets thinkingBudget 0); dropped if a model refuses it;
+  - photos go to the AI at 1280 px;
+  - a model that doesn't answer in time isn't waited on again: the next one is tried. Order:
+    the main Gemini model -> **Claude** (`ANTHROPIC_API_KEY`, default `claude-haiku-5-5`; a different
+    provider, so it isn't busy when Gemini is) -> the newest other Gemini Flash models.
 
 ## TEAM — still to decide
 

@@ -93,6 +93,27 @@ def check_ebay() -> bool:
     return True
 
 
+def check_claude() -> bool:
+    key = os.getenv("ANTHROPIC_API_KEY", "").strip()
+    if not key:
+        print("CLAUDE: not set (optional backup when Gemini is busy; add ANTHROPIC_API_KEY to .env)")
+        return True
+    model = os.getenv("CLAUDE_MODEL", "claude-haiku-5-5")
+    try:
+        r = httpx.post("https://api.anthropic.com/v1/messages", timeout=60,
+                       headers={"x-api-key": key, "anthropic-version": os.getenv("ANTHROPIC_VERSION", "2023-06-01"),
+                                "content-type": "application/json"},
+                       json={"model": model, "max_tokens": 10, "messages": [{"role": "user", "content": "Reply OK"}]})
+    except httpx.HTTPError as e:
+        print(f"CLAUDE: network error ({type(e).__name__})")
+        return False
+    if r.status_code == 200:
+        print(f"CLAUDE: OK ({model})")
+        return True
+    print(f"CLAUDE: HTTP {r.status_code} with model '{model}' - {r.text[:200]}")
+    return False
+
+
 if __name__ == "__main__":
-    ok = check_gemini() & check_ebay() & check_serpapi()
+    ok = check_gemini() & check_claude() & check_ebay() & check_serpapi()
     sys.exit(0 if ok else 1)

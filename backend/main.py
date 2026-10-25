@@ -86,29 +86,95 @@ async def identify(
     hint: Optional[str] = Form(None, description="Optional typed hint, e.g. 'size 9'"),
 ):
     blobs = [await f.read() for f in images[:4]]
-    try:  # in a worker thread: the Gemini call takes a while and mustn't freeze the whole server
-        out = await run_in_threadpool(lambda: GeminiIdentifier().from_images(blobs, hint=hint))
-    except IdentifyError as e:
+    # in a worker thread: the Gemini call takes a while and mustn't freeze the whole server
+    from backend.vision.gemini_identifier import DEFAULT_BUDGET_S
+    return await run_in_threadpool(_identify_photos, blobs, hint, DEFAULT_BUDGET_S)
+
+
+# ---- identify as a background job: the page starts it and polls, so a slow model can't run into
+# Cloudflare's 100 s cut-off on the tunnel ("failed to fetch", 25 Oct)
+import asyncio  # noqa: E402
+import uuid  # noqa: E402
+import time as _time  # noqa: E402
+
+JOBS: dict[str, dict] = {}
+JOB_KEEP_S = 900
+
+
+def _start_job(fn) -> str:
+    now = _time.time()
+    for k in [k for k, v in JOBS.items() if now - v["started"] > JOB_KEEP_S]:
+        JOBS.pop(k, None)
+    jid = uuid.uuid4().hex[:16]
+    JOBS[jid] = {"status": "running", "started": now, "result": None}
+
+    async def runner():
+        try:
+            JOBS[jid]["result"] = await run_in_threadpool(fn)
+        except Exception:  # noqa: BLE001 - always finish the job with something editable
+            log.exception("identify job failed")
+            JOBS[jid]["result"] = _identify_fallback("vision", "something went wrong")
+        JOBS[jid]["status"] = "done"
+    asyncio.get_running_loop().create_task(runner())
+    return jid
+
+
+def _identify_photos(blobs: list[bytes], hint: str | None, budget_s: float) -> dict:
+    from backend.vision.gemini_identifier import IdentifyError as _IE
+    try:
+        out = GeminiIdentifier(budget_s=budget_s).from_images(blobs, hint=hint)
+    except _IE as e:
         log.warning("identify failed: %s", e)
-        why = "it took too long" if "out of time" in str(e) else "the image model is busy or unavailable"
+        why = "it took too long" if "out of time" in str(e) else "the image models are busy or unavailable"
         return _identify_fallback("vision", why)
-    return {"item": out["item"], "source": "vision", "confidence": out["confidence"], "warnings": []}
+    return {"item": out["item"], "source": "vision", "confidence": out["confidence"],
+            "warnings": [f"Identified by {out['model']} (the main model was busy)"] if out.get("fallback") else []}
 
 
-@app.post("/api/v1/identify-text", response_model=IdentifyResponse)
-def identify_text(req: IdentifyTextRequest):
+@app.post("/api/v1/identify/start")
+async def identify_start(images: list[UploadFile] = File(...), hint: Optional[str] = Form(None)):
+    from backend.vision.gemini_identifier import JOB_BUDGET_S
+    blobs = [await f.read() for f in images[:4]]
+    return {"job": _start_job(lambda: _identify_photos(blobs, hint, JOB_BUDGET_S))}
+
+
+@app.get("/api/v1/identify/job/{jid}")
+def identify_job(jid: str):
+    job = JOBS.get(jid)
+    if not job:
+        raise HTTPException(404, "unknown or expired job")
+    out = {"status": job["status"], "seconds": round(_time.time() - job["started"])}
+    if job["status"] == "done":
+        out["result"] = IdentifyResponse.model_validate(job["result"]).model_dump(mode="json")
+    return out
+
+
+def _identify_text(req: IdentifyTextRequest, budget_s: float) -> dict:
     tier = getattr(req.condition_tier, "value", req.condition_tier)
     try:
-        out = GeminiIdentifier().from_text(req.query, condition_tier=tier)
+        out = GeminiIdentifier(budget_s=budget_s).from_text(req.query, condition_tier=tier)
     except IdentifyError as e:
         log.warning("identify-text failed: %s", e)
         data = _identify_fallback("text", "the model is busy or unavailable")
         q = req.query.strip().lower()
-        data["item"].update(title=req.query.strip(), brand=None, model_name=None, size_or_storage=None,
-                            detected_flaws=[], search_queries={"ebay": q, "vinted": q},
+        data["item"].update(title=req.query.strip(), search_queries={"ebay": q, "vinted": q},
                             condition_tier=tier or "good")
+        data["warnings"] = ["Couldn't look it up automatically (the AI models are busy). Your description is used as "
+                            "the search; check it below."]
         return data
     return {"item": out["item"], "source": "text", "confidence": out["confidence"], "warnings": []}
+
+
+@app.post("/api/v1/identify-text", response_model=IdentifyResponse)
+async def identify_text(req: IdentifyTextRequest):
+    from backend.vision.gemini_identifier import DEFAULT_BUDGET_S
+    return await run_in_threadpool(_identify_text, req, DEFAULT_BUDGET_S)
+
+
+@app.post("/api/v1/identify-text/start")
+async def identify_text_start(req: IdentifyTextRequest):
+    from backend.vision.gemini_identifier import JOB_BUDGET_S
+    return {"job": _start_job(lambda: _identify_text(req, JOB_BUDGET_S))}
 
 
 @app.post("/api/v1/market-scan", response_model=MarketScanResponse)

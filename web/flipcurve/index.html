@@ -275,20 +275,44 @@ $("identifyBtn").onclick = async () => {
     if (mode === "text") {
       const query = $("q").value.trim();
       if (!query) throw new Error("Type what you're selling first.");
-      out = await api("/api/v1/identify-text", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, condition_tier: $("qTier").value || null }) });
+      const body = JSON.stringify({ query, condition_tier: $("qTier").value || null });
+      const opts = () => ({ method: "POST", headers: { "Content-Type": "application/json" }, body });
+      out = await identifyJob("/api/v1/identify-text/start", opts, "/api/v1/identify-text");
     } else {
       if (!photos.length) throw new Error("Choose a photo first.");
       const fd = new FormData();
       for (const f of photos) { const small = await shrinkPhoto(f); fd.append("images", small, small.name || f.name); }
       if ($("hint").value.trim()) fd.append("hint", $("hint").value.trim());
-      out = await api("/api/v1/identify", { method: "POST", body: fd }, 95000);
+      out = await identifyJob("/api/v1/identify/start", () => ({ method: "POST", body: fd }), "/api/v1/identify");
     }
     item = out.item;
     showConfirm(out);
   } catch (e) { $("identifyErr").textContent = e.message; }
   finally { btn.disabled = false; $("identifyMsg").textContent = ""; }
 };
+
+// Identify runs as a background job on the server: start it, then check every 2 s. No single
+// request lasts long, so Cloudflare's 100 s limit on the tunnel can't cut it off. (Older servers
+// without jobs: fall back to the one-shot endpoint.)
+async function identifyJob(startPath, opts, oldPath) {
+  let start;
+  try {
+    start = await api(startPath, opts(), 60000);
+  } catch (e) {
+    if (/\(404\)|\(405\)/.test(e.message)) return api(oldPath, opts(), 95000);
+    throw e;
+  }
+  const t0 = Date.now();
+  while (Date.now() - t0 < 240000) {
+    await new Promise((r) => setTimeout(r, 2000));
+    const j = await api(`/api/v1/identify/job/${start.job}`, {}, 20000);
+    if (j.status === "done") return j.result;
+    const s = Math.round((Date.now() - t0) / 1000);
+    $("identifyMsg").textContent = (mode === "photo" ? "Looking at your photos" : "Working out what it is") +
+      `… ${s}s` + (s > 30 ? " (the AI is busy; trying other models if needed)" : "");
+  }
+  throw new Error("That took too long. Try again, or describe the item instead.");
+}
 
 function showConfirm(out) {
   $("title").value = item.title || "";

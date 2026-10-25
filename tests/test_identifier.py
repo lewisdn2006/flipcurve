@@ -134,3 +134,81 @@ def test_gives_up_inside_the_time_budget(monkeypatch):
     with pytest.raises(IdentifyError):
         ident.from_text("x")
     assert clock["t"] <= 75
+
+
+def test_claude_steps_in_when_gemini_is_busy(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setenv("GEMINI_FALLBACK_MODELS", "gemini-other-flash")
+    order = []
+
+    def handler(req):
+        if req.url.host == "api.anthropic.com":
+            order.append("claude")
+            body = json.loads(req.content)
+            kinds = [b["type"] for b in body["messages"][0]["content"]]
+            assert kinds == ["image", "text"] and body["model"] == "claude-haiku-5-5"
+            assert req.headers["x-api-key"] == "test-key"
+            return httpx.Response(200, json={"type": "message", "content": [
+                {"type": "text", "text": "Here it is: " + json.dumps(GOOD)}]})
+        order.append(req.url.path.split("/models/")[1].split(":")[0])
+        return httpx.Response(503, text="high demand")
+
+    out = make(handler).from_images([b"not-really-a-jpeg"])
+    assert out["item"]["brand"] == "Nike" and out["model"] == "claude:claude-haiku-5-5" and out["fallback"]
+    assert order[0] == "m" and order[-1] == "claude" and "gemini-other-flash" not in order
+
+
+def test_slow_gemini_moves_on_instead_of_waiting_again(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("GEMINI_FALLBACK_MODELS", "gemini-other-flash")
+    tried = []
+
+    def handler(req):
+        model = req.url.path.split("/models/")[1].split(":")[0]
+        tried.append(model)
+        if model == "m":
+            raise httpx.ReadTimeout("slow", request=req)
+        return reply(GOOD)
+
+    out = make(handler).from_text("air force 1")
+    assert tried == ["m", "gemini-other-flash"] and out["item"]["brand"] == "Nike"
+
+
+def test_asks_for_low_thinking_and_drops_it_if_refused():
+    from backend.vision.gemini_identifier import _thinking_config
+    assert _thinking_config("gemini-3.8-flash") == {"thinkingLevel": "low"}
+    assert _thinking_config("gemini-2.5-flash") == {"thinkingBudget": 0}
+    seen = []
+
+    def handler(req):
+        cfg = json.loads(req.content)["generationConfig"]
+        seen.append("thinkingConfig" in cfg)
+        if "thinkingConfig" in cfg:
+            return httpx.Response(400, text="Unknown field thinkingConfig")
+        return reply(GOOD)
+
+    GeminiIdentifier(api_key="k", model="gemini-3.8-flash", client=httpx.Client(transport=httpx.MockTransport(handler)),
+                     sleep=lambda s: None).from_text("x")
+    assert seen == [True, False]
+
+
+def test_identify_jobs_start_and_finish():
+    import time as t
+    from fastapi.testclient import TestClient
+    from backend.main import app
+    with TestClient(app) as c:
+        jid = c.post("/api/v1/identify/start", files=[("images", ("a.jpg", b"xx", "image/jpeg"))]).json()["job"]
+        for _ in range(50):
+            j = c.get(f"/api/v1/identify/job/{jid}").json()
+            if j["status"] == "done":
+                break
+            t.sleep(0.1)
+        assert j["status"] == "done" and j["result"]["item"]["title"] == ""   # no key in tests -> blank form
+        tj = c.post("/api/v1/identify-text/start", json={"query": "nike air force 1"}).json()["job"]
+        for _ in range(50):
+            j = c.get(f"/api/v1/identify/job/{tj}").json()
+            if j["status"] == "done":
+                break
+            t.sleep(0.1)
+        assert j["result"]["item"]["search_queries"]["ebay"] == "nike air force 1"
+        assert c.get("/api/v1/identify/job/nope").status_code == 404
