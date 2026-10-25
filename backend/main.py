@@ -71,10 +71,13 @@ def health():
 
 def _identify_fallback(source: str, why: str) -> dict:
     """Gemini unavailable: return an editable placeholder so the user can type the item in."""
-    data = _mock("mock_identify.json")
-    data.update(source=source, cleaned_image_url=None, confidence=0.0,
-                warnings=[f"Couldn't identify automatically ({why}). Please check and edit the details."])
-    return data
+    # a blank item, not the sample trainers: a failed T-shirt photo showed "creasing on toebox" (25 Oct)
+    item = {"title": "", "brand": None, "model_name": None, "category": None, "size_or_storage": None,
+            "era_or_year": None, "condition_tier": "good", "condition_score": 6.0, "detected_flaws": [],
+            "search_queries": {"ebay": "", "vinted": ""}, "is_broken": False, "must_have": [], "must_not_have": []}
+    return {"item": item, "source": source, "cleaned_image_url": None, "confidence": 0.0,
+            "warnings": [f"Couldn't identify the photo automatically ({why}). Type what it is and the "
+                         "searches below, or try Identify again in a minute."]}
 
 
 @app.post("/api/v1/identify", response_model=IdentifyResponse)
@@ -83,11 +86,12 @@ async def identify(
     hint: Optional[str] = Form(None, description="Optional typed hint, e.g. 'size 9'"),
 ):
     blobs = [await f.read() for f in images[:4]]
-    try:
-        out = GeminiIdentifier().from_images(blobs, hint=hint)
+    try:  # in a worker thread: the Gemini call takes a while and mustn't freeze the whole server
+        out = await run_in_threadpool(lambda: GeminiIdentifier().from_images(blobs, hint=hint))
     except IdentifyError as e:
         log.warning("identify failed: %s", e)
-        return _identify_fallback("vision", "the image model is busy or unavailable")
+        why = "it took too long" if "out of time" in str(e) else "the image model is busy or unavailable"
+        return _identify_fallback("vision", why)
     return {"item": out["item"], "source": "vision", "confidence": out["confidence"], "warnings": []}
 
 

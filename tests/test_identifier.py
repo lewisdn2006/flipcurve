@@ -106,3 +106,31 @@ def test_bad_key_does_not_try_other_models(monkeypatch):
     with pytest.raises(IdentifyError):
         make(handler).from_text("x")
     assert all("/models/m:" in t for t in tried)
+
+
+def test_heic_photos_are_converted_to_small_jpegs():
+    import io
+    import pillow_heif
+    from PIL import Image
+    from backend.vision.gemini_identifier import _shrink
+    pillow_heif.register_heif_opener()
+    buf = io.BytesIO()
+    Image.new("RGB", (4032, 3024), (200, 200, 200)).save(buf, "HEIF")
+    out, mime = _shrink(buf.getvalue())
+    assert mime == "image/jpeg" and max(Image.open(io.BytesIO(out)).size) == 1600
+
+
+def test_gives_up_inside_the_time_budget(monkeypatch):
+    monkeypatch.setenv("GEMINI_FALLBACK_MODELS", "")
+    clock = {"t": 0.0}
+    monkeypatch.setattr("backend.vision.gemini_identifier.time.monotonic", lambda: clock["t"])
+
+    def handler(req):
+        clock["t"] += 30  # every call is slow
+        return httpx.Response(503, text="high demand")
+
+    ident = GeminiIdentifier(api_key="k", model="m", client=httpx.Client(transport=httpx.MockTransport(handler)),
+                             sleep=lambda s: clock.__setitem__("t", clock["t"] + s), budget_s=70)
+    with pytest.raises(IdentifyError):
+        ident.from_text("x")
+    assert clock["t"] <= 75

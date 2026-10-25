@@ -249,6 +249,15 @@ helper still does eBay sold pages and all of Vinted, and keeps loading eBay's ne
 * If the API fails, the scan carries on with the helper's pages and says so.
   `python scripts/check_keys.py` tests the keys; the page shows "eBay API on".
 
+## D17. Photo identify through the tunnel (25 Oct)
+
+"Failed to fetch" after Identify: Cloudflare cuts a request at 100 s, and Gemini retries while
+"high demand" ran past it. Now the whole identify (retries and fallback models) has a 70 s budget,
+each call at most 45 s; it runs in a worker thread so the server keeps answering meanwhile;
+the page shrinks photos to 1600 px JPEG before upload, and the server converts iPhone HEIC photos
+(pillow-heif) that the browser can't read. If it still fails, the user gets a blank item to type
+in, not the sample trainers.
+
 ## TEAM — still to decide
 
 - [ ] Demo items: fill in `backend/scrapers/cache_seed/demo_items.csv` with the things on the table.

@@ -9,6 +9,7 @@ Owner: Person 2.
 from __future__ import annotations
 
 import base64
+import io
 import logging
 import json
 import os
@@ -20,6 +21,8 @@ API = "https://generativelanguage.googleapis.com/v1beta"
 log = logging.getLogger("flipcurve")
 RETRY_STATUS = {429, 500, 502, 503, 504}
 BACKOFF_S = (1.0, 2.5, 5.0)     # per model; then the next model
+DEFAULT_BUDGET_S = 70.0          # whole identify, retries + fallbacks (Cloudflare cuts requests at 100 s)
+REQUEST_TIMEOUT_S = 45.0
 SKIP_IN_FALLBACK = ("image", "tts", "audio", "live", "embedding", "thinking-exp", "native")
 
 PROMPT = """You are helping someone in the UK price a secondhand item they own, to sell on eBay or Vinted.
@@ -71,21 +74,49 @@ class IdentifyError(RuntimeError):
 
 
 def _shrink(data: bytes, max_side: int = 1600) -> tuple[bytes, str]:
-    """Downscale big phone photos before upload (faster, cheaper). Falls back to the original."""
+    """Downscale big phone photos to a JPEG before sending (faster, cheaper). Handles iPhone HEIC
+    photos too (via pillow-heif), which OpenCV can't read: they used to go up full size with the
+    wrong type. Falls back to the original bytes."""
+    try:
+        from PIL import Image, ImageOps
+        try:
+            import pillow_heif
+            pillow_heif.register_heif_opener()
+        except ImportError:
+            pass
+        img = Image.open(io.BytesIO(data))
+        img = ImageOps.exif_transpose(img).convert("RGB")
+        img.thumbnail((max_side, max_side))
+        buf = io.BytesIO()
+        img.save(buf, "JPEG", quality=88)
+        return buf.getvalue(), "image/jpeg"
+    except Exception:  # noqa: BLE001 - try OpenCV, then send as-is
+        pass
     try:
         import cv2
         import numpy as np
         img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
-        if img is None:
-            return data, "image/jpeg"
-        h, w = img.shape[:2]
-        s = max_side / max(h, w)
-        if s < 1:
-            img = cv2.resize(img, (int(w * s), int(h * s)), interpolation=cv2.INTER_AREA)
-        ok, buf = cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 88])
-        return (buf.tobytes(), "image/jpeg") if ok else (data, "image/jpeg")
+        if img is not None:
+            h, w = img.shape[:2]
+            s = max_side / max(h, w)
+            if s < 1:
+                img = cv2.resize(img, (int(w * s), int(h * s)), interpolation=cv2.INTER_AREA)
+            ok, buf = cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 88])
+            if ok:
+                return buf.tobytes(), "image/jpeg"
     except ImportError:
-        return data, "image/jpeg"
+        pass
+    return data, _sniff_mime(data)
+
+
+def _sniff_mime(data: bytes) -> str:
+    if data[4:12] in (b"ftypheic", b"ftypheix", b"ftypmif1", b"ftypmsf1", b"ftyphevc"):
+        return "image/heic"
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        return "image/png"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp"
+    return "image/jpeg"
 
 
 def _terms(v, n: int) -> list[str]:
@@ -122,11 +153,15 @@ def _clean(raw: dict) -> dict:
 
 class GeminiIdentifier:
     def __init__(self, api_key: str | None = None, model: str | None = None, client: httpx.Client | None = None,
-                 sleep=time.sleep):
+                 sleep=time.sleep, budget_s: float = DEFAULT_BUDGET_S):
         self.key = api_key or os.getenv("GEMINI_API_KEY", "")
         self.model = model or os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
-        self.http = client or httpx.Client(timeout=90)
+        self.http = client or httpx.Client(timeout=REQUEST_TIMEOUT_S)
         self.sleep = sleep
+        # The whole identify, retries and fallbacks included, must finish well inside Cloudflare's
+        # 100 s limit on the tunnel (25 Oct: retries while Gemini was busy ran past it -> "failed to fetch").
+        self.budget_s = budget_s
+        self._deadline = None
         if not self.key:
             raise IdentifyError("GEMINI_API_KEY is not set")
 
@@ -149,10 +184,17 @@ class GeminiIdentifier:
         flash = [n for n in names if "flash" in n and n != self.model and not any(k in n for k in SKIP_IN_FALLBACK)]
         return sorted(flash, reverse=True)[:2]  # newest versions sort last alphabetically
 
+    def _left(self) -> float:
+        return self._deadline - time.monotonic() if self._deadline else self.budget_s
+
     def _call(self, parts: list[dict], use_schema: bool = True) -> dict:
         errors, fallbacks = [], None
         model = self.model
+        self._deadline = time.monotonic() + self.budget_s
         while model:
+            if self._left() < 5:
+                errors.append("out of time")
+                break
             out, err, busy = self._call_model(model, parts, use_schema)
             if out is not None:
                 return out
@@ -173,8 +215,12 @@ class GeminiIdentifier:
         url = f"{API}/models/{model}:generateContent"
         last, busy = None, False
         for attempt in range(len(BACKOFF_S) + 1):
+            left = self._left()
+            if left < 5:
+                return None, (last or "") + " (out of time)", busy
             try:
-                r = self.http.post(url, json=body, headers={"x-goog-api-key": self.key})
+                r = self.http.post(url, json=body, headers={"x-goog-api-key": self.key},
+                                   timeout=min(REQUEST_TIMEOUT_S, left - 2))
             except httpx.HTTPError as e:
                 last, busy = f"network error: {type(e).__name__}", True
             else:
@@ -189,6 +235,8 @@ class GeminiIdentifier:
                 if not busy:
                     break
             if attempt < len(BACKOFF_S):
+                if self._left() - BACKOFF_S[attempt] < 8:
+                    break  # not enough time for another go: try the next model instead
                 self.sleep(BACKOFF_S[attempt])
         return None, last, busy
 

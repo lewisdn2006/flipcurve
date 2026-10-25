@@ -123,7 +123,7 @@ ol.sched { margin: 0; padding-left: 20px; }
     <div id="tabPhoto" class="hidden">
       <div class="row">
         <div class="grow"><label for="photos">Up to 4 photos (whole item, other angles, a label close-up if there is one)</label>
-          <input type="file" id="photos" accept="image/*" multiple>
+          <input type="file" id="photos" accept="image/*,.heic,.heif" multiple>
           <div class="thumbs" id="thumbs"></div>
           <button class="ghost small hidden" id="clearPhotos" style="margin-top:8px">Remove all photos</button></div>
         <div class="grow"><label for="hint">Anything the photo won't show (optional)</label><input type="text" id="hint" placeholder="e.g. size 9, small scuff on heel"></div>
@@ -210,8 +210,18 @@ let API = (new URLSearchParams(location.search).get("api") || store.get("flipcur
 $("apiInput").value = API;
 $("apiSave").onclick = () => { API = $("apiInput").value.trim().replace(/\/$/, ""); store.set("flipcurve_api", API); checkApi(); };
 
-async function api(path, opts = {}) {
-  const r = await fetch(API + path, opts);
+async function api(path, opts = {}, timeoutMs = 0) {
+  let r;
+  const ctrl = timeoutMs ? new AbortController() : null;
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs) : null;
+  try {
+    r = await fetch(API + path, ctrl ? { ...opts, signal: ctrl.signal } : opts);
+  } catch (e) {
+    if (e.name === "AbortError") throw new Error("That took too long. Try again, or describe the item instead.");
+    throw new Error(`Couldn't reach the FlipCurve server (${e.message}). Is it running?`);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
   if (!r.ok) throw new Error(`${path} failed (${r.status}): ${(await r.text()).slice(0, 200)}`);
   return r.json();
 }
@@ -270,9 +280,9 @@ $("identifyBtn").onclick = async () => {
     } else {
       if (!photos.length) throw new Error("Choose a photo first.");
       const fd = new FormData();
-      photos.forEach((f) => fd.append("images", f));
+      for (const f of photos) { const small = await shrinkPhoto(f); fd.append("images", small, small.name || f.name); }
       if ($("hint").value.trim()) fd.append("hint", $("hint").value.trim());
-      out = await api("/api/v1/identify", { method: "POST", body: fd });
+      out = await api("/api/v1/identify", { method: "POST", body: fd }, 95000);
     }
     item = out.item;
     showConfirm(out);
@@ -300,6 +310,22 @@ function confirmedItem() {
   return { ...item, title: $("title").value.trim() || item.title, condition_tier: $("tier").value,
            search_queries: { ebay: $("qEbay").value.trim(), vinted: $("qVinted").value.trim() },
            must_have: terms($("mustHave").value), must_not_have: terms($("mustNot").value) };
+}
+
+// Shrink photos before upload (phone photos are 3-5 MB; the server only needs ~1600 px).
+// Formats the browser can't decode (iPhone HEIC in Chrome) go up as they are; the server converts them.
+async function shrinkPhoto(file, maxSide = 1600) {
+  try {
+    const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
+    const s = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
+    c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+    const blob = await new Promise((res) => c.toBlob(res, "image/jpeg", 0.85));
+    return blob && blob.size < file.size ? new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" }) : file;
+  } catch {
+    return file;
+  }
 }
 
 // ---- photos: keep our own list so single photos can be removed
