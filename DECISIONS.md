@@ -236,6 +236,19 @@ stays up and says "Sold", so following listings we've already seen is the only s
 * Quick sale is never below the 25th percentile of same-condition sales (it went to £4 for a
   T-shirt that sells around £7). "XL" no longer marks a different model (it's a clothing size).
 
+## D16. eBay Browse API alongside the helper (25 Oct, keys approved)
+
+The API adds to the helper; it doesn't replace it. The Browse API only has **live** eBay
+listings: no sold listings (those need a signed-in browser) and nothing from Vinted, so the
+helper still does eBay sold pages and all of Vinted, and keeps loading eBay's newest pages too.
+* With `EBAY_CLIENT_ID` / `EBAY_CLIENT_SECRET` in .env, every scan also pulls up to 1,000 newest
+  UK listings (`itemLocationCountry:GB`, 5 calls) on the server, with exact listing dates
+  (`itemOriginDate`, kept across relists). They're merged with the helper's pages (API dates win).
+* Each API listing's (item number, `itemCreationDate`) is a calibration point, which makes the
+  dating of sold listings (from their item numbers) more precise.
+* If the API fails, the scan carries on with the helper's pages and says so.
+  `python scripts/check_keys.py` tests the keys; the page shows "eBay API on".
+
 ## TEAM — still to decide
 
 - [ ] Demo items: fill in `backend/scrapers/cache_seed/demo_items.csv` with the things on the table.

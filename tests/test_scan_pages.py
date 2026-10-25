@@ -160,3 +160,41 @@ def test_background_rechecks_find_sales_without_a_new_scan(client):
     # "Use saved data" now has a real Vinted sale
     out = client.post("/api/v1/market-scan", json={"item": ITEM, "allow_live": False}).json()
     assert out["platform_recommendations"]["vinted"]["n_sales"] >= 1
+
+
+def test_ebay_api_adds_active_listings_and_calibration(client, monkeypatch):
+    """With eBay keys set, the server adds Browse API listings (exact dates) to the helper's pages."""
+    import backend.scrapers.ebay_api as api
+    calls = []
+
+    class FakeAPI:
+        def active_cards(self, q, pages=5):
+            calls.append(q)
+            return [{"item_id": str(336744300000 + i * 10_000), "title": "Nike Air Force 1 white trainers",
+                     "price_gbp": 32.0 + i % 5, "shipping_gbp": 3.0, "condition_raw": "Pre-owned",
+                     "start_time": T0 - timedelta(hours=3 * i), "created_time": T0 - timedelta(hours=3 * i),
+                     "sold_date": None, "best_offer_accepted": False, "is_auction": False, "from_abroad": False,
+                     "url": f"https://www.ebay.co.uk/itm/{336744300000 + i * 10_000}"} for i in range(40)]
+    monkeypatch.setattr(api, "configured", lambda: True)
+    monkeypatch.setattr(api, "BrowseAPI", FakeAPI)
+    pages, _ = first_scan(T0)
+    r = client.post("/api/v1/scan-pages", json={"item": ITEM, "pages": pages})
+    assert r.status_code == 200, r.text
+    assert calls == ["nike air force 1 white"]
+    ids = {x["listing_id"] for x in r.json()["comparable_listings"] if x["platform"] == "ebay"}
+    assert any(i.startswith("3367443") for i in ids)          # API listings are in
+    assert client.get("/api/v1/health").json()["ebay_api"] is True
+
+
+def test_ebay_api_failure_falls_back_to_helper_pages(client, monkeypatch):
+    import backend.scrapers.ebay_api as api
+
+    class Broken:
+        def active_cards(self, q, pages=5):
+            raise RuntimeError("401 invalid_client")
+    monkeypatch.setattr(api, "configured", lambda: True)
+    monkeypatch.setattr(api, "BrowseAPI", Broken)
+    pages, _ = first_scan(T0)
+    out = client.post("/api/v1/scan-pages", json={"item": ITEM, "pages": pages}).json()
+    assert any("eBay API" in w for w in out["warnings"])
+    assert any(x["platform"] == "ebay" for x in out["comparable_listings"])

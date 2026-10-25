@@ -237,7 +237,10 @@ async function checkHelper() {
   setStatus("extDot", "extText", s[0], `${s[1]} <span class="muted">(v${esc(helper.version)})</span>`);
 }
 async function checkApi() {
-  try { await api("/api/v1/health"); setStatus("apiDot", "apiText", "ok", "Server connected"); }
+  try {
+    const h = await api("/api/v1/health");
+    setStatus("apiDot", "apiText", "ok", "Server connected" + (h.ebay_api ? ' <span class="muted">· eBay API on</span>' : ""));
+  }
   catch { setStatus("apiDot", "apiText", "bad", `Can't reach the server at ${esc(API)}`); }
 }
 checkHelper(); checkApi();

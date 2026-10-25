@@ -65,7 +65,8 @@ def _mock(name: str) -> dict:
 
 @app.get("/api/v1/health")
 def health():
-    return {"ok": True}
+    from backend.scrapers import ebay_api
+    return {"ok": True, "ebay_api": ebay_api.configured()}
 
 
 def _identify_fallback(source: str, why: str) -> dict:
@@ -187,6 +188,8 @@ def _scan_pages(req: ScanPagesRequest):
     warnings = []
     rows, stats = ingest(pages, queries)
     have = {r["platform"] for r in rows}
+    if (stats.get("ebay") or {}).get("api_error"):
+        warnings.append("The eBay API didn't answer this time, so eBay listings come from the helper's pages only.")
     for site, info in (req.stopped or {}).items():
         msg = STOP_MESSAGES.get((info or {}).get("reason"), "{site} stopped early.")
         warnings.append(msg.format(site="eBay" if site == "ebay" else "Vinted"))

@@ -1,4 +1,4 @@
-"""Verify the Gemini key in .env works (and SerpAPI if set). Never prints the keys.
+"""Verify the Gemini key in .env works (and the eBay API / SerpAPI keys if set). Never prints the keys.
 
 Run from the repo root:  python scripts/check_keys.py
 If the configured model is unavailable, it lists the Flash models your key can use.
@@ -64,6 +64,31 @@ def check_serpapi() -> bool:
     return r.status_code == 200
 
 
+def check_ebay() -> bool:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from backend.scrapers import ebay_api
+    if not ebay_api.configured():
+        print("EBAY API: not set (optional; add EBAY_CLIENT_ID and EBAY_CLIENT_SECRET to .env)")
+        return True
+    try:
+        api = ebay_api.BrowseAPI()
+        api.token()
+        j = api.search("nike air force 1", limit=5)
+    except httpx.HTTPStatusError as e:
+        body = e.response.text[:200].replace(os.getenv("EBAY_CLIENT_SECRET", "") or "\0", "***")
+        print(f"EBAY API: HTTP {e.response.status_code} - {body}")
+        if e.response.status_code == 401:
+            print("  -> check EBAY_CLIENT_ID is the App ID and EBAY_CLIENT_SECRET the Cert ID of the Production keyset")
+        return False
+    except httpx.HTTPError as e:
+        print(f"EBAY API: network error ({type(e).__name__})")
+        return False
+    items = j.get("itemSummaries", [])
+    dated = sum(1 for it in items if it.get("itemCreationDate"))
+    print(f"EBAY API: OK ({j.get('total', len(items))} UK listings for a test search; {dated}/{len(items)} with listing dates)")
+    return True
+
+
 if __name__ == "__main__":
-    ok = check_gemini() & check_serpapi()
+    ok = check_gemini() & check_ebay() & check_serpapi()
     sys.exit(0 if ok else 1)

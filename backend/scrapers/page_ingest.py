@@ -34,11 +34,26 @@ def _ts(p) -> datetime:
     return datetime.fromisoformat(str(t).replace("Z", "+00:00")) if t else datetime.now(timezone.utc)
 
 
+API_PAGES = 5   # eBay Browse API: up to 1,000 newest UK listings per scan (200 a call)
+
+
 def ebay_rows(pages: list[dict], query: str, store: CalibrationStore | None = None) -> tuple[list[dict], dict]:
+    """eBay rows from the helper's pages, plus (when EBAY_CLIENT_ID/SECRET are set) up to 1,000
+    active listings from the official Browse API with exact listing dates, which also become
+    calibration points for dating the sold listings."""
     store = store or CalibrationStore()
     act, sold = [], []
     now = max((_ts(p) for p in pages), default=datetime.now(timezone.utc))
     act_complete = sold_complete = False
+    api_cards, api_error = [], None
+    from backend.scrapers import ebay_api
+    if ebay_api.configured():
+        try:
+            api_cards = ebay_api.BrowseAPI().active_cards(query, pages=API_PAGES)
+            store.add([(c["item_id"], c["created_time"]) for c in api_cards if c.get("created_time")],
+                      source=f"api:{query}")
+        except Exception as e:  # noqa: BLE001 - the helper's pages still work without it
+            api_error = f"{type(e).__name__}: {e}"[:200]
     for p in sorted(pages, key=lambda p: (p["kind"], p.get("page") or 0)):
         cards = parse_cards(p["html"], _ts(p))
         if p["kind"] == "active":
@@ -48,12 +63,16 @@ def ebay_rows(pages: list[dict], query: str, store: CalibrationStore | None = No
         elif p["kind"] == "sold":
             sold += cards
             sold_complete = sold_complete or len(cards) < 200
+    if api_cards:  # the API's exact dates win; helper pages fill any gaps
+        act = act + api_cards
+        act_complete = act_complete or len(api_cards) < 200 * API_PAGES
     act = list({c["item_id"]: c for c in act}.values())
     sold = list({c["item_id"]: c for c in sold}.values())
     if not act and not sold:
-        return [], {"active": 0, "sold": 0}
+        return [], {"active": 0, "sold": 0, "api_error": api_error}
     rows, stats = build_rows(act, sold, store, now, act_complete, sold_complete,
                              sold_refused=None if sold or not act else "sold pages missing")
+    stats.update(api_active=len(api_cards), api_error=api_error)
     save_cache(query, "ebay", rows, {"stats": stats, "source": "extension"})
     return rows, stats
 
@@ -259,7 +278,8 @@ def ingest(pages: list[dict], queries: dict[str, str]) -> tuple[list[dict], dict
     by = {"ebay": [p for p in pages if p["platform"] == "ebay"],
           "vinted": [p for p in pages if p["platform"] == "vinted"]}
     rows, stats = [], {}
-    if by["ebay"] and queries.get("ebay"):
+    from backend.scrapers import ebay_api
+    if queries.get("ebay") and (by["ebay"] or ebay_api.configured()):
         r, stats["ebay"] = ebay_rows(by["ebay"], queries["ebay"])
         rows += r
     if by["vinted"] and queries.get("vinted"):

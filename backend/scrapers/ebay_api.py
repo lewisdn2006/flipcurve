@@ -53,13 +53,17 @@ class BrowseAPI:
         self._token, self._expires = j["access_token"], time.time() + float(j.get("expires_in", 7200))
         return self._token
 
-    def search(self, q: str, limit: int = 200, offset: int = 0, sort: str = "newlyListed") -> dict:
-        r = self.http.get(SEARCH_URL, params={"q": q, "limit": limit, "offset": offset, "sort": sort},
+    def search(self, q: str, limit: int = 200, offset: int = 0, sort: str = "newlyListed",
+               uk_only: bool = True) -> dict:
+        params = {"q": q, "limit": limit, "offset": offset, "sort": sort}
+        if uk_only:  # same as the website search's "UK only" (LH_PrefLoc=1) used for sold listings
+            params["filter"] = "itemLocationCountry:GB"
+        r = self.http.get(SEARCH_URL, params=params,
                           headers={"Authorization": f"Bearer {self.token()}", "X-EBAY-C-MARKETPLACE-ID": "EBAY_GB"})
         r.raise_for_status()
         return r.json()
 
-    def active_cards(self, q: str, pages: int = 3) -> list[dict]:
+    def active_cards(self, q: str, pages: int = 5) -> list[dict]:
         out = []
         for p in range(pages):
             j = self.search(q, offset=p * 200)
