@@ -17,6 +17,16 @@ pytest                             # contract tests, keep green
 
 The API currently serves **mock data** (`backend/mock/`, contract v1.1) so the frontend can build straight away.
 
+## Run the whole thing (website + helper + this laptop)
+
+1. **Helper extension:** Chrome → `chrome://extensions` → Developer mode → Load unpacked →
+   `extension/`. The ID must be `fdibajhmjjbjcdfafdofkoedbkhbkfcb`. Stay signed in to eBay.
+2. **Local test:** `uvicorn backend.main:app --port 8000`, then open
+   http://localhost:8000/flipcurve/ in the same Chrome.
+3. **Online:** `brew install cloudflared`, then `scripts/tunnel.sh quick` for a throwaway
+   address, or `scripts/tunnel.sh setup` once and `scripts/tunnel.sh run` each time for
+   https://flipcurve.lewisdn.com/flipcurve/ (API at https://api.lewisdn.com).
+
 ## Read first
 
 1. `DECISIONS.md` — the Phase 0 calls the contract is built on.

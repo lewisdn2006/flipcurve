@@ -39,7 +39,10 @@ log = logging.getLogger("flipcurve")
 app = FastAPI(title="FlipCurve API", version="1.1")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # hackathon: open CORS so any dev server / phone on the LAN can call us
+    # Only FlipCurve's own pages may call this from a browser: lewisdn.com (and subdomains), a
+    # trycloudflare test address, and localhost / LAN addresses while developing.
+    allow_origin_regex=r"https://([a-z0-9-]+\.)*lewisdn\.com|https://[a-z0-9-]+\.trycloudflare\.com"
+                       r"|http://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+)(:\d+)?",
     allow_methods=["*"],
     allow_headers=["*"],
 )

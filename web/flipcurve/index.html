@@ -190,7 +190,10 @@ const store = { get(k) { try { return localStorage.getItem(k); } catch { return 
 // ---- where the backend is: ?api=..., then saved, then a sensible default
 const LOCAL = ["localhost", "127.0.0.1"].includes(location.hostname);
 let API = (new URLSearchParams(location.search).get("api") || store.get("flipcurve_api") ||
-           (LOCAL ? (location.port === "8000" ? location.origin : "http://localhost:8000") : "https://api.lewisdn.com")).replace(/\/$/, "");
+           (LOCAL ? (location.port === "8000" ? location.origin : "http://localhost:8000")
+                  // served straight from the laptop through the tunnel: same address
+                  : /(^flipcurve\.lewisdn\.com|\.trycloudflare\.com)$/.test(location.hostname) ? location.origin
+                  : "https://api.lewisdn.com")).replace(/\/$/, "");
 $("apiInput").value = API;
 $("apiSave").onclick = () => { API = $("apiInput").value.trim().replace(/\/$/, ""); store.set("flipcurve_api", API); checkApi(); };
 

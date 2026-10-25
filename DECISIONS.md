@@ -124,9 +124,27 @@ We collect them politely, and we never try to get around a refusal.
   Terapeak (Seller Hub > Research) is eBay's own sold-data tool; it was showing "unavailable"
   on a freshly enabled account, so worth retrying.
 
+## D11. Architecture: website + helper extension + laptop backend (25 Oct)
+
+* **Website** (`web/flipcurve/index.html`, one static page): text or photo in → confirm the
+  item → Scan → results. Served at `flipcurve.lewisdn.com/flipcurve/` (by the laptop through
+  the tunnel) and can also be copied onto lewisdn.com itself; it talks to `api.lewisdn.com`.
+* **Helper extension** (`extension/`, ID `fdibajhmjjbjcdfafdofkoedbkhbkfcb`): no screens. When
+  the page asks, it loads ~2 eBay newest + ~2 eBay sold + 1 Vinted catalogue + a few Vinted item
+  pages **in the user's own Chrome, signed in as them**, 1.5 s apart, and hands the HTML back.
+  It stops on any sign-in or bot-check page (D10). Only lewisdn.com and localhost can call it.
+* **Backend** on the laptop (FastAPI), exposed with a Cloudflare named tunnel
+  (`scripts/tunnel.sh`). `POST /api/v1/scan-pages` turns the pages into rows, fits, and returns
+  the usual MarketScanResponse; `GET /api/v1/recheck-ids` lists Vinted items due a re-check.
+  Browser calls are only accepted from lewisdn.com, trycloudflare.com and localhost.
+* Why: eBay's sold search now needs a signed-in person, and a signed-in person's own browser is
+  the honest way to see it; the user never saves pages by hand.
+* If the laptop is off, the site shows "can't reach the server"; "Use saved data" works whenever
+  the server is up even without the helper.
+
 ## TEAM — still to decide
 
 - [ ] Demo items: fill in `backend/scrapers/cache_seed/demo_items.csv` with the things on the table.
 - [ ] Frontend framework (Person 3's call; the types are in `frontend/src/types/api.ts`).
-- [ ] Hosting for the demo: laptop on venue Wi-Fi vs a phone hotspot (recommended: hotspot + `FLIPCURVE_OFFLINE=1` as a fallback).
+- [ ] Demo network: laptop on venue Wi-Fi vs a phone hotspot (the tunnel needs internet either way).
 - [ ] Who owns the pitch deck and backup video.
