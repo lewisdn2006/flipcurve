@@ -44,14 +44,31 @@ VERSION_WORDS = set().union(*EXCLUSIVE) | TIER_WORDS | KIDS
 # share of the query's words a title needs (0.5 let 'Air Force 1 Triple Black' through for
 # 'jordan 1 low triple black'; 25 Oct)
 RELEVANCE = 0.7
+# ...but when the identifier gave must_have words (which pin the item down), half is enough: a
+# query like "mki miyuki zoku studio t-shirt white" rejected 71 of 74 real sales for lacking
+# "studio" or saying "tee" (25 Oct)
+RELEVANCE_WITH_MUST = 0.5
 FENCE_K = 3.0
 SOLD_HI, SOLD_LO = 2.5, 0.3
 TIER_RATIO = {"fair": 0.65, "good": 1.0, "very_good": 1.32, "mint": 1.9}  # = survival_model.DEFAULT_TIER_RATIO
 MIN_FOR_FENCES = 8
 
 
+SYNONYMS = [(re.compile(r"\bt[\s-]?shirts?\b|\btees?\b"), "tshirt"),
+            (re.compile(r"\bsneakers?\b|\btrainer\b"), "trainers"),
+            (re.compile(r"\bhoodies?\b|\bhooded\b"), "hoodie"),
+            (re.compile(r"\bjumpers?\b|\bsweaters?\b"), "jumper")]
+
+
+def _norm(text: str) -> str:
+    t = (text or "").lower()
+    for pat, rep in SYNONYMS:
+        t = pat.sub(rep, t)
+    return t
+
+
 def _words(text: str) -> set[str]:
-    return {w for w in re.findall(r"[a-z0-9']+", text.lower()) if len(w) > 1 and w not in STOP}
+    return {w for w in re.findall(r"[a-z0-9']+", _norm(text)) if len(w) > 1 and w not in STOP}
 
 
 def _mark(r: dict, reason: str):
@@ -147,7 +164,7 @@ def filter_rows(rows: list[dict], queries: dict[str, str], item_is_broken: bool 
             _mark(r, "condition: for parts")
             continue
         q = _words(queries.get(r["platform"], ""))
-        if q and len(q & _words(r["title"])) < RELEVANCE * len(q):
+        if q and len(q & _words(r["title"])) < (RELEVANCE_WITH_MUST if must_have else RELEVANCE) * len(q):
             _mark(r, "not a close title match")
             continue
         why = other_item_reason(r["title"], queries.get(r["platform"], ""), item_text, must_have, must_not_have)

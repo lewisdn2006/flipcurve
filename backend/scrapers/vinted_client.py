@@ -50,6 +50,7 @@ def calibrate_from_pages(cal: VintedCalibration, fetcher: Fetcher, item_ids: lis
 
 
 STOCK_MIN_ROWS = 20
+STOCK_MAX_DAYS = 120.0
 
 
 def _row(c: dict, now: datetime) -> dict:
@@ -87,6 +88,9 @@ def active_rows(cards: list[dict], cal: VintedCalibration, now: datetime) -> lis
         # pages went back a year (25 Oct); bumped old listings scattered earlier don't move this.
         in_order = [ages[r["listing_id"]] for r in rows]
         window = float(np.median(in_order[-max(3, len(in_order) // 20):]))
+        # Listings still up after months are mostly forgotten ones (a niche tee's pages reached
+        # back 650 days, 25 Oct); past STOCK_MAX_DAYS they say more about sellers than speed.
+        window = min(window, STOCK_MAX_DAYS)
         if window >= 1.0:
             for r in rows:
                 a = round(ages[r["listing_id"]], 4)

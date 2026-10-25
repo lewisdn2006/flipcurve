@@ -125,3 +125,13 @@ def test_small_shoe_sizes_count_as_kids_for_an_adult_pair():
     assert version_mismatch("Nike Air Jordan 1 Low Triple Black UK 4", q, item, footwear=True) == "kids"
     assert version_mismatch("Nike Air Jordan 1 Low Triple Black UK 9", q, item, footwear=True) is None
     assert version_mismatch("Ladies coat UK 6", "coat", "Coat UK 10", footwear=False) is None
+
+
+def test_tee_and_tshirt_match_and_must_have_relaxes_overlap():
+    q = {"ebay": "mki miyuki zoku studio t-shirt white"}
+    rows = [row("MKI Miyuki Zoku White Logo Mens Tee XL", 12), row("MKI MIYUKI ZOKU White T Shirt", 14),
+            row("Plain white t-shirt", 3)]
+    out = {r["title"]: r for r in filter_rows(rows, q, must_have=["mki|miyuki"])}
+    assert not out["MKI Miyuki Zoku White Logo Mens Tee XL"]["is_outlier"]
+    assert not out["MKI MIYUKI ZOKU White T Shirt"]["is_outlier"]
+    assert out["Plain white t-shirt"]["is_outlier"]

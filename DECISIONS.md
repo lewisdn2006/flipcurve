@@ -228,6 +228,11 @@ stays up and says "Sold", so following listings we've already seen is the only s
 * Price sensitivity floor is now in elasticity terms: a 10% dearer listing waits at least ~10%
   longer (β1 ≥ σ_p / anchor, and ≥ 0.3). The fixed 0.75 was far stronger for tightly priced items
   (σ_p £1.60 on a £7 T-shirt) and made the tail heavy (k 0.40 → 0.68 after the change).
+* MKI tee test: the query "mki miyuki zoku studio t-shirt white" threw out 71 of 74 timed eBay
+  sales (titles lack "studio" or say "tee"). Titles and queries now share synonyms (tee / t-shirt /
+  t shirt -> tshirt; sneakers -> trainers; hoodie, jumper), and with must_have words present a
+  title only needs half the query's words. Vinted's stock window is capped at 120 days: listings
+  still up after a year (seen to 680 days) are mostly forgotten, not slow.
 * Quick sale is never below the 25th percentile of same-condition sales (it went to £4 for a
   T-shirt that sells around £7). "XL" no longer marks a different model (it's a clothing size).
 
