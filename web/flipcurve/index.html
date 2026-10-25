@@ -356,7 +356,7 @@ function collect(queries, recheckIds) {
       if (pages.length) resolve({ pages, stopped: {}, partial: true });
       else reject(new Error("The helper disconnected before sending any pages. Reload it in chrome://extensions and try again."));
     });
-    port.postMessage({ type: "collect", queries, ebayPages: 4, vintedPages: 8, vintedItemSamples: 8,
+    port.postMessage({ type: "collect", queries, ebayPages: 4, vintedPages: 8, vintedItemSamples: 4,
                        recheckVintedIds: recheckIds, api: API });
   });
 }
@@ -388,7 +388,12 @@ async function scan(live) {
         headers["Content-Encoding"] = "gzip";
       }
       result = await api("/api/v1/scan-pages", { method: "POST", headers, body });
-      if (got.partial) result.warnings = [`The helper stopped part-way, so this uses the ${got.pages.length} pages it sent. Scanning again may get more.`, ...(result.warnings || [])];
+      if (got.partial) {
+        const h = await pingHelper();
+        const where = h?.lastScan?.label ? ` (last step: ${h.lastScan.label})` : "";
+        result.warnings = [`The helper stopped part-way${where}, so this uses the ${got.pages.length} pages it sent. Scanning again may get more.`,
+                           ...(result.warnings || [])];
+      }
       checkHelper();
     } else {
       $("progressText").textContent = "Working out prices from saved listings…"; $("barFill").style.width = "60%";
@@ -524,7 +529,7 @@ function drawHeat(surf, pts) {
 }
 
 const RELATED = { mid: "Mid", low: "Low", high: "High", hi: "High", kids: "kids' size", pro: "Pro", max: "Max",
-                  plus: "Plus", mini: "Mini", ultra: "Ultra", lite: "Lite", se: "SE", xl: "XL" };
+                  plus: "Plus", mini: "Mini", ultra: "Ultra", lite: "Lite", se: "SE" };
 function drawEvidence(list, excluded) {
   const kind = { sold_exact: "Sold", sold_interval: "Sold", sold_unknown_time: "Sold", active: "Not sold yet" };
   // exact matches first, then similar versions; sold before unsold; cheapest first

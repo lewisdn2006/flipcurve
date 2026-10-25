@@ -28,7 +28,8 @@ STOP = {"the", "a", "an", "and", "or", "for", "with", "of", "in", "size", "uk", 
 # Mutually exclusive versions: if the search names one, a title naming another is a different item
 EXCLUSIVE = [{"low", "mid", "high", "hi"}]
 # Model-tier words: a title with one the search doesn't have is a different (usually pricier) item
-TIER_WORDS = {"pro", "max", "plus", "mini", "ultra", "lite", "se", "xl", "og", "sp"}
+# (no "xl": on clothes it is a size, and 33 XL Ralph Lauren tees were set aside as "another model", 25 Oct)
+TIER_WORDS = {"pro", "max", "plus", "mini", "ultra", "lite", "se", "og", "sp"}
 KIDS = {"gs", "junior", "junior's", "kids", "kid's", "infant", "infants", "toddler", "baby", "youth",
         "boys", "girls", "td", "ps", "child", "childs", "children", "children's", "jnr", "bgs"}
 # Colour words: a title naming a colour the item doesn't have is another colourway (25 Oct:

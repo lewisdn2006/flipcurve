@@ -129,6 +129,7 @@ def market_scan(req: MarketScanRequest):
 STOP_MESSAGES = {
     "sign_in_required": "eBay needs you signed in to show sold listings. Sign in to eBay in this browser, then scan again.",
     "refused": "{site} declined the request for now, so these results use saved data for it.",
+    "slow": "{site} slowed right down part-way, so this uses the pages that arrived. Scanning again in a few minutes may get more.",
     "network_error": "{site} couldn't be reached, so these results use saved data for it.",
 }
 

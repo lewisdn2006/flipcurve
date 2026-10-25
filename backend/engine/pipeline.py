@@ -42,7 +42,7 @@ def confidence(n_sales: int, low: float, high: float) -> str:
 RELATED_MIN = 5
 RELATED_LABEL = {"mid": "Mid", "low": "Low", "high": "High", "hi": "High", "kids": "kids' sizes",
                  "pro": "Pro", "max": "Max", "plus": "Plus", "mini": "Mini", "ultra": "Ultra",
-                 "lite": "Lite", "se": "SE", "xl": "XL"}
+                 "lite": "Lite", "se": "SE"}
 
 
 def _with_related(rows):
@@ -73,25 +73,27 @@ def price_axis(f: sm.FitResult) -> np.ndarray:
     return np.round(np.linspace(lo, hi, GRID_POINTS), 2)
 
 
-def price_ceilings(rows, tier: str, anchors: dict) -> tuple[float, float]:
+def price_ceilings(rows, tier: str, anchors: dict) -> tuple[float, float, float]:
     """Highest list prices we'll recommend for this condition, from what exact matches actually
     sold for (same-condition sales if there are 3+, else all sales converted by the typical
     condition ratios): best value <= 1.35x the median sale (and <= the 90th percentile); patient
     <= 1.6x the median (and <= 1.15x the 90th percentile). Under 3 sales: 1.3x / 1.5x the anchor.
     The model extrapolates smoothly, so when price looks only weakly linked to speed, every "best"
-    price ran to the top of the chart (£121 for trainers that sell at £20-60, 25 Oct)."""
+    price ran to the top of the chart (£121 for trainers that sell at £20-60, 25 Oct).
+    Third value: the lowest quick-sale price we'll suggest, the 25th percentile of those sales
+    (a weak price effect put "quick sale" at £4 for a T-shirt that sells at £7, 25 Oct)."""
     ratio = sm.DEFAULT_TIER_RATIO
     exact = [r for r in rows if r["obs_type"] != "active" and not r["is_outlier"] and not r.get("related")]
     same = [r["price_gbp"] for r in exact if sm._tier(r) == tier]
     # same-condition sales if there are a few (new special editions say little about used prices)
     sold = same if len(same) >= 3 else [r["price_gbp"] * ratio[tier] / ratio[sm._tier(r)] for r in exact]
     if len(sold) >= 3:
-        med, p90 = float(np.median(sold)), float(np.percentile(sold, 90))
-        return min(1.35 * med, p90), min(1.6 * med, 1.15 * p90)
-    return 1.3 * anchors[tier], 1.5 * anchors[tier]
+        med, p90, p25 = float(np.median(sold)), float(np.percentile(sold, 90)), float(np.percentile(sold, 25))
+        return min(1.35 * med, p90), min(1.6 * med, 1.15 * p90), p25
+    return 1.3 * anchors[tier], 1.5 * anchors[tier], 0.75 * anchors[tier]
 
 
-def _platform_points(f, tier, prices, ceilings=(np.inf, np.inf)):
+def _platform_points(f, tier, prices, ceilings=(np.inf, np.inf, 0.0)):
     out = {}
     for pl in f.platforms:
         lam = f.scale(prices, tier, pl)
@@ -103,6 +105,7 @@ def _platform_points(f, tier, prices, ceilings=(np.inf, np.inf)):
             "p7": sm.cdf(7, lam, f.k),
             # prices above what has ever sold aren't candidates for a recommendation
             "value": np.where(prices <= ceilings[0], val, 0.0), "ok_patient": prices <= ceilings[1],
+            "quick_floor": ceilings[2],
         }
     return out
 
@@ -160,7 +163,7 @@ def _markers(grid, pp, platforms, anchor, k):
         fast = 0.85 * anchor
         note = ("Even below the usual price this item rarely sells within a week, so the quick-sale "
                 "price is set just under what similar ones sold for")
-    fast = min(fast, best)
+    fast = min(max(fast, pp[best_pl]["quick_floor"]), best)
     return {"fast_sale_gbp": _r(fast), "best_value_gbp": _r(best), "patient_gbp": _r(patient),
             "gamma_per_day": DEFAULT_GAMMA_PER_DAY, "note": note}
 
@@ -280,9 +283,9 @@ def run(item: dict, rows: list[dict], now: datetime | None = None, data_source: 
         warnings.append("Few exact matches, so selling speed also uses similar items ("
                         + ", ".join(f"{k}: {v}" for k, v in related.items())
                         + " listings), each scaled to this item's price level")
-    if f.beta1 <= sm.BETA1_MIN + 1e-3:
-        warnings.append("In these listings price barely changes how fast things sell, so the suggested "
-                        "prices stay within the range that recent sales actually reached")
+    if f.beta1 <= sm.beta1_min(f.anchors, f.sigma_p) + 1e-3:
+        warnings.append("Within the usual price range, price made little visible difference to how fast these "
+                        "sold, so the suggested prices stay within the range recent sales actually reached")
     if not f.converged:
         warnings.append("Model fit did not fully converge; treat the numbers as rough")
     platforms_ok = sorted({r["platform"] for r in rows})

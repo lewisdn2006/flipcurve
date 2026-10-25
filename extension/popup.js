@@ -31,10 +31,17 @@ async function refresh() {
     else {
       box.append(row(`Last run (${ago(l.at)})`, l.checked ? `${l.checked} checked` : "nothing due yet"));
       if (l.checked) box.append(row("Found", `${l.sold || 0} sold · ${l.active || 0} still up · ${l.deleted || 0} removed`));
-      if (l.stopped) box.append(row("Vinted", "declined, pausing 12 h", "err"));
+      if (l.stopped) box.append(row("Vinted", l.stopped === "refused" ? "declined, pausing 12 h" : "slowed down, will try next run", "err"));
     }
   } else {
     box.append(row("Last run", "not yet"));
+  }
+  const sc = s.lastScan;
+  if (sc && sc.startedAt) {
+    const how = sc.crash ? `stopped: ${sc.crash}` : sc.finishedAt
+      ? (sc.stopped && Object.keys(sc.stopped).length ? `ended early (${Object.entries(sc.stopped).map(([k, v]) => `${k}: ${v.reason}`).join(", ")})` : `${sc.sent} pages`)
+      : `stopped at ${sc.step}/${sc.steps}: ${sc.label}`;
+    box.append(row(`Last scan (${ago(sc.startedAt)})`, how, sc.crash || !sc.finishedAt ? "err" : ""));
   }
   if (s.pausedUntil > Date.now()) box.append(row("Paused", until(s.pausedUntil)));
   else if (s.enabled && s.next) box.append(row("Next run", until(s.next)));

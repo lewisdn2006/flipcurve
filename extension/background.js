@@ -2,7 +2,7 @@
 // FlipCurve website asks (only lewisdn.com / localhost can talk to it - see manifest.json).
 //
 // Rules (DECISIONS.md D10, D14): scans run only when the user presses Scan; one page at a time
-// with a pause; nothing disguised. On a sign-in or bot-check page we STOP that site and report it;
+// per site with a pause (longer for Vinted); nothing disguised. On a sign-in or bot-check page we STOP that site and report it;
 // we never try to get around it.
 // Background re-checks (D14, can be switched off in the popup): every 2 hours while Chrome is
 // open, re-open up to 20 Vinted listings seen in earlier scans, so the server learns which sold.
@@ -50,14 +50,24 @@ function trimAround(html, marker, tail) {
   return `<title>${titleOf(html)}</title>` + slim(html.slice(Math.max(0, first - 500), last + tail));
 }
 
-let lastPage = 0;
-async function load(url) {
-  const wait = PAUSE_MS - (Date.now() - lastPage);
+// Pacing per site. Vinted slows right down after ~14 requests in a minute (25 Oct: two scans
+// both died on the 15th Vinted request; a stalled request makes Chrome stop the helper), so Vinted
+// gets a longer gap. eBay and Vinted run side by side, so the gap costs little.
+const GAP_MS = { "www.vinted.co.uk": 4500, "www.ebay.co.uk": 1500 };
+const TIMEOUT_MS = 20000;   // give up on a request that stalls (Chrome stops a worker on a 30 s stall)
+const lastHit = {};
+
+async function load(url, gapMs) {
+  const host = new URL(url).host;
+  const gap = gapMs ?? GAP_MS[host] ?? 1500;
+  const wait = gap - (Date.now() - (lastHit[host] || 0));
+  lastHit[host] = Date.now() + Math.max(wait, 0);   // reserve the slot before waiting
   if (wait > 0) await sleep(wait);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
-    const r = await fetch(url, { credentials: "include", redirect: "follow" });
+    const r = await fetch(url, { credentials: "include", redirect: "follow", signal: ctrl.signal });
     const html = await r.text();
-    lastPage = Date.now();
     const finalUrl = r.url || url;
     const title = titleOf(html).toLowerCase();
     let stop = null;
@@ -65,10 +75,27 @@ async function load(url) {
     else if (CHALLENGE.test(finalUrl) || BLOCK_TITLES.some((t) => title.includes(t)) || r.status === 403 || r.status === 429) stop = "refused";
     return { status: r.status, finalUrl, html, stop };
   } catch (e) {
-    lastPage = Date.now();
-    return { status: 0, finalUrl: url, html: "", stop: "network_error", error: String(e) };
+    const slow = e && e.name === "AbortError";
+    return { status: 0, finalUrl: url, html: "", stop: slow ? "slow" : "network_error", error: String(e) };
+  } finally {
+    clearTimeout(timer);
+    lastHit[host] = Date.now();
   }
 }
+
+// Keep the worker awake during long runs: extension API calls reset Chrome's idle timer.
+function keepAwake() {
+  const t = setInterval(() => chrome.runtime.getPlatformInfo(() => void chrome.runtime.lastError), 15000);
+  return () => clearInterval(t);
+}
+
+// What the last scan did, for the popup and for the site when a scan ends early.
+async function logScan(update) {
+  const { lastScan = {} } = await chrome.storage.local.get("lastScan");
+  await chrome.storage.local.set({ lastScan: { ...lastScan, ...update, updatedAt: Date.now() } });
+}
+self.addEventListener("error", (e) => { logScan({ crash: String(e.message || e) }); });
+self.addEventListener("unhandledrejection", (e) => { logScan({ crash: String(e.reason) }); });
 
 function spread(ids, n) {
   if (ids.length <= n) return ids;
@@ -86,19 +113,18 @@ async function setBadge(state) {
 
 async function collect(req, progress) {
   // Defaults: up to 4 pages of each eBay search (240 a page; stops early on the last page),
-  // 8 Vinted catalogue pages (~96 each; stops early) and 8 Vinted item pages to date them.
-  const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, Number(x) || lo));
-  const ebayPages = clamp(req.ebayPages ?? 4, 1, 6), vintedPages = clamp(req.vintedPages ?? 8, 1, 10);
-  const vintedItemSamples = clamp(req.vintedItemSamples ?? 8, 0, 12);
+  // 8 Vinted catalogue pages (~96 each; stops early) and 4 Vinted item pages to date them.
+  const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, Number.isFinite(Number(x)) ? Number(x) : lo));
+  const ebayPages = clamp(req.ebayPages ?? 4, 0, 6), vintedPages = clamp(req.vintedPages ?? 8, 0, 10);
+  const vintedItemSamples = clamp(req.vintedItemSamples ?? 4, 0, 8);
   const { queries = {} } = req;
-  const recheckVintedIds = (req.recheckVintedIds || []).slice(0, 10);
-  // Each page goes to the site as soon as it's loaded (one small message each). Sending them all
-  // at the end as one big message dropped the connection after the last page (25 Oct).
+  const recheckVintedIds = (req.recheckVintedIds || []).slice(0, 6);
+  // Each page goes to the site as soon as it's loaded (one small message each).
   let sent = 0;
   const stopped = {};
-  const steps = 2 * ebayPages + vintedPages + vintedItemSamples + recheckVintedIds.length;
+  const steps = (queries.ebay ? 2 * ebayPages : 0) + (queries.vinted ? vintedPages + vintedItemSamples + recheckVintedIds.length : 0);
   let done = 0;
-  const step = (label) => progress({ type: "progress", done: ++done, total: steps, label });
+  const step = (label) => { progress({ type: "progress", done: ++done, total: steps, label }); logScan({ step: done, steps, label }); };
   const keep = (platform, kind, page, url, res, html) => {
     sent++;
     progress({ type: "page", page: { platform, kind, page, url, final_url: res.finalUrl, status: res.status, html,
@@ -106,7 +132,8 @@ async function collect(req, progress) {
   };
 
   // eBay: newest-listed pages (start times + calibration), then recently-sold pages
-  if (queries.ebay) {
+  async function ebay() {
+    if (!queries.ebay || !ebayPages) return;
     outer: for (const kind of ["active", "sold"]) {
       for (let p = 1; p <= ebayPages; p++) {
         const url = ebayUrl(queries.ebay, p, kind === "sold");
@@ -120,14 +147,15 @@ async function collect(req, progress) {
     await setBadge(stopped.ebay ? (stopped.ebay.reason === "sign_in_required" ? "signin" : "refused") : "ok");
   }
 
-  // Vinted: newest catalogue page(s), a few item pages to date listing IDs, and any re-checks
-  if (queries.vinted) {
-    let ids = [];
+  // Vinted: newest catalogue pages, a few item pages to date listing IDs, and any re-checks
+  async function vinted() {
+    if (!queries.vinted) return;
+    let ids = (req.vintedIds || []).map(String);
     for (let p = 1; p <= vintedPages; p++) {
       const url = vintedCatalogUrl(queries.vinted, p);
       const res = await load(url);
       step(`Vinted listings ${p}/${vintedPages}`);
-      if (res.stop) { stopped.vinted = { reason: res.stop, url }; break; }
+      if (res.stop) { stopped.vinted = { reason: res.stop, url }; return; }
       keep("vinted", "catalog", p, url, res, trimAround(res.html, 'data-testid="grid-item"', 20000));
       const found = [...res.html.matchAll(/\/items\/(\d{8,12})-/g)].map((m) => m[1]);
       ids.push(...found);
@@ -137,14 +165,22 @@ async function collect(req, progress) {
     const todo = [...spread(ids, vintedItemSamples).map((id) => ["item", id]),
                   ...recheckVintedIds.map((id) => ["recheck", String(id)])];
     for (const [kind, id] of todo) {
-      if (stopped.vinted) break;
       const url = `${VINTED}/items/${id}`;
       const res = await load(url);
       step(kind === "item" ? "Vinted listing ages" : "Re-checking earlier Vinted listings");
-      if (res.stop && res.status !== 404) { stopped.vinted = { reason: res.stop, url }; break; }
+      if (res.stop && res.status !== 404) { stopped.vinted = { reason: res.stop, url }; return; }
       keep("vinted", kind, null, url, res, slim(res.html));
     }
   }
+
+  const stopAwake = keepAwake();
+  await logScan({ startedAt: Date.now(), step: 0, steps, label: "starting", stopped: null, crash: null, finishedAt: null });
+  try {
+    await Promise.all([ebay(), vinted()]);   // the two sites side by side, each at its own pace
+  } finally {
+    stopAwake();
+  }
+  await logScan({ finishedAt: Date.now(), stopped, sent });
   return { type: "result", ok: true, pages: [], sent, stopped, version: chrome.runtime.getManifest().version };
 }
 
@@ -174,6 +210,7 @@ async function backgroundRecheck(force = false) {
   if (Date.now() < s.pausedUntil && !force) return { skipped: "paused after Vinted declined" };
   if (recheckRunning) return { skipped: "already running" };
   recheckRunning = true;
+  const stopAwake = keepAwake();
   const record = async (summary) => {
     const last = { at: Date.now(), ...summary };
     await chrome.storage.local.set({ lastRecheck: last });
@@ -187,7 +224,7 @@ async function backgroundRecheck(force = false) {
     let stopped = null;
     for (const { id, query } of due) {
       const url = `${VINTED}/items/${id}`;
-      const res = await load(url);
+      const res = await load(url, 6000);   // no one is waiting: go gently
       if (res.stop && res.status !== 404) { stopped = res.stop; break; }
       results.push({ query, page: { platform: "vinted", kind: "recheck", page: null, url, final_url: res.finalUrl,
                                     status: res.status, html: slim(res.html), fetched_at: new Date().toISOString() } });
@@ -203,12 +240,13 @@ async function backgroundRecheck(force = false) {
     }
     if (stopped) {
       summary.stopped = stopped;
-      await chrome.storage.local.set({ recheckPausedUntil: Date.now() + REFUSED_PAUSE_MS });
+      if (stopped === "refused") await chrome.storage.local.set({ recheckPausedUntil: Date.now() + REFUSED_PAUSE_MS });
     }
     return await record(summary);
   } catch (e) {
     return await record({ error: String(e.message || e) });
   } finally {
+    stopAwake();
     recheckRunning = false;
     await chrome.storage.local.remove("recheckProgress");
   }
@@ -225,9 +263,9 @@ chrome.alarms.onAlarm.addListener((a) => { if (a.name === RECHECK_ALARM) backgro
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id) return;
   if (msg?.type === "recheck-status") {
-    Promise.all([recheckSettings(), chrome.storage.local.get(["recheckProgress"]), chrome.alarms.get(RECHECK_ALARM)])
+    Promise.all([recheckSettings(), chrome.storage.local.get(["recheckProgress", "lastScan"]), chrome.alarms.get(RECHECK_ALARM)])
       .then(([st, p, alarm]) => sendResponse({ ...st, running: recheckRunning, progress: p.recheckProgress || null,
-                                               next: alarm ? alarm.scheduledTime : null }));
+                                               lastScan: p.lastScan || null, next: alarm ? alarm.scheduledTime : null }));
     return true;
   }
   if (msg?.type === "recheck-toggle") {
@@ -243,9 +281,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 // One-shot messages: {type: "ping"} -> installed + last known eBay sign-in state
 chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
   if (msg && msg.type === "ping") {
-    chrome.storage.local.get(["ebayState", "ebayCheckedAt"]).then((s) =>
+    chrome.storage.local.get(["ebayState", "ebayCheckedAt", "lastScan"]).then((s) =>
       sendResponse({ ok: true, version: chrome.runtime.getManifest().version, ebayState: s.ebayState || "unknown",
-                     ebayCheckedAt: s.ebayCheckedAt || null }));
+                     ebayCheckedAt: s.ebayCheckedAt || null, lastScan: s.lastScan || null }));
     return true;
   }
   sendResponse({ ok: false, error: "unknown message" });

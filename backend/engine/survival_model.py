@@ -33,7 +33,8 @@ DEFAULT_TIER_RATIO = {"fair": 0.65, "good": 1.0, "very_good": 1.32, "mint": 1.9}
 MIN_SOLD_PER_ANCHOR = 5
 PRIOR_MIN_N = 12          # fewer observed sales than this -> flagged as leaning on priors
 T_MIN = 1e-3              # days; avoids ln(0) for listings seen the moment they went up
-BETA1_MIN = 0.75
+MIN_ELASTICITY = 1.0     # at least: 10% dearer -> ~10% longer wait
+BETA1_FLOOR = 0.3
 
 # ------------------------------------------------------------------ closed forms (section 3)
 
@@ -322,6 +323,10 @@ class FitResult:
         return mean, mean * np.exp(-z90 * se), mean * np.exp(z90 * se)
 
 
+def beta1_min(anchors: dict, sigma_p: float) -> float:
+    return max(BETA1_FLOOR, MIN_ELASTICITY * sigma_p / anchors["good"])
+
+
 def fit(rows, platforms=("ebay", "vinted"), prior: Prior | None = None,
         anchors: dict | None = None, sigma_p: float | None = None) -> FitResult:
     """Fit the penalised censored Weibull AFT model to ListingRow-shaped rows."""
@@ -340,11 +345,13 @@ def fit(rows, platforms=("ebay", "vinted"), prior: Prior | None = None,
     eta_start = np.log(np.median(ages)) if len(ages) else np.log(prior.lambda0_days)
     x0 = np.concatenate([[eta_start, prior.beta1, prior.beta2],
                          [prior.theta_mean.get(p, 0.0) for p in platforms], [np.log(prior.k)]])
-    # beta1 >= 0.75: a listing priced one spread above the market sells ~2x slower at least. With
-    # mixed listings the data can make price look almost irrelevant, and then every "best price"
-    # ran to the top of the chart (25 Oct). k kept in a sane range too.
-    bounds = [(None, None), (BETA1_MIN, 8.0), (None, None)] + [(None, None)] * n_plat + [(np.log(0.3), np.log(3.0))]
-    x0[1] = max(x0[1], BETA1_MIN)
+    # Price must matter at least a little: elasticity of the wait d ln E[T] / d ln p >= 1 at the
+    # typical price, i.e. beta1 >= sigma_p / anchor. With mixed listings the data can make price
+    # look irrelevant, and then every "best price" ran to the top of the chart (25 Oct). (A fixed
+    # 0.75 floor was far stronger for tightly priced items like £7 T-shirts.) k kept sane too.
+    b_min = beta1_min(anchors, sigma_p)
+    bounds = [(None, None), (b_min, 8.0), (None, None)] + [(None, None)] * n_plat + [(np.log(0.3), np.log(3.0))]
+    x0[1] = max(x0[1], b_min)
     res = minimize(objective, x0, method="L-BFGS-B", bounds=bounds)
     H = _hessian(objective, res.x)
     # parameters sitting on a bound are treated as fixed: the curvature there isn't a valid

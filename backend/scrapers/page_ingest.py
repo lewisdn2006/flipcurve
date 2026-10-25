@@ -69,7 +69,7 @@ RECHECK_MIN_AGE = timedelta(hours=3)    # first re-check once a listing has been
 RECHECK_EVERY = timedelta(hours=6)      # then at most this often
 TRACK_FOR = timedelta(days=30)          # stop following a listing after this
 SOLD_ROWS_FOR = timedelta(days=90)      # sales found within this window feed the model
-RECHECK_MAX = 8                         # re-checks folded into one scan
+RECHECK_MAX = 6                         # re-checks folded into one scan
 
 
 def _dt(s: str) -> datetime:

@@ -6,12 +6,16 @@ pages **in your own browser, signed in as you**, and hands them to the page:
 
 * eBay: up to 4 newest-listed pages + up to 4 recently-sold pages, 240 listings each, stopping
   early on the last page (sold results need you signed in to eBay)
-* Vinted: up to 8 newest catalogue pages (stops at the last) + 8 item pages (to date listings) + any re-checks
+* Vinted: up to 8 newest catalogue pages (stops at the last) + 4 item pages (to date listings) + any re-checks
+
+eBay and Vinted are loaded side by side: eBay pages 1.5 s apart, Vinted pages 4.5 s apart (Vinted
+slows down if asked too often). A request that stalls for 20 s ends that site's part of the scan
+with the pages it already got. The popup shows how the last scan went.
 
 **Background re-checks** (switch in the toolbar popup, on by default): every 2 hours while Chrome
 is open, the helper asks the FlipCurve server which Vinted listings from earlier scans are due
 (only ones that matched the item, first after 3 h, then at most every 6 h, for 30 days), re-opens
-up to 20 of them 1.5 s apart, and reports sold / still up / removed. If Vinted declines, it stops
+up to 20 of them 6 s apart, and reports sold / still up / removed. If Vinted declines, it stops
 and waits 12 hours. The server address is the one the FlipCurve page last used.
 
 It pauses 1.5 s between pages, only runs when you press Scan, and stops on any sign-in or

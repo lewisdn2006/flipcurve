@@ -215,6 +215,22 @@ stays up and says "Sold", so following listings we've already seen is the only s
   it sold, or survival to the last check. Ages use the ID-interpolated start.
 * Vinted catalogue depth: up to 8 pages per scan (stops at the last page) for the stock estimate.
 
+## D15. Scans that stalled, and price sensitivity (25 Oct, T-shirt test)
+
+* Two scans with 8 Vinted pages both died on the 15th Vinted request in about a minute: Vinted
+  slows down when asked too often, and Chrome stops an extension worker whose request stalls.
+  Now: Vinted requests are 4.5 s apart (background re-checks 6 s), eBay 1.5 s, and the two sites
+  run side by side; any request is abandoned after 20 s ("slow": that site's part ends with the
+  pages it got, and the result says so); 4 Vinted listing pages per scan instead of 8 (the ID
+  calibration builds up across scans); the worker is kept awake during long runs; the last scan's
+  progress is logged and shown in the popup and in the site's warning if it ends early. Pages are
+  sent to the site one at a time, and a partial scan is kept rather than thrown away.
+* Price sensitivity floor is now in elasticity terms: a 10% dearer listing waits at least ~10%
+  longer (β1 ≥ σ_p / anchor, and ≥ 0.3). The fixed 0.75 was far stronger for tightly priced items
+  (σ_p £1.60 on a £7 T-shirt) and made the tail heavy (k 0.40 → 0.68 after the change).
+* Quick sale is never below the 25th percentile of same-condition sales (it went to £4 for a
+  T-shirt that sells around £7). "XL" no longer marks a different model (it's a clothing size).
+
 ## TEAM — still to decide
 
 - [ ] Demo items: fill in `backend/scrapers/cache_seed/demo_items.csv` with the things on the table.
