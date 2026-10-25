@@ -166,6 +166,24 @@ class ListingRow(_Model):
         return self
 
 
+class CollectedPage(_Model):
+    """One page the helper extension loaded in the user's browser (extension/README.md)."""
+    platform: Platform
+    kind: Literal["active", "sold", "catalog", "item", "recheck"]
+    page: Optional[int] = None
+    url: str
+    final_url: Optional[str] = None
+    status: int = 200
+    html: str
+    fetched_at: datetime
+
+
+class ScanPagesRequest(_Model):
+    item: "ItemSpec"
+    pages: list[CollectedPage] = Field(default_factory=list, max_length=40)
+    stopped: dict = Field(default_factory=dict, description="Sites the extension stopped on, and why")
+
+
 class MarketScanRequest(_Model):
     item: ItemSpec
     platforms: list[Platform] = Field(default_factory=lambda: [p for p in Platform])

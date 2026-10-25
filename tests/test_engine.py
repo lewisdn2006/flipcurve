@@ -66,3 +66,10 @@ def test_pipeline_end_to_end():
     assert out.market_summary.survivorship_bias_pct > 0  # unsold listings are priced higher
     m = out.price_markers["good"]
     assert m.fast_sale_gbp <= m.best_value_gbp <= m.patient_gbp
+
+
+def test_cheaper_platform_is_not_flagged_as_outliers():
+    ebay = [row(f"Nike Air Force 1 white {i}", 34 + i % 5) for i in range(12)]
+    vinted = [dict(row(f"Nike Air Force 1 white v{i}", 21 + i % 4, platform="vinted")) for i in range(12)]
+    out = filter_rows(ebay + vinted, {"ebay": "nike air force 1 white", "vinted": "air force 1 white"})
+    assert not any(r["is_outlier"] for r in out)

@@ -4,7 +4,7 @@ Rows are never deleted: each gets is_outlier / outlier_reason, so the evidence d
 what was excluded and why. Three passes:
   1. Keywords: "box only", "spares", bundles, fakes... (repair words allowed if the item is broken)
   2. Relevance: the title must share at least half of the search query's meaningful words
-  3. Price: two-sided Tukey fences on log price relative to its condition's median
+  3. Price: two-sided Tukey fences on log price relative to its condition's median, per platform
 
 Owner: Person 1.
 """
@@ -51,16 +51,21 @@ def filter_rows(rows: list[dict], queries: dict[str, str], item_is_broken: bool 
         if q and len(q & _words(r["title"])) < 0.5 * len(q):
             _mark(r, "not a close title match")
 
-    # price fences on log(price / condition median), pooled so thin tiers still get checked
-    keep = [r for r in rows if not r["is_outlier"]]
-    if len(keep) >= MIN_FOR_FENCES:
+    # price fences on log(price / condition median), per platform: Vinted is usually cheaper than
+    # eBay, so pooling them flagged ordinary Vinted listings as "far below" (found 24 Oct).
+    # Tiers are pooled within a platform so thin tiers still get checked.
+    for platform in {r["platform"] for r in rows}:
+        keep = [r for r in rows if r["platform"] == platform and not r["is_outlier"]]
+        if len(keep) < MIN_FOR_FENCES:
+            continue
         tiers: dict[str, list[float]] = {}
         for r in keep:
             tiers.setdefault(r.get("condition_tier") or "good", []).append(r["price_gbp"])
         med = {t: float(np.median(v)) for t, v in tiers.items()}
         resid = np.array([np.log(r["price_gbp"] / med[r.get("condition_tier") or "good"]) for r in keep])
         q1, q3 = np.percentile(resid, [25, 75])
-        lo, hi = q1 - TUKEY_K * (q3 - q1), q3 + TUKEY_K * (q3 - q1)
+        spread = max(q3 - q1, 0.15)  # floor: a tight cluster shouldn't make normal prices look extreme
+        lo, hi = q1 - TUKEY_K * spread, q3 + TUKEY_K * spread
         for r, z in zip(keep, resid):
             if z < lo:
                 _mark(r, "price far below similar listings")

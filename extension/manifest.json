@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "FlipCurve helper",
+  "version": "0.1.0",
+  "description": "Looks up eBay and Vinted listings in your own browser when you press Scan on FlipCurve (lewisdn.com/flipcurve).",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAz6d2rFoE5too7dSvGeoMcO0TzxzjjaeqrTx0IRRULSoE1r5D1R1JB5NiQleMgJ9GjxKnEu04fIf5bYzcjqPJSSpmO/0CCuxp/tr+/9BDcDNcfaO19WDDjlEz7FAWb2/qbjTjc4PC1NVdhx6+4yjfaBEAEWGGayFd02q3np/+36Cc9vufkmmVG8SkkZ+ywlq0SL7sk9hO6yrV8uPqtadsrakC4a6deyX4gZwakxMcfsJkOlxi6DBe9lqdCr/we2h5cSNAAoGJQ0QOUXzfbwYaF3Kurxd77w3mKGhb/i78jm81pcred5gHEdgfrbguXMl+Tykz57S2sU30nsgkGVJMVQIDAQAB",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "host_permissions": [
+    "https://www.ebay.co.uk/*",
+    "https://www.vinted.co.uk/*"
+  ],
+  "externally_connectable": {
+    "matches": [
+      "https://lewisdn.com/*",
+      "https://*.lewisdn.com/*",
+      "http://localhost/*",
+      "http://127.0.0.1/*"
+    ]
+  },
+  "action": {
+    "default_title": "FlipCurve helper"
+  },
+  "permissions": [
+    "storage"
+  ]
+}
