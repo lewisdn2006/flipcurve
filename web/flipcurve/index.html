@@ -1207,7 +1207,7 @@ const Viz3D = (() => {
       labels.forEach((l) => l.el.remove()); labels = []; pick = []; onPick = null; cursor.visible = false;
       group = new THREE.Group(); scene.add(group);
     }
-    function frame({ xt, yt, zt, titles }) {
+    function frame({ xt, yt, zt, titles, zTitleAt }) {
       const x0 = -W3 / 2, x1 = W3 / 2, z0 = -D3 / 2, z1 = D3 / 2;
       line([V(x0, 0, z0), V(x1, 0, z0), V(x1, 0, z1), V(x0, 0, z1), V(x0, 0, z0)], 0xffffff, .22);
       xt.forEach((t) => { line([V(t.x, 0, z0), V(t.x, 0, z1)], 0xffffff, .05); line([V(t.x, 0, z0), V(t.x, H3, z0)], 0xffffff, .04); label(t.label, V(t.x, 0, z1 + 0.5)); });
@@ -1216,8 +1216,8 @@ const Viz3D = (() => {
       line([V(x0, 0, z0), V(x0, H3, z0)], 0xffffff, .22);
       if (st.annotate) {
         label(titles[0] + " →", V(0, 0, z1 + 1.15), "axis");
-        label(titles[1] + " →", V(x1 + 1.5, 0, 0.2), "axis");
-        label("↑ " + titles[2], V(x0 - 0.2, H3 + 0.45, z0), "axis");
+        if (zTitleAt) label(titles[1], zTitleAt, "axis", "l"); else label(titles[1] + " →", V(x1 + 1.5, 0, 0.2), "axis");
+        label("↑ " + titles[2], V(x0 - 0.3, H3 + 0.3, z0), "axis", "r");
       }
     }
     const fmtP = (v) => "£" + (Math.abs(v - Math.round(v)) < 1e-6 ? Math.round(v) : v.toFixed(1));
@@ -1270,8 +1270,14 @@ const Viz3D = (() => {
 
     // --- mode: every comparable listing
     function buildCloud() {
-      const ls = (R.comparable_listings || []).filter((x) => !x.is_outlier && x.t_days != null), ms = R.market_summary || {};
-      if (!ls.length) { defaultReadout = msg("No listings with known times to plot yet."); return; }
+      const all = (R.comparable_listings || []).filter((x) => !x.is_outlier && x.t_days != null && x.price_gbp > 0), ms = R.market_summary || {};
+      if (!all.length) { defaultReadout = msg("No listings with known times to plot yet."); return; }
+      // A few far-off prices (a £900 pair among £40 ones) squash everything else into one corner,
+      // so this view leaves out prices far from the typical one: beyond 3 robust SDs of log price,
+      // but never closer than 0.6x-1.6x of the median. The charts and the table still show them.
+      const lp = all.map((x) => Math.log(x.price_gbp)).sort((a, b) => a - b), qm = (a) => a.length % 2 ? a[a.length >> 1] : (a[a.length / 2 - 1] + a[a.length / 2]) / 2;
+      const med = qm(lp), mad = qm(lp.map((v) => Math.abs(v - med)).sort((a, b) => a - b)), band = Math.max(3 * 1.4826 * mad, Math.log(1.6));
+      const ls = all.filter((x) => Math.abs(Math.log(x.price_gbp) - med) <= band), hidden = all.length - ls.length;
       const ps = ls.map((x) => x.price_gbp), p0 = Math.floor(Math.min(...ps) / 5) * 5; let p1 = Math.ceil(Math.max(...ps) / 5) * 5; if (p1 <= p0) p1 = p0 + 5;
       const dv = (x) => x.obs_type === "active" ? x.t_days : Math.sqrt(Math.max(x.t_days, 0.05) * (x.t_upper_days ?? x.t_days));
       const dmin = Math.max(0.05, Math.min(...ls.map(dv)) * 0.8), dmax = Math.max(dmin * 4, Math.max(...ls.map(dv)) * 1.15), la = Math.log(dmin), lb = Math.log(dmax);
@@ -1299,20 +1305,23 @@ const Viz3D = (() => {
         line([V(x, 0, -D3 / 2), V(x, H3, -D3 / 2), V(x, H3, D3 / 2), V(x, 0, D3 / 2)], color, .6); return x; };
       const inRange = (v) => v != null && v >= p0 && v <= p1;
       if (st.annotate) {
+        // the lower of the two medians gets its callout to the left of its stem, the higher one to the right
+        const soldLeft = !(ms.active_median_gbp < ms.sold_median_gbp);
         if (inRange(ms.sold_median_gbp)) {
           const xs = plane(ms.sold_median_gbp, 0x4fb7a8, .1);
-          line([V(xs, H3 + 0.5, -D3 / 2), V(xs, H3, -D3 / 2)], 0x4fb7a8, .8);
-          label(`<b style="font-weight:600;color:#4fb7a8">Sold median</b> · ${gbp(ms.sold_median_gbp)}<br><span style="color:#a8a69e">what buyers actually paid</span>`, V(xs, H3 + 0.5, -D3 / 2), "callout", "b");
+          line([V(xs, H3 + 0.9, -D3 / 2), V(xs, H3, -D3 / 2)], 0x4fb7a8, .8);
+          label(`<b style="font-weight:600;color:#4fb7a8">Sold median</b> · ${gbp(ms.sold_median_gbp)}<br><span style="color:#a8a69e">what buyers actually paid</span>`, V(xs, H3 + 0.9, -D3 / 2), "callout", soldLeft ? "bl" : "br");
         }
         if (inRange(ms.active_median_gbp)) {
           const xa = plane(ms.active_median_gbp, 0xeeece6, .06), gap = ms.survivorship_bias_pct;
-          line([V(xa, H3 + 1.25, -D3 / 2), V(xa, H3, -D3 / 2)], 0xeeece6, .8);
+          line([V(xa, H3 + 0.9, -D3 / 2), V(xa, H3, -D3 / 2)], 0xeeece6, .8);
           const sub = gap == null ? "what unsold sellers are asking" : gap >= 0 ? `unsold ask ${Math.round(gap)}% more: survivorship bias` : `unsold ask ${Math.round(-gap)}% less than recent sales`;
-          label(`<b style="font-weight:600">Asking median</b> · ${gbp(ms.active_median_gbp)}<br><span style="color:#a8a69e">${sub}</span>`, V(xa, H3 + 1.25, -D3 / 2), "callout", "b");
+          label(`<b style="font-weight:600">Asking median</b> · ${gbp(ms.active_median_gbp)}<br><span style="color:#a8a69e">${sub}</span>`, V(xa, H3 + 0.9, -D3 / 2), "callout", soldLeft ? "br" : "bl");
         }
       }
-      frame({ xt: priceTicks(p0, p1, Xp), zt: [], yt: [0.1, 0.3, 1, 3, 7, 14, 30, 90, 365].filter((d) => d >= dmin && d <= dmax).map((d) => ({ y: Y(d), label: d + "d" })), titles: ["List price", "Condition", "Days listed (log)"] });
-      defaultReadout = msg("Hover a point to see the listing. Solid = sold, wireframe = still listed (at least this long).");
+      frame({ xt: priceTicks(p0, p1, Xp), zt: [], yt: [0.1, 0.3, 1, 3, 7, 14, 30, 90, 365].filter((d) => d >= dmin && d <= dmax).map((d) => ({ y: Y(d), label: d + "d" })), titles: ["List price", "Condition", "Days listed (log)"], zTitleAt: V(W3 / 2 + 0.6, 0, -D3 / 2 - 0.9) });
+      defaultReadout = msg("Hover a point to see the listing. Solid = sold, wireframe = still listed (at least this long)." +
+        (hidden ? ` ${hidden} listing${hidden > 1 ? "s" : ""} priced far from the rest (${gbp(Math.exp(med - band))}–${gbp(Math.exp(med + band))} shown) left out of this view.` : ""));
       onPick = (hit) => {
         const x = hit.object.userData.rows?.[hit.instanceId]; if (!x) return null;
         const M = new THREE.Matrix4(); hit.object.getMatrixAt(hit.instanceId, M); place(V().setFromMatrixPosition(M));
@@ -1390,7 +1399,7 @@ const Viz3D = (() => {
         if (v.z > 1) { l.el.style.display = "none"; return; }
         l.el.style.display = "";
         const x = (v.x + 1) / 2 * w, y = (1 - v.y) / 2 * h;
-        const tr = l.anchor === "b" ? "translate(-50%,calc(-100% - 6px))" : l.anchor === "l" ? "translate(0,-50%)" : l.anchor === "r" ? "translate(-100%,-50%)" : "translate(-50%,-50%)";
+        const tr = l.anchor === "b" ? "translate(-50%,calc(-100% - 6px))" : l.anchor === "bl" ? "translate(calc(-100% + 12px),calc(-100% - 6px))" : l.anchor === "br" ? "translate(-12px,calc(-100% - 6px))" : l.anchor === "l" ? "translate(0,-50%)" : l.anchor === "r" ? "translate(-100%,-50%)" : "translate(-50%,-50%)";
         l.el.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) ${tr}`;
       });
     }
