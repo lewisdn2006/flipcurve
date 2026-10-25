@@ -335,16 +335,27 @@ function collect(queries, recheckIds) {
     let port;
     try { port = chrome.runtime.connect(EXT_ID); } catch (e) { return reject(new Error("Couldn't talk to the helper extension.")); }
     let done = false;
+    const pages = [];  // the helper sends each page as soon as it has it
     port.onMessage.addListener((m) => {
-      if (m.type === "progress") {
+      if (m.type === "page") {
+        pages.push(m.page);
+      } else if (m.type === "progress") {
         $("barFill").style.width = Math.round(100 * m.done / m.total) * 0.8 + "%";
         $("progressText").textContent = `${m.label} (${m.done} of ${m.total})`;
       } else if (m.type === "result") {
         done = true; port.disconnect();
-        m.ok ? resolve(m) : reject(new Error(m.error || "The helper stopped."));
+        if (!m.ok) return reject(new Error(m.error || "The helper stopped."));
+        resolve({ pages: pages.concat(m.pages || []), stopped: m.stopped || {} });
       }
     });
-    port.onDisconnect.addListener(() => { void chrome.runtime.lastError; if (!done) reject(new Error("The helper disconnected mid-scan.")); });
+    port.onDisconnect.addListener(() => {
+      void chrome.runtime.lastError;
+      if (done) return;
+      done = true;
+      // keep what arrived rather than throwing the scan away
+      if (pages.length) resolve({ pages, stopped: {}, partial: true });
+      else reject(new Error("The helper disconnected before sending any pages. Reload it in chrome://extensions and try again."));
+    });
     port.postMessage({ type: "collect", queries, ebayPages: 4, vintedPages: 8, vintedItemSamples: 8,
                        recheckVintedIds: recheckIds, api: API });
   });
@@ -377,6 +388,7 @@ async function scan(live) {
         headers["Content-Encoding"] = "gzip";
       }
       result = await api("/api/v1/scan-pages", { method: "POST", headers, body });
+      if (got.partial) result.warnings = [`The helper stopped part-way, so this uses the ${got.pages.length} pages it sent. Scanning again may get more.`, ...(result.warnings || [])];
       checkHelper();
     } else {
       $("progressText").textContent = "Working out prices from saved listings…"; $("barFill").style.width = "60%";

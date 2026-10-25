@@ -92,13 +92,18 @@ async function collect(req, progress) {
   const vintedItemSamples = clamp(req.vintedItemSamples ?? 8, 0, 12);
   const { queries = {} } = req;
   const recheckVintedIds = (req.recheckVintedIds || []).slice(0, 10);
-  const pages = [];
+  // Each page goes to the site as soon as it's loaded (one small message each). Sending them all
+  // at the end as one big message dropped the connection after the last page (25 Oct).
+  let sent = 0;
   const stopped = {};
   const steps = 2 * ebayPages + vintedPages + vintedItemSamples + recheckVintedIds.length;
   let done = 0;
   const step = (label) => progress({ type: "progress", done: ++done, total: steps, label });
-  const keep = (platform, kind, page, url, res, html) =>
-    pages.push({ platform, kind, page, url, final_url: res.finalUrl, status: res.status, html, fetched_at: new Date().toISOString() });
+  const keep = (platform, kind, page, url, res, html) => {
+    sent++;
+    progress({ type: "page", page: { platform, kind, page, url, final_url: res.finalUrl, status: res.status, html,
+                                     fetched_at: new Date().toISOString() } });
+  };
 
   // eBay: newest-listed pages (start times + calibration), then recently-sold pages
   if (queries.ebay) {
@@ -140,7 +145,7 @@ async function collect(req, progress) {
       keep("vinted", kind, null, url, res, slim(res.html));
     }
   }
-  return { type: "result", ok: true, pages, stopped, version: chrome.runtime.getManifest().version };
+  return { type: "result", ok: true, pages: [], sent, stopped, version: chrome.runtime.getManifest().version };
 }
 
 // ------------------------------------------------------------------ background Vinted re-checks

@@ -36,7 +36,8 @@ const EXT = "fdibajhmjjbjcdfafdofkoedbkhbkfcb";
 chrome.runtime.sendMessage(EXT, { type: "ping" }, (r) => { /* r = {ok, version, ebayState} or undefined if not installed */ });
 
 const port = chrome.runtime.connect(EXT);
-port.onMessage.addListener((m) => { /* {type:"progress", done, total, label} ... then {type:"result", ok, pages, stopped} */ });
+port.onMessage.addListener((m) => { /* {type:"progress", done, total, label}, {type:"page", page} (one per page),
+                                      then {type:"result", ok, sent, stopped} */ });
 port.postMessage({ type: "collect", queries: { ebay: "...", vinted: "..." }, ebayPages: 4, vintedPages: 8,
                    vintedItemSamples: 8, recheckVintedIds: [], api: "https://api.lewisdn.com" });
 ```
