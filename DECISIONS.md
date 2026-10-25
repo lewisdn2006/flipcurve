@@ -298,6 +298,15 @@ identify without trying the backups, and all of them showed the same "busy or un
 * Don't link the project to the "My Billing Account" prepay account while it's at £0: a paid-tier
   project with no prepaid balance stops serving requests altogether.
 
+* **Skip models that are out of allowance; give Gemma time** (same day; Gemma 4 31B didn't answer
+  within 40 s, twice, and the smaller-photo retry asked the three 429'd Flash models again). A model
+  that answers 429 is skipped by every identify until its limit resets: Google's retry delay (or a
+  minute) for a per-minute limit, midnight Pacific for a daily one, read from the 429's QuotaFailure
+  details. Gemma gets up to 160 s per request and isn't held to the 40 s first-model cap; the whole
+  identify can take 3 minutes (the page waits 4). The warning keeps every model's full reason and
+  Google's whole message, says which limit was hit and when each skipped model is tried again.
+  Gemma's request and answer are not trimmed.
+
 ## TEAM — still to decide
 
 - [ ] Demo items: fill in `backend/scrapers/cache_seed/demo_items.csv` with the things on the table.

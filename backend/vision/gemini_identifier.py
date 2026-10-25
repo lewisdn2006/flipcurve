@@ -16,7 +16,9 @@ import io
 import logging
 import json
 import os
+import threading
 import time
+from datetime import datetime, timedelta
 
 import httpx
 
@@ -25,8 +27,9 @@ log = logging.getLogger("flipcurve")
 RETRY_STATUS = {429, 500, 502, 503, 504}
 BACKOFF_S = (1.0, 2.5, 5.0)     # per model; then the next model
 DEFAULT_BUDGET_S = 70.0          # whole identify for the old one-request endpoint (Cloudflare cuts at 100 s)
-JOB_BUDGET_S = 170.0             # identify run as a background job the page polls: no 100 s limit
+JOB_BUDGET_S = 180.0             # identify run as a background job the page polls: no 100 s limit (3 min is fine)
 REQUEST_TIMEOUT_S = 75.0
+GEMMA_TIMEOUT_S = 160.0          # Gemma is slow on the free tier but has allowance left: let it take its time
 FIRST_MODEL_CAP_S = 40.0         # longest wait for the first model, so the backups always get a turn
 SMALL_RETRY_SIDE = 800           # one more go with smaller photos when the first round failed for non-busy reasons
 GEMINI_MAX_SIDE = 1280           # photos sent to Gemini: plenty to read a label, fewer image tiles = faster
@@ -88,7 +91,7 @@ class IdentifyError(RuntimeError):
         Claude: busy (HTTP 529)"."""
         if not self.attempts:
             return str(self)
-        bits = [f"{pretty_model(m)}: {r[:140]}" for m, r in self.attempts]
+        bits = [f"{pretty_model(m)}: {r}" for m, r in self.attempts]
         if not claude_configured() and not any(m.startswith("gemma") for m, _ in self.attempts):
             bits.append("no backup AI set up (add ANTHROPIC_API_KEY to .env, or GEMMA_MODEL)")
         return "; ".join(bits)
@@ -318,10 +321,79 @@ def parse_answer(resp: dict) -> dict:
 
 
 def _google_error(r: httpx.Response) -> str:
+    """Google's own error message, in full (it's what tells you which limit or which problem)."""
     try:
-        return str(r.json()["error"]["message"])[:80]
+        return " ".join(str(r.json()["error"]["message"]).split())
     except Exception:  # noqa: BLE001
-        return r.text[:80]
+        return " ".join(r.text.split())[:600]
+
+
+# ---- models that are out of allowance (HTTP 429) are skipped until their limit resets, instead of
+# being asked again on every identify (25 Oct: each identify spent requests on three Flash models
+# that could only say 429). Shared by all identifies in this server process.
+
+COOLDOWN: dict[str, dict] = {}     # model -> {"until": epoch seconds, "why": text}
+_COOLDOWN_LOCK = threading.Lock()
+
+
+def _next_pacific_midnight(now: float) -> float:
+    """Gemini API daily limits reset at midnight Pacific time."""
+    try:
+        from zoneinfo import ZoneInfo
+        pt = datetime.fromtimestamp(now, ZoneInfo("America/Los_Angeles"))
+        nxt = (pt + timedelta(days=1)).replace(hour=0, minute=0, second=5, microsecond=0)
+        return nxt.timestamp()
+    except Exception:  # noqa: BLE001 - no tz data: assume a day
+        return now + 24 * 3600
+
+
+def quota_details(r: httpx.Response) -> dict:
+    """From a 429 body: which limit (quotaId / metric), the per-day flag, and Google's retry delay."""
+    out = {"ids": [], "daily": False, "retry_s": None}
+    try:
+        for d in r.json()["error"].get("details", []) or []:
+            t = d.get("@type", "")
+            if t.endswith("QuotaFailure"):
+                for v in d.get("violations", []) or []:
+                    qid = v.get("quotaId") or v.get("quotaMetric") or ""
+                    if qid:
+                        out["ids"].append(qid + (f" (limit {v['quotaValue']})" if v.get("quotaValue") else ""))
+                    if re.search(r"per ?day", qid, re.I):
+                        out["daily"] = True
+            elif t.endswith("RetryInfo"):
+                m = re.match(r"([\d.]+)s", str(d.get("retryDelay", "")))
+                if m:
+                    out["retry_s"] = float(m.group(1))
+    except Exception:  # noqa: BLE001
+        pass
+    if not out["ids"] and re.search(r"per ?day|daily", r.text, re.I):
+        out["daily"] = True
+    return out
+
+
+def _clock(ts: float) -> str:
+    return datetime.fromtimestamp(ts).strftime("%H:%M") + (" tomorrow" if datetime.fromtimestamp(ts).date() > datetime.now().date() else "")
+
+
+def cool_down(model: str, r: httpx.Response, now: float | None = None) -> str:
+    """Remember that `model` is out of allowance; returns a description of when it's tried again."""
+    now = time.time() if now is None else now
+    q = quota_details(r)
+    until = _next_pacific_midnight(now) if q["daily"] else now + max(q["retry_s"] or 60.0, 10.0)
+    why = ("daily limit" if q["daily"] else "per-minute limit") + (f": {', '.join(q['ids'])}" if q["ids"] else "")
+    with _COOLDOWN_LOCK:
+        COOLDOWN[model] = {"until": until, "why": why, "since": now}
+    return f"{why}; skipped until {_clock(until)}"
+
+
+def cooling(model: str, now: float | None = None) -> dict | None:
+    now = time.time() if now is None else now
+    with _COOLDOWN_LOCK:
+        c = COOLDOWN.get(model)
+        if c and c["until"] <= now:
+            COOLDOWN.pop(model, None)
+            c = None
+    return c
 
 
 class GeminiIdentifier:
@@ -425,9 +497,15 @@ class GeminiIdentifier:
             if self._left() < 5:
                 attempts.append((model, "out of time"))
                 break
+            c = cooling(model) if not model.startswith("claude:") else None
+            if c:
+                attempts.append((model, f"skipped: usage limit reached at {_clock(c['since'])} ({c['why']}); "
+                                        f"tried again after {_clock(c['until'])}"))
+                continue
             tried.append(model)
-            # the first model can't use up the whole budget: the backups always get a turn
-            cap = FIRST_MODEL_CAP_S if len(tried) == 1 else None
+            # the first model can't use up the whole budget, so the backups always get a turn.
+            # Not Gemma: it's slow but often the only one with allowance left, so it gets the time.
+            cap = FIRST_MODEL_CAP_S if len(tried) == 1 and not model.startswith("gemma") else None
             resp, err, kind = self._call_model(model, parts, use_schema, cap)
             if resp is not None:
                 try:
@@ -519,7 +597,7 @@ class GeminiIdentifier:
             left = self._left() if not t_end else min(self._left(), t_end - time.monotonic() + 2)
             if left < 5:
                 return None, (last + " " if last else "") + ("(out of time)" if not t_end else "(gave up to try the backups)"), "busy"
-            timeout = min(REQUEST_TIMEOUT_S, left - 2)
+            timeout = min(GEMMA_TIMEOUT_S if model.startswith("gemma") else REQUEST_TIMEOUT_S, left - 2)
             try:
                 r = self.http.post(url, json=body, headers={"x-goog-api-key": self.key}, timeout=timeout)
             except httpx.TimeoutException:
@@ -540,9 +618,11 @@ class GeminiIdentifier:
                 if r.status_code == 400 and json_mode and use_schema and "schema" in r.text.lower():
                     return self._call_model(model, parts, False, cap)  # model without schema support
                 if r.status_code == 429:
-                    # not "busy": this key has used up its allowance (requests per minute or per day)
-                    last, kind = f"usage limit reached (HTTP 429: {_google_error(r)})", "busy"
-                    break  # retrying the same model only spends more of the allowance: next model
+                    # not "busy": this key has used up its allowance (requests per minute or per day).
+                    # Skip this model until the limit resets; retrying now only spends more of it.
+                    when = cool_down(model, r)
+                    last, kind = f"usage limit reached (HTTP 429: {_google_error(r)}) [{when}]", "busy"
+                    break
                 elif r.status_code in RETRY_STATUS:
                     last, kind = f"busy (HTTP {r.status_code})", "busy"
                 elif r.status_code in (401, 403):
@@ -580,7 +660,7 @@ class GeminiIdentifier:
         except IdentifyError as e:
             # One more round with smaller photos, unless every model was simply busy (smaller photos
             # won't help that) or there isn't time left for it.
-            not_busy = any(not r.startswith(("busy", "usage limit")) for _, r in e.attempts)
+            not_busy = any(not r.startswith(("busy", "usage limit", "skipped")) for _, r in e.attempts)
             if not (not_busy and self._left() >= 25 and images):
                 raise
             log.warning("identify: retrying with %d px photos after: %s", SMALL_RETRY_SIDE, e.attempts)

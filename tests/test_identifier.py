@@ -485,3 +485,95 @@ def test_gemma_counts_as_a_backup_in_the_message(monkeypatch):
         make(lambda req: httpx.Response(429, json={"error": {"message": "quota"}})).from_text("x")
     why = e.value.reason()
     assert "gemma-4-31b-it: usage limit reached" in why and "no backup AI" not in why
+
+
+# ---- 25 Oct: skip models that are out of allowance; give Gemma time
+
+def _quota_429(qid="GenerateRequestsPerMinutePerProjectPerModel-FreeTier", delay="37s"):
+    return httpx.Response(429, json={"error": {"code": 429, "status": "RESOURCE_EXHAUSTED",
+        "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits.",
+        "details": [{"@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                     "violations": [{"quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",
+                                     "quotaId": qid, "quotaValue": "20"}]},
+                    {"@type": "type.googleapis.com/google.rpc.RetryInfo", "retryDelay": delay}]}})
+
+
+def test_model_out_of_allowance_is_skipped_on_the_next_identify(monkeypatch):
+    monkeypatch.setenv("GEMINI_FALLBACK_MODELS", "")
+    monkeypatch.setenv("GEMMA_MODEL", "gemma-4-31b-it")
+    calls = []
+
+    def handler(req):
+        calls.append(_model_of(req))
+        return _quota_429() if calls[-1] == "m" else reply(GOOD)
+
+    make(handler).from_text("x")
+    make(handler).from_text("x")
+    assert calls == ["m", "gemma-4-31b-it", "gemma-4-31b-it"]  # the second identify doesn't ask "m" again
+
+
+def test_skipped_model_comes_back_after_its_limit_resets(monkeypatch):
+    from backend.vision import gemini_identifier as gi
+    now = {"t": 1_000_000.0}
+    monkeypatch.setattr(gi.time, "time", lambda: now["t"])
+    gi.cool_down("m", _quota_429(delay="30s"))
+    assert gi.cooling("m")
+    now["t"] += 31
+    assert gi.cooling("m") is None
+
+
+def test_daily_limit_waits_until_pacific_midnight():
+    from backend.vision import gemini_identifier as gi
+    t = datetime_ts = 1_761_400_000.0  # 25 Oct 2026, mid-afternoon in London
+    gi.cool_down("m", _quota_429(qid="GenerateRequestsPerDayPerProjectPerModel-FreeTier"), now=t)
+    until = gi.COOLDOWN["m"]["until"]
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    pt = datetime.fromtimestamp(until, ZoneInfo("America/Los_Angeles"))
+    assert until > datetime_ts and pt.hour == 0 and until - t < 26 * 3600
+
+
+def test_warning_keeps_googles_full_message_and_says_when_it_tries_again(monkeypatch):
+    monkeypatch.setenv("GEMINI_FALLBACK_MODELS", "")
+    monkeypatch.setenv("GEMMA_MODEL", "")
+    with pytest.raises(IdentifyError) as e:
+        make(lambda req: _quota_429()).from_text("x")
+    why = e.value.reason()
+    assert "head to: https://ai.google.dev/gemini-api/docs/rate-limits." in why
+    assert "per-minute limit: GenerateRequestsPerMinutePerProjectPerModel-FreeTier (limit 20)" in why and "skipped until" in why
+    with pytest.raises(IdentifyError) as e2:
+        make(lambda req: _quota_429()).from_text("x")
+    assert "m: skipped: usage limit reached at" in e2.value.reason()
+
+
+def test_gemma_gets_its_long_timeout_even_when_first(monkeypatch):
+    monkeypatch.setenv("GEMINI_FALLBACK_MODELS", "")
+    monkeypatch.setenv("GEMMA_MODEL", "gemma-4-31b-it")
+    monkeypatch.setenv("PHOTO_AI_FIRST", "gemma")
+    seen = {}
+
+    def handler(req):
+        seen[_model_of(req)] = req.extensions["timeout"]["read"]
+        return reply(GOOD)
+
+    GeminiIdentifier(api_key="k", model="m", sleep=lambda s: None, budget_s=180,
+                     client=httpx.Client(transport=httpx.MockTransport(handler))).from_images([_jpeg(400)])
+    assert seen["gemma-4-31b-it"] >= 150
+
+
+def test_slow_gemma_after_skipped_flash_still_fits_three_minutes(monkeypatch):
+    monkeypatch.setenv("GEMINI_FALLBACK_MODELS", "")
+    monkeypatch.setenv("GEMMA_MODEL", "gemma-4-31b-it")
+    clock = {"t": 0.0}
+    monkeypatch.setattr("backend.vision.gemini_identifier.time.monotonic", lambda: clock["t"])
+
+    def handler(req):
+        if _model_of(req) == "m":
+            return _quota_429()
+        clock["t"] += req.extensions["timeout"]["read"]  # Gemma uses its whole wait
+        raise httpx.ReadTimeout("slow", request=req)
+
+    with pytest.raises(IdentifyError) as e:
+        GeminiIdentifier(api_key="k", model="m", sleep=lambda s: None, budget_s=180,
+                         client=httpx.Client(transport=httpx.MockTransport(handler))).from_images([_jpeg(400)])
+    assert clock["t"] <= 180 and "gemma-4-31b-it: no answer within 160 s" in e.value.reason()

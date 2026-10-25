@@ -8,3 +8,15 @@ os.environ["ANTHROPIC_API_KEY"] = ""
 os.environ.pop("PHOTO_AI_FIRST", None)
 os.environ["EBAY_CLIENT_ID"] = ""
 os.environ["EBAY_CLIENT_SECRET"] = ""
+
+
+import pytest  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _fresh_identify_cooldowns():
+    """Models out of allowance are remembered per server process; each test starts clean."""
+    from backend.vision import gemini_identifier
+    gemini_identifier.COOLDOWN.clear()
+    yield
+    gemini_identifier.COOLDOWN.clear()
