@@ -74,8 +74,14 @@ The app takes the photo, runs the search, and shows charts. The x-axis is the li
 3. Evidence scatter: every listing, price against days on market, sold vs unsold.
 4. Net cash against list price per platform, with confidence bands; peaks = recommended prices.
 
-Markers on the charts (`price_markers`): fast sale (P(24h) ≥ 50%), best value (maximises
-net × E[e^(−γT)], γ = 0.05/day), patient (P(30d) ≥ 80%).
+Markers on the charts (`price_markers`), always quick ≤ best ≤ patient (revised 25 Oct):
+* quick sale: highest price with P(sold within 7 days) ≥ 50%;
+* best value: maximises net × E[e^(−γT)] with γ = 0.01/day (waiting a month costs ~25%);
+* patient: the same with γ = 0.003/day.
+If no price reaches the quick-sale target (a slow market), quick sale = 85% of the typical sold
+price for the condition, with a `note`, and the markdown floor uses it too. Before this, a slow
+market made every marker fall to the bottom of the chart: a user's £30 Jordans showed £10.
+(γ was 0.05/day, which made any slow market recommend the cheapest price.)
 
 ## D5. "90% range" = 5th–95th percentile of time-to-sell
 
@@ -141,6 +147,29 @@ We collect them politely, and we never try to get around a refusal.
   the honest way to see it; the user never saves pages by hand.
 * If the laptop is off, the site shows "can't reach the server"; "Use saved data" works whenever
   the server is up even without the helper.
+
+## D12. More data per scan: similar versions, Vinted stock sampling, more pages (25 Oct)
+
+First live scan (Jordan 1 Low Triple Black): eBay's search was ~75% Jordan 1 **Mid** and ~25%
+kids' sizes, only 4 exact sales, and Vinted had no sales at all, so speed came almost entirely
+from priors. Three changes:
+* **Similar versions** (Mid when we searched Low, Pro/Max/Mini the search didn't name, kids'
+  sizes) are tagged `related`. They join the speed fit with prices rescaled to this item's level
+  (ratio of the two "Good" anchors), so "a Mid at a Mid's usual price sells about as fast as a
+  Low at a Low's usual price". They never set the price level; anchors come from exact matches
+  (≥ 3 sales pooled over tiers). Groups under 5 listings are dropped. Shown greyed as "similar".
+* **Vinted stock sampling.** A newest-first catalogue read back to age A, with listings arriving
+  steadily, has visible ages distributed as S(t) / ∫₀ᴬ S(u) du: young-heavy = fast, even spread =
+  slow. Each catalogue row now carries `stock_window_days` (A = 90th percentile of ages, so bumped
+  old listings don't stretch it). Vinted ages use an ID-interpolated point estimate instead of the
+  ~36 h bounds. Caveat: deleted listings also vanish, so this leans fast; re-checks still add
+  real sales over time. Vinted's badge is "low" (not "estimated") when this is all it has.
+* **More pages:** up to 4 eBay new + 4 eBay sold (240 each, stops at the last page), 4 Vinted
+  catalogue pages, 8 Vinted item pages. Pages are stripped of scripts/styles in the extension and
+  gzipped by the site (~10× smaller) before upload.
+* Relevance now needs 70% of the query's words (50% let "Air Force 1 Triple Black" through).
+* Survivorship gap is measured within one platform (mixing Vinted asks with eBay sales made it
+  negative).
 
 ## TEAM — still to decide
 

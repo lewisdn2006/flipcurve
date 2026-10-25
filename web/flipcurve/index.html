@@ -299,7 +299,7 @@ function collect(queries, recheckIds) {
       }
     });
     port.onDisconnect.addListener(() => { void chrome.runtime.lastError; if (!done) reject(new Error("The helper disconnected mid-scan.")); });
-    port.postMessage({ type: "collect", queries, ebayPages: 2, vintedPages: 1, vintedItemSamples: 4, recheckVintedIds: recheckIds });
+    port.postMessage({ type: "collect", queries, ebayPages: 4, vintedPages: 4, vintedItemSamples: 8, recheckVintedIds: recheckIds });
   });
 }
 
@@ -322,8 +322,14 @@ async function scan(live) {
       try { if (it.search_queries.vinted) ids = (await api("/api/v1/recheck-ids?vinted_query=" + encodeURIComponent(it.search_queries.vinted))).ids || []; } catch {}
       const got = await collect(it.search_queries, ids);
       $("progressText").textContent = "Working out prices and selling times…"; $("barFill").style.width = "90%";
-      result = await api("/api/v1/scan-pages", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ item: it, pages: got.pages, stopped: got.stopped || {} }) });
+      const json = JSON.stringify({ item: it, pages: got.pages, stopped: got.stopped || {} });
+      const headers = { "Content-Type": "application/json" };
+      let body = json;
+      if (window.CompressionStream) {  // pages are several MB of HTML; gzip shrinks them ~10x
+        body = await new Response(new Blob([json]).stream().pipeThrough(new CompressionStream("gzip"))).blob();
+        headers["Content-Encoding"] = "gzip";
+      }
+      result = await api("/api/v1/scan-pages", { method: "POST", headers, body });
       checkHelper();
     } else {
       $("progressText").textContent = "Working out prices from saved listings…"; $("barFill").style.width = "60%";
@@ -346,8 +352,10 @@ function render(r) {
   const b = rec[best];
   $("headline").textContent = b ? `List on ${PLAT[best]} at ${gbp(b.recommended_list_gbp)}` : "Results";
   const ms = r.market_summary || {};
-  $("summary").textContent = `Based on ${ms.sample_size_sold ?? 0} sold and ${ms.sample_size_active ?? 0} unsold listings` +
-    (ms.survivorship_bias_pct ? `. Unsold listings are priced about ${Math.round(ms.survivorship_bias_pct)}% higher than what actually sells, so asking prices alone would mislead you.` : ".");
+  const gap = ms.survivorship_bias_pct;
+  $("summary").textContent = `Based on ${ms.sample_size_sold ?? 0} sold and ${ms.sample_size_active ?? 0} unsold listings of this exact item` +
+    (gap >= 5 ? `. Unsold listings are priced about ${Math.round(gap)}% higher than what actually sells, so asking prices alone would mislead you.`
+     : gap <= -5 ? `. Listings still up are priced about ${Math.round(-gap)}% below recent sales: there's competition at lower prices.` : ".");
   $("platforms").innerHTML = Object.entries(rec).map(([p, x]) => `
     <div class="plat ${p === best ? "best" : ""}">
       <h3><span>${PLAT[p] || p}${p === best ? " · best" : ""}</span><span class="badge" title="${x.n_sales} sales seen">${esc(x.confidence)} confidence</span></h3>
@@ -355,7 +363,7 @@ function render(r) {
       <div class="kv" style="margin-top:6px">
         <span>List at</span><span>${gbp(x.recommended_list_gbp)}</span>
         <span>Likely sale price</span><span>${gbp(x.expected_sale_price_gbp)}</span>
-        <span>Typical time to sell</span><span>${days(x.expected_days)}</span>
+        <span>Average time to sell</span><span>${days(x.expected_days)}</span>
         <span>Range</span><span>${x.expected_days_low?.toFixed(1)}–${x.expected_days_high?.toFixed(1)} days</span>
         <span>Chance sold in 7 days</span><span>${pct(x.prob_sell_7d)}</span>
         <span>Listings / sales seen</span><span>${x.n_listings} / ${x.n_sales}</span>
@@ -365,7 +373,7 @@ function render(r) {
   $("viewTier").value = r.item_metadata?.condition_tier || "good";
   drawTier();
   $("schedule").innerHTML = (r.markdown_schedule || []).map((s) => `<li>${s.day === 0 ? "Day 0" : "Day " + s.day}: ${esc(s.action)}</li>`).join("");
-  drawEvidence(r.comparable_listings || []);
+  drawEvidence(r.comparable_listings || [], ms.sample_size_excluded || 0);
   $("results").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 $("viewTier").onchange = drawTier;
@@ -373,7 +381,8 @@ $("viewTier").onchange = drawTier;
 function drawTier() {
   const t = $("viewTier").value, m = R.price_markers?.[t];
   $("markers").innerHTML = m ? [["Quick sale", m.fast_sale_gbp], ["Best value", m.best_value_gbp], ["Patient", m.patient_gbp]]
-    .map(([k, v]) => `<div><span class="muted">${k}</span><b>${gbp(v)}</b></div>`).join("") : "";
+    .map(([k, v]) => `<div><span class="muted">${k}</span><b>${gbp(v)}</b></div>`).join("")
+    + (m.note ? `<p class="muted" style="flex-basis:100%;margin:0">${esc(m.note)}</p>` : "") : "";
   drawCurve(R.price_curve_grid?.[t] || [], m);
   drawHeat(R.sale_surface?.[t], R.price_curve_grid?.[t] || []);
 }
@@ -455,14 +464,19 @@ function drawHeat(surf, pts) {
   surf.days.forEach((d, j) => svgEl("text", { x: L + j * cw + cw / 2, y: H - 12, "text-anchor": "middle", "font-size": 11, fill: "var(--ink-3)" }, svg).textContent = d + "d");
 }
 
-function drawEvidence(list) {
+const RELATED = { mid: "Mid", low: "Low", high: "High", hi: "High", kids: "kids' size", pro: "Pro", max: "Max",
+                  plus: "Plus", mini: "Mini", ultra: "Ultra", lite: "Lite", se: "SE", xl: "XL" };
+function drawEvidence(list, excluded) {
   const kind = { sold_exact: "Sold", sold_interval: "Sold", sold_unknown_time: "Sold", active: "Not sold yet" };
-  const sorted = [...list].sort((a, b) => (a.obs_type === "active") - (b.obs_type === "active") || a.price_gbp - b.price_gbp);
-  const shown = sorted.filter((x) => !x.is_outlier).slice(0, 30);
-  const excluded = list.filter((x) => x.is_outlier).length;
-  $("evNote").textContent = `${list.length} listings found; showing ${shown.length}` + (excluded ? `. ${excluded} left out (wrong item, bundles, extreme prices).` : ".");
+  // exact matches first, then similar versions; sold before unsold; cheapest first
+  const sorted = [...list].sort((a, b) => (!!a.related - !!b.related) || (a.obs_type === "active") - (b.obs_type === "active")
+                                           || a.price_gbp - b.price_gbp);
+  const shown = sorted.filter((x) => !x.is_outlier).slice(0, 40);
+  const nRel = list.filter((x) => x.related).length;
+  $("evNote").textContent = `${list.length} listings used` + (nRel ? ` (${list.length - nRel} exact matches, ${nRel} similar versions used only for selling speed)` : "")
+    + `; showing ${shown.length}` + (excluded ? `. ${excluded} more left out (wrong item, bundles, extreme prices).` : ".");
   $("evidence").innerHTML = `<tr><th>Site</th><th>Listing</th><th>Condition</th><th class="num">Price</th><th>Status</th><th class="num">Days listed</th></tr>` +
-    shown.map((x) => `<tr><td>${PLAT[x.platform] || x.platform}</td>
+    shown.map((x) => `<tr${x.related ? ' style="color:var(--ink-2)"' : ""}><td>${PLAT[x.platform] || x.platform}${x.related ? `<br><span class="badge">similar: ${esc(RELATED[x.related] || x.related)}</span>` : ""}</td>
       <td>${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a>` : esc(x.title)}</td>
       <td>${TIERS[x.condition_tier] || "–"}</td><td class="num">${gbp(x.price_gbp)}</td>
       <td>${kind[x.obs_type] || x.obs_type}</td>

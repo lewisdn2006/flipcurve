@@ -50,20 +50,26 @@ def value(list_price, lam, k: float, platform: str, gamma: float = DEFAULT_GAMMA
     return net_payout(list_price, platform) * sm.discounted_sale_value(lam, k, gamma)
 
 
-def markdown_schedule(prices: np.ndarray, lam_2day_probs: np.ndarray, start_price: float, platform: str):
-    """Three steps: list at the best price, drop halfway on day 4, then a floor on day 10 with
-    over 90% chance of selling within 48 hours (lam_2day_probs = P(sell within 2 days) per price)."""
+def markdown_schedule(prices: np.ndarray, lam_2day_probs: np.ndarray, start_price: float, platform: str,
+                      fallback_floor: float | None = None):
+    """Three steps: list at the best price, drop halfway on day 4, then a floor on day 10. The floor
+    is the highest price with over 90% chance of selling within 48 hours (lam_2day_probs = P(sell
+    within 2 days) per price); if no price gets there, the quick-sale price instead."""
     ok = prices[lam_2day_probs >= 0.9]
-    floor = float(ok.max()) if ok.size else float(prices[0])
+    r = lambda x: float(round(x, 2))  # noqa: E731
+    if ok.size:
+        floor, why = float(ok.max()), "over 90% chance of selling within 48 hours"
+    else:
+        floor = float(fallback_floor if fallback_floor is not None else start_price * 0.75)
+        why = "the quick-sale price; this item doesn't sell within 48 hours at any sensible price"
     floor = min(floor, start_price * 0.9)
     mid = (start_price + floor) / 2
     name = "Vinted" if platform == "vinted" else "eBay"
-    r = lambda x: float(round(x, 2))  # noqa: E731
     return [
         {"day": 0, "list_price_gbp": r(start_price), "platform": platform,
          "action": f"List on {name} at £{start_price:.2f}"},
         {"day": 4, "list_price_gbp": r(mid), "platform": platform,
          "action": f"If unsold, drop to £{mid:.2f} so watchers and favouriters get a price-drop alert"},
         {"day": 10, "list_price_gbp": r(floor), "platform": platform,
-         "action": f"Floor: £{floor:.2f} (over 90% chance of selling within 48 hours)"},
+         "action": f"Floor: £{floor:.2f} ({why})"},
     ]

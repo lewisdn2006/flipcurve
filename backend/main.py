@@ -16,7 +16,11 @@ from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Form, UploadFile
+import gzip
+
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.concurrency import run_in_threadpool
+from pydantic import ValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -135,9 +139,22 @@ def recheck_ids(vinted_query: str):
     return {"ids": _ids(vinted_query)}
 
 
-@app.post("/api/v1/scan-pages", response_model=MarketScanResponse)
-def scan_pages(req: ScanPagesRequest):
-    """Scan using pages the helper extension collected in the user's own browser."""
+@app.post("/api/v1/scan-pages", response_model=MarketScanResponse, openapi_extra={"requestBody": {
+    "required": True, "content": {"application/json": {"schema": ScanPagesRequest.model_json_schema()}}}})
+async def scan_pages(request: Request):
+    """Scan using pages the helper extension collected in the user's own browser.
+    The body is a ScanPagesRequest; send it gzipped with Content-Encoding: gzip (pages are big)."""
+    body = await request.body()
+    if request.headers.get("content-encoding", "").lower() == "gzip":
+        body = gzip.decompress(body)
+    try:
+        req = ScanPagesRequest.model_validate_json(body)
+    except ValidationError as e:
+        raise HTTPException(422, e.errors(include_url=False, include_context=False)) from None
+    return await run_in_threadpool(_scan_pages, req)
+
+
+def _scan_pages(req: ScanPagesRequest):
     from backend.scrapers.orchestrator import load_cache
     from backend.scrapers.page_ingest import ingest
     item = req.item.model_dump(mode="json")

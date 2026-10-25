@@ -123,7 +123,7 @@ export type Days = [number, number, ...number[]];
  */
 export type Prob = number[][];
 /**
- * Highest list price with P(sell <= 24h) >= 0.5
+ * Highest list price with P(sell <= 7d) >= 0.5
  */
 export type FastSaleGbp = number;
 /**
@@ -131,13 +131,17 @@ export type FastSaleGbp = number;
  */
 export type BestValueGbp = number;
 /**
- * Highest list price with P(sell <= 30d) >= 0.8
+ * Highest list price with P(sell <= 30d) >= 0.5
  */
 export type PatientGbp = number;
 /**
  * Urgency used for best_value
  */
 export type GammaPerDay = number;
+/**
+ * Set when a marker fell back to recent sold prices
+ */
+export type Note = string | null;
 /**
  * Platform recommended for the item's condition
  */
@@ -205,6 +209,14 @@ export type TUpperDays = number | null;
  * Age when we first saw it (left truncation); None/0 = seen from the start. The likelihood conditions on surviving to this age
  */
 export type TEntryDays = number | null;
+/**
+ * Active rows from a newest-first catalogue read back to this age (days): the model uses the age spread of what's still listed (stock sampling)
+ */
+export type StockWindowDays = number | null;
+/**
+ * Set when this is a similar but different item (e.g. 'mid' for a Jordan 1 Mid when we searched Low): used for selling speed with its price rescaled, never for the price level
+ */
+export type Related = string | null;
 /**
  * How we know when it was listed
  */
@@ -451,6 +463,7 @@ export interface PriceMarkers1 {
   best_value_gbp: BestValueGbp;
   patient_gbp: PatientGbp;
   gamma_per_day: GammaPerDay;
+  note?: Note;
 }
 /**
  * For the item's condition tier
@@ -508,6 +521,8 @@ export interface ListingRow {
   t_days?: TDays;
   t_upper_days?: TUpperDays;
   t_entry_days?: TEntryDays;
+  stock_window_days?: StockWindowDays;
+  related?: Related;
   start_source?: StartSource;
   listed_at?: ListedAt;
   sold_at?: SoldAt;

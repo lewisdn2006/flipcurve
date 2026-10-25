@@ -10,6 +10,9 @@ Model (section 4):
 Likelihood (section 5): active -> ln S(t); sold_exact -> ln f(t); sold_interval -> ln[S(a) - S(b)];
 every row first seen at age e > 0 also gets - ln S(e) (left truncation: it was only visible
 because it survived that long).
+Stock rows (a newest-first catalogue read back to age A, e.g. Vinted): listings arrive at a steady
+rate and stay visible until they sell, so a visible listing's age has density S(t) / int_0^A S(u) du.
+Young-heavy catalogues mean fast sales; evenly spread ages mean slow ones.
 Penalties = normal priors (section 6), so thin data falls back smoothly to the priors.
 Confidence (section 7): finite-difference Hessian -> covariance -> delta method on ln E[T].
 """
@@ -19,7 +22,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from scipy.optimize import minimize
-from scipy.special import digamma, gammaln
+from scipy.special import digamma, gammainc, gammaln
 from scipy.special import gamma as gamma_fn
 
 C_REF = 2  # "good"
@@ -105,7 +108,10 @@ def estimate_anchors(rows) -> dict[str, float]:
     sold = [r for r in rows if _get(r, "obs_type") != "active" and not _get(r, "is_outlier")]
     by_tier = {t: [float(_get(r, "price_gbp")) for r in sold if _tier(r) == t] for t in TIERS}
     good = {t: float(np.median(v)) for t, v in by_tier.items() if len(v) >= MIN_SOLD_PER_ANCHOR}
-    if not good:  # nothing sold at all: use every listing, scaled down a little for survivorship
+    if not good and len(sold) >= 3:  # a few sales spread over tiers: pool them via the typical ratios
+        ref = float(np.median([float(_get(r, "price_gbp")) / DEFAULT_TIER_RATIO[_tier(r)] for r in sold]))
+        return {t: round(ref * DEFAULT_TIER_RATIO[t], 2) for t in TIERS}
+    if not good:  # (almost) nothing sold: use every listing, scaled down a little for survivorship
         prices = [float(_get(r, "price_gbp")) for r in rows if not _get(r, "is_outlier")]
         base = 0.85 * float(np.median(prices)) if prices else 30.0
         return {t: round(base * DEFAULT_TIER_RATIO[t], 2) for t in TIERS}
@@ -130,7 +136,7 @@ class _Data:
     z: np.ndarray
     cdev: np.ndarray
     j: np.ndarray
-    kind: np.ndarray   # 0 active, 1 exact, 2 interval
+    kind: np.ndarray   # 0 active, 1 exact, 2 interval, 3 stock sample (b = window A)
     a: np.ndarray
     b: np.ndarray
     e: np.ndarray      # entry age (left truncation), 0 = seen from the start
@@ -148,7 +154,12 @@ def _prepare(rows, platforms, anchors, sigma_p) -> _Data:
             continue
         t1, t2 = _get(r, "t_days"), _get(r, "t_upper_days")
         t0 = float(_get(r, "t_entry_days") or 0.0) if (isinstance(r, dict) and "t_entry_days" in r) or hasattr(r, "t_entry_days") else 0.0
-        if ot == "active" and t1 is not None:
+        win = r.get("stock_window_days") if isinstance(r, dict) else getattr(r, "stock_window_days", None)
+        if ot == "active" and t1 is not None and win:
+            if float(t1) > float(win):
+                continue  # older than the window we read back to (e.g. a bumped listing): no information
+            k_, aa, bb, t0 = 3, max(float(t1), T_MIN), float(win), 0.0
+        elif ot == "active" and t1 is not None:
             k_, aa, bb = 0, max(float(t1), 0.0), np.nan
         elif ot == "sold_exact" and t1 is not None:
             k_, aa, bb = 1, max(float(t1), T_MIN), np.nan
@@ -197,6 +208,12 @@ def _loglik(psi, d: _Data, n_plat: int) -> float:
         B = np.exp(k * (np.log(bb) - ll_i))
         # ln[e^-A - e^-B] = -A + ln(1 - e^-(B-A)), computed stably
         ll += (-A + np.log(-np.expm1(-(B - A)) + 1e-300)).sum()
+    m = d.kind == 3
+    if m.any():
+        t, A, ll_i = d.a[m], d.b[m], lnlam[m]
+        X = np.exp(k * (np.log(A) - ll_i))
+        log_int = ll_i - np.log(k) + gammaln(1.0 / k) + np.log(gammainc(1.0 / k, X) + 1e-300)
+        ll += (-np.exp(k * (np.log(t) - ll_i)) - log_int).sum()
     m = d.e > 0  # left truncation: we only saw it because it survived to age e
     if m.any():
         ll += np.exp(k * (np.log(d.e[m]) - lnlam[m])).sum()
@@ -324,7 +341,7 @@ def fit(rows, platforms=("ebay", "vinted"), prior: Prior | None = None,
         cov = np.linalg.pinv(H)
         cov = (cov + cov.T) / 2
         np.fill_diagonal(cov, np.abs(np.diag(cov)))
-    sales_mask = d.kind > 0
+    sales_mask = (d.kind == 1) | (d.kind == 2)
     n_sales = {p: int(((d.j == i) & sales_mask).sum()) for i, p in enumerate(platforms)}
     return FitResult(
         platforms=platforms, psi=res.x, cov=cov, anchors=anchors, sigma_p=sigma_p,

@@ -8,6 +8,8 @@ Owner: Person 2.
 """
 from __future__ import annotations
 
+import numpy as np
+
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 
@@ -47,6 +49,9 @@ def calibrate_from_pages(cal: VintedCalibration, fetcher: Fetcher, item_ids: lis
     return added
 
 
+STOCK_MIN_ROWS = 20
+
+
 def _row(c: dict, now: datetime) -> dict:
     return {
         "listing_id": c["item_id"], "platform": "vinted", "title": c["title"], "url": c["url"],
@@ -66,11 +71,23 @@ def active_rows(cards: list[dict], cal: VintedCalibration, now: datetime) -> lis
             continue
         # censored at the youngest plausible age: "unsold for at least this long" stays true
         age_min = max((now - b.hi).total_seconds() / 86400, 0.0)
-        # a single scrape only shows survivors: entry age = age now, so no speed information
-        # until a recheck() follows these listings forward (maths doc, section 5)
+        # a single scrape only shows survivors: entry age = age now (left truncation). On its own
+        # that says nothing about speed; the stock window below is what does.
         rows.append({**_row(c, now), "obs_type": "active", "t_days": round(age_min, 4), "t_upper_days": None,
                      "t_entry_days": round(age_min, 4), "start_source": "id_calibration",
                      "listed_at": b.mid.isoformat()})
+    # Newest-first catalogue read back to age A: the age spread of what's still listed tells us how
+    # fast things go (stock sampling, survival_model). A = 90th percentile of ages, so the odd
+    # bumped old listing doesn't stretch the window; it needs a day or more to average over.
+    # Ages here use the best-guess start (interpolated), not the youngest bound.
+    if len(rows) >= STOCK_MIN_ROWS:
+        ages = {r["listing_id"]: max((now - datetime.fromisoformat(r["listed_at"])).total_seconds() / 86400, 0.0)
+                for r in rows}
+        window = float(np.percentile(list(ages.values()), 90))
+        if window >= 1.0:
+            for r in rows:
+                a = round(ages[r["listing_id"]], 4)
+                r.update(t_days=a, t_entry_days=a, stock_window_days=round(window, 4))
     return rows
 
 

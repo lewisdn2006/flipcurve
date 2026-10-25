@@ -4,8 +4,9 @@ A search-only helper with no screens. When you press **Scan** on the FlipCurve p
 (lewisdn.com/flipcurve, or localhost while testing), it loads a handful of eBay and Vinted
 pages **in your own browser, signed in as you**, and hands them to the page:
 
-* eBay: 2 newest-listed pages + 2 recently-sold pages (sold results need you signed in to eBay)
-* Vinted: 1 newest catalogue page + a few item pages (to date listings) + any re-checks
+* eBay: up to 4 newest-listed pages + up to 4 recently-sold pages, 240 listings each, stopping
+  early on the last page (sold results need you signed in to eBay)
+* Vinted: up to 4 newest catalogue pages + 8 item pages (to date listings) + any re-checks
 
 It pauses 1.5 s between pages, only runs when you press Scan, and stops on any sign-in or
 bot-check page (it never tries to get around one). Only lewisdn.com and localhost can talk to it.
@@ -29,8 +30,9 @@ chrome.runtime.sendMessage(EXT, { type: "ping" }, (r) => { /* r = {ok, version, 
 
 const port = chrome.runtime.connect(EXT);
 port.onMessage.addListener((m) => { /* {type:"progress", done, total, label} ... then {type:"result", ok, pages, stopped} */ });
-port.postMessage({ type: "collect", queries: { ebay: "...", vinted: "..." }, ebayPages: 2, vintedPages: 1,
-                   vintedItemSamples: 4, recheckVintedIds: [] });
+port.postMessage({ type: "collect", queries: { ebay: "...", vinted: "..." }, ebayPages: 4, vintedPages: 4,
+                   vintedItemSamples: 8, recheckVintedIds: [] });
 ```
 
-Then POST `{item, pages}` to the backend's `/api/v1/scan-pages`.
+Then POST `{item, pages, stopped}` to the backend's `/api/v1/scan-pages` (gzip the body and send
+`Content-Encoding: gzip`; pages are several MB).

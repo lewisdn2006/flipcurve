@@ -59,3 +59,32 @@ def test_estimated_anchors_are_close_to_truth():
     a = sm.estimate_anchors(rows)
     for tier, m in TRUTH.anchor.items():
         assert abs(a[tier] / m - 1) < 0.25, (tier, a[tier], m)  # sold prices sit a bit below asking
+
+
+def _stock_sample(lam0, k, beta1=2.0, n_days=60, per_day=40, window=12.0, seed=3):
+    """Listings arrive steadily for n_days; we read a newest-first catalogue back `window` days."""
+    rng = np.random.default_rng(seed)
+    anchor, sd = 30.0, 6.0
+    rows = []
+    for i in range(n_days * per_day):
+        age = rng.uniform(0, n_days)
+        p = max(5.0, rng.normal(anchor, sd))
+        lam = lam0 * np.exp(beta1 * (p - anchor) / sd)
+        dur = lam * rng.weibull(k)
+        if age < dur and age <= window:  # still listed, and within the pages we read
+            rows.append({"platform": "vinted", "price_gbp": round(p, 2), "condition_tier": "good",
+                         "obs_type": "active", "t_days": age, "t_upper_days": None, "t_entry_days": age,
+                         "stock_window_days": window, "is_outlier": False})
+    sold = [{"platform": "vinted", "price_gbp": anchor + d, "condition_tier": "good", "obs_type": "sold_unknown_time",
+             "t_days": None, "t_upper_days": None, "is_outlier": False} for d in (-3, -1, 0, 1, 3)]
+    return rows + sold
+
+
+@pytest.mark.parametrize("lam0", [3.0, 15.0])
+def test_stock_sample_recovers_speed_from_catalogue_alone(lam0):
+    rows = _stock_sample(lam0, k=0.9)
+    f = sm.fit(rows, platforms=["vinted"], anchors={t: 30.0 * sm.DEFAULT_TIER_RATIO[t] for t in sm.TIERS}, sigma_p=6.0)
+    mean, lo, hi = f.mean_days_range(30.0, "good", "vinted")
+    true_mean = float(sm.expected_days(lam0, 0.9))
+    assert 0.6 * true_mean < mean[0] < 1.6 * true_mean, (mean, true_mean)
+    assert f.beta1 > 0.8  # pricier listings linger

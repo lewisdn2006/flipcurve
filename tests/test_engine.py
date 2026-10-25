@@ -73,3 +73,18 @@ def test_cheaper_platform_is_not_flagged_as_outliers():
     vinted = [dict(row(f"Nike Air Force 1 white v{i}", 21 + i % 4, platform="vinted")) for i in range(12)]
     out = filter_rows(ebay + vinted, {"ebay": "nike air force 1 white", "vinted": "air force 1 white"})
     assert not any(r["is_outlier"] for r in out)
+
+
+def test_slow_market_markers_stay_near_real_prices():
+    # 25 Oct: in a slow market no price reached the targets and the markers showed the bottom
+    # of the chart (£10 for trainers that sell at ~£30)
+    rows = simulate_listings(TrueParams(lambda0=60.0, beta1=0.6), n_per_platform=150, now=NOW, seed=4)
+    for r in rows:
+        r["title"] = "Nike Air Force 1 white"
+    out = MarketScanResponse.model_validate(run(ITEM, rows, now=NOW, data_source="seed"))
+    for tier, m in out.price_markers.items():
+        anchor = out.model_fit.anchor_gbp[tier]
+        assert m.fast_sale_gbp <= m.best_value_gbp <= m.patient_gbp
+        assert m.fast_sale_gbp > out.price_range.min_gbp + 0.01, (tier, m, anchor)  # never the axis floor
+        assert m.best_value_gbp > 0.8 * anchor, (tier, m, anchor)
+    assert out.markdown_schedule[-1].list_price_gbp > out.price_range.min_gbp + 0.01

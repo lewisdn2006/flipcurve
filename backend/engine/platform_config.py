@@ -33,6 +33,7 @@ DEFERRED_PLATFORMS = {
                        "local_discount": 0.12, "flake_prob": 0.25},
 }
 
-DEFAULT_GAMMA_PER_DAY = 0.05  # urgency for "best value": a sale in 2 weeks is worth ~half one today
+DEFAULT_GAMMA_PER_DAY = 0.01  # urgency for "best value": waiting a month costs ~25% (0.05 made
+#                              any slow market recommend the bottom of the price axis; 25 Oct)
 SURFACE_DAYS = [1, 2, 3, 5, 7, 10, 14, 21, 30, 45, 60, 90]  # y-axis of the price x time heatmap
 TAU = 0.5  # prior sd of theta_j (maths doc, section 6)

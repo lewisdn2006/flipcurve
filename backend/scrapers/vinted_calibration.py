@@ -23,7 +23,7 @@ DEFAULT_PATH = Path(__file__).resolve().parents[1] / "db" / "vinted_calibration.
 class StartBounds:
     lo: datetime   # earliest plausible listing time
     hi: datetime   # latest plausible listing time
-    mid: datetime
+    mid: datetime  # best guess: interpolated by ID between neighbouring samples, inside [lo, hi]
 
 
 class VintedCalibration:
@@ -97,5 +97,15 @@ class VintedCalibration:
             lo, hi = lo_env[j - 1], hi_env[j]  # older side bounds from below, newer side from above
         if hi < lo:  # samples disagree (display rounding); widen to cover both
             lo, hi = hi, lo
+        # point estimate: the counter runs at a fairly steady rate over a day or two, so interpolate
+        # between the neighbouring samples' centres (25 Oct: bounds alone were ~36 h wide and
+        # put most of a catalogue page at the same age)
+        if ids[j] == n:
+            est = sum(self.samples[n]) / 2
+        else:
+            a, b = ids[j - 1], ids[j]
+            ca, cb = sum(self.samples[a]) / 2, sum(self.samples[b]) / 2
+            est = ca + (n - a) / (b - a) * (cb - ca)
+        est = min(max(est, lo), hi)
         to_dt = lambda x: datetime.fromtimestamp(x, timezone.utc)  # noqa: E731
-        return StartBounds(to_dt(lo), to_dt(hi), to_dt((lo + hi) / 2))
+        return StartBounds(to_dt(lo), to_dt(hi), to_dt(est))

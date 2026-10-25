@@ -33,12 +33,19 @@ function titleOf(html) {
   return m ? m[1].trim() : "";
 }
 
+// Drop what the parsers never read (scripts other than ld+json, styles, icons, comments).
+function slim(html) {
+  return html.replace(/<script(?![^>]*application\/ld\+json)[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "").replace(/<svg[\s\S]*?<\/svg>/gi, "")
+    .replace(/<!--[\s\S]*?-->/g, "");
+}
+
 // Search pages are several MB; keep the title plus the stretch that holds the listings.
 function trimAround(html, marker, tail) {
   const first = html.indexOf(marker);
-  if (first < 0) return html.slice(0, 200000);
+  if (first < 0) return slim(html.slice(0, 200000));
   const last = html.lastIndexOf(marker);
-  return `<title>${titleOf(html)}</title>` + html.slice(Math.max(0, first - 500), last + tail);
+  return `<title>${titleOf(html)}</title>` + slim(html.slice(Math.max(0, first - 500), last + tail));
 }
 
 let lastPage = 0;
@@ -76,7 +83,13 @@ async function setBadge(state) {
 }
 
 async function collect(req, progress) {
-  const { queries = {}, ebayPages = 2, vintedPages = 1, vintedItemSamples = 4, recheckVintedIds = [] } = req;
+  // Defaults: up to 4 pages of each eBay search (240 a page; stops early on the last page),
+  // 4 Vinted catalogue pages (~96 each) and 8 Vinted item pages to date them.
+  const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, Number(x) || lo));
+  const ebayPages = clamp(req.ebayPages ?? 4, 1, 6), vintedPages = clamp(req.vintedPages ?? 4, 1, 6);
+  const vintedItemSamples = clamp(req.vintedItemSamples ?? 8, 0, 12);
+  const { queries = {} } = req;
+  const recheckVintedIds = (req.recheckVintedIds || []).slice(0, 10);
   const pages = [];
   const stopped = {};
   const steps = 2 * ebayPages + vintedPages + vintedItemSamples + recheckVintedIds.length;
@@ -109,7 +122,9 @@ async function collect(req, progress) {
       step(`Vinted listings ${p}/${vintedPages}`);
       if (res.stop) { stopped.vinted = { reason: res.stop, url }; break; }
       keep("vinted", "catalog", p, url, res, trimAround(res.html, 'data-testid="grid-item"', 20000));
-      ids.push(...[...res.html.matchAll(/\/items\/(\d{8,12})-/g)].map((m) => m[1]));
+      const found = [...res.html.matchAll(/\/items\/(\d{8,12})-/g)].map((m) => m[1]);
+      ids.push(...found);
+      if (new Set(found).size < 40) break;  // last page
     }
     ids = [...new Set(ids)].sort();
     const todo = [...spread(ids, vintedItemSamples).map((id) => ["item", id]),
@@ -120,7 +135,7 @@ async function collect(req, progress) {
       const res = await load(url);
       step(kind === "item" ? "Vinted listing ages" : "Re-checking earlier Vinted listings");
       if (res.stop && res.status !== 404) { stopped.vinted = { reason: res.stop, url }; break; }
-      keep("vinted", kind, null, url, res, res.html);
+      keep("vinted", kind, null, url, res, slim(res.html));
     }
   }
   return { type: "result", ok: true, pages, stopped, version: chrome.runtime.getManifest().version };

@@ -145,6 +145,12 @@ class ListingRow(_Model):
     t_entry_days: Optional[float] = Field(
         None, ge=0, description="Age when we first saw it (left truncation); None/0 = seen from the start. "
                                 "The likelihood conditions on surviving to this age")
+    stock_window_days: Optional[float] = Field(
+        None, gt=0, description="Active rows from a newest-first catalogue read back to this age (days): "
+                                "the model uses the age spread of what's still listed (stock sampling)")
+    related: Optional[str] = Field(None, description="Set when this is a similar but different item "
+                                   "(e.g. 'mid' for a Jordan 1 Mid when we searched Low): used for selling "
+                                   "speed with its price rescaled, never for the price level")
     start_source: StartSource = Field("unknown", description="How we know when it was listed")
     listed_at: Optional[datetime] = None
     sold_at: Optional[datetime] = None
@@ -269,10 +275,11 @@ class PriceRange(_Model):
 
 class PriceMarkers(_Model):
     """List prices to mark on the charts (per condition tier)."""
-    fast_sale_gbp: float = Field(..., description="Highest list price with P(sell <= 24h) >= 0.5")
+    fast_sale_gbp: float = Field(..., description="Highest list price with P(sell <= 7d) >= 0.5")
     best_value_gbp: float = Field(..., description="Best list price on the best platform at default urgency")
-    patient_gbp: float = Field(..., description="Highest list price with P(sell <= 30d) >= 0.8")
+    patient_gbp: float = Field(..., description="Highest list price with P(sell <= 30d) >= 0.5")
     gamma_per_day: float = Field(..., description="Urgency used for best_value")
+    note: Optional[str] = Field(None, description="Set when a marker fell back to recent sold prices")
 
 
 class PlatformRecommendation(_Model):

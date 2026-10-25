@@ -112,3 +112,22 @@ def test_stopped_sites_become_clear_warnings(client):
                                                  "stopped": {"ebay": {"reason": "sign_in_required"}}})
     assert r.status_code == 200
     assert any("signed in" in w for w in r.json()["warnings"])
+
+
+def test_scan_pages_accepts_gzip(client):
+    import gzip
+    import json
+    pages, _ = first_scan(T0)
+    body = gzip.compress(json.dumps({"item": ITEM, "pages": pages}).encode())
+    r = client.post("/api/v1/scan-pages", content=body,
+                    headers={"Content-Type": "application/json", "Content-Encoding": "gzip"})
+    assert r.status_code == 200, r.text
+    assert MarketScanResponse.model_validate(r.json()).market_summary.data_source == "live"
+
+
+def test_related_versions_help_speed_but_not_price(client):
+    from backend.engine.outlier_filter import version_mismatch
+    assert version_mismatch("Nike Air Jordan 1 Mid Triple Black UK 9", "air jordan 1 low triple black") == "mid"
+    assert version_mismatch("Nike Air Jordan 1 Low (GS) Triple Black", "air jordan 1 low triple black") == "kids"
+    assert version_mismatch("iPhone 13 Pro Max 128GB", "iphone 13 pro") == "max"
+    assert version_mismatch("Nike Air Jordan 1 Low Triple Black UK 10", "air jordan 1 low triple black") is None

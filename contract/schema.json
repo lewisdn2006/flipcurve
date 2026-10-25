@@ -476,6 +476,33 @@
           "description": "Age when we first saw it (left truncation); None/0 = seen from the start. The likelihood conditions on surviving to this age",
           "title": "T Entry Days"
         },
+        "stock_window_days": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Active rows from a newest-first catalogue read back to this age (days): the model uses the age spread of what's still listed (stock sampling)",
+          "title": "Stock Window Days"
+        },
+        "related": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Set when this is a similar but different item (e.g. 'mid' for a Jordan 1 Mid when we searched Low): used for selling speed with its price rescaled, never for the price level",
+          "title": "Related"
+        },
         "start_source": {
           "default": "unknown",
           "description": "How we know when it was listed",
@@ -1120,7 +1147,7 @@
       "description": "List prices to mark on the charts (per condition tier).",
       "properties": {
         "fast_sale_gbp": {
-          "description": "Highest list price with P(sell <= 24h) >= 0.5",
+          "description": "Highest list price with P(sell <= 7d) >= 0.5",
           "title": "Fast Sale Gbp",
           "type": "number"
         },
@@ -1130,7 +1157,7 @@
           "type": "number"
         },
         "patient_gbp": {
-          "description": "Highest list price with P(sell <= 30d) >= 0.8",
+          "description": "Highest list price with P(sell <= 30d) >= 0.5",
           "title": "Patient Gbp",
           "type": "number"
         },
@@ -1138,6 +1165,19 @@
           "description": "Urgency used for best_value",
           "title": "Gamma Per Day",
           "type": "number"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Set when a marker fell back to recent sold prices",
+          "title": "Note"
         }
       },
       "required": [
