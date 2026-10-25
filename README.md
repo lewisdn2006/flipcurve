@@ -23,7 +23,7 @@ The API currently serves **mock data** (`backend/mock/`, contract v1.1) so the f
    `extension/`. The ID must be `fdibajhmjjbjcdfafdofkoedbkhbkfcb`. Stay signed in to eBay.
 2. **Local test:** `uvicorn backend.main:app --port 8000`, then open
    http://localhost:8000/flipcurve/ in the same Chrome.
-3. **Online:** `brew install cloudflared`, then `scripts/tunnel.sh quick` for a throwaway
+3. **Online:** `scripts/tunnel.sh quick` (downloads cloudflared the first time if needed) for a throwaway
    address, or `scripts/tunnel.sh setup` once and `scripts/tunnel.sh run` each time to put the
    API at https://api.lewisdn.com, which the live page uses.
 4. **The page is live at https://lewisdn.com/flipcurve/**: a small Cloudflare Worker
