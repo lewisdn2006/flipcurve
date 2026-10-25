@@ -111,9 +111,9 @@ def _start_job(fn) -> str:
     async def runner():
         try:
             JOBS[jid]["result"] = await run_in_threadpool(fn)
-        except Exception:  # noqa: BLE001 - always finish the job with something editable
+        except Exception as e:  # noqa: BLE001 - always finish the job with something editable
             log.exception("identify job failed")
-            JOBS[jid]["result"] = _identify_fallback("vision", "something went wrong")
+            JOBS[jid]["result"] = _identify_fallback("vision", f"something went wrong: {type(e).__name__}")
         JOBS[jid]["status"] = "done"
     asyncio.get_running_loop().create_task(runner())
     return jid
@@ -125,10 +125,12 @@ def _identify_photos(blobs: list[bytes], hint: str | None, budget_s: float) -> d
         out = GeminiIdentifier(budget_s=budget_s).from_images(blobs, hint=hint)
     except _IE as e:
         log.warning("identify failed: %s", e)
-        why = "it took too long" if "out of time" in str(e) else "the image models are busy or unavailable"
-        return _identify_fallback("vision", why)
+        # say what actually happened to each model, e.g. "gemini-3.8-flash: no answer within 40 s; Claude: busy"
+        return _identify_fallback("vision", e.reason() if hasattr(e, "reason") else str(e))
+    from backend.vision.gemini_identifier import pretty_model
     return {"item": out["item"], "source": "vision", "confidence": out["confidence"],
-            "warnings": [f"Identified by {out['model']} (the main model was busy)"] if out.get("fallback") else []}
+            "warnings": [f"Identified by {pretty_model(out['model'] or '')} (the main model didn't answer)"]
+            if out.get("fallback") else []}
 
 
 @app.post("/api/v1/identify/start")
@@ -159,7 +161,8 @@ def _identify_text(req: IdentifyTextRequest, budget_s: float) -> dict:
         q = req.query.strip().lower()
         data["item"].update(title=req.query.strip(), search_queries={"ebay": q, "vinted": q},
                             condition_tier=tier or "good")
-        data["warnings"] = ["Couldn't look it up automatically (the AI models are busy). Your description is used as "
+        why = e.reason() if hasattr(e, "reason") else "the AI models are busy"
+        data["warnings"] = [f"Couldn't look it up automatically ({why}). Your description is used as "
                             "the search; check it below."]
         return data
     return {"item": out["item"], "source": "text", "confidence": out["confidence"], "warnings": []}

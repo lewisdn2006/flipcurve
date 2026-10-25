@@ -268,6 +268,25 @@ in, not the sample trainers.
     the main Gemini model -> **Claude** (`ANTHROPIC_API_KEY`, default `claude-haiku-5-5`; a different
     provider, so it isn't busy when Gemini is) -> the newest other Gemini Flash models.
 
+## D18. Photo identify gives up less often (25 Oct)
+
+"Couldn't identify the photo automatically" was common. Reading the code, several failures ended the
+identify without trying the backups, and all of them showed the same "busy or unavailable" message:
+* An answer that couldn't be used (cut off, blocked by a safety filter, not JSON, no item named) ended
+  it straight away. Now it moves on to the next model, the same as a busy one. If no model names the
+  item, the best half-answer is kept rather than a blank form.
+* Odd values ("7/10", "85%", "high", a string where a list was expected) raised an uncaught error
+  ("something went wrong"). The cleanup now reads them.
+* The first model could spend 75 s on one request. It now gets at most 40 s (retries included), so
+  Claude and the other Flash models always get a turn.
+* Errors other than a refused key (e.g. 400 "unable to process input image") stopped everything. Now
+  only a refused Gemini key skips the other Gemini models, and Claude is still tried.
+* If the first round failed for reasons other than "busy", it tries once more with 800 px photos.
+* Claude works on its own if there's no Gemini key, and isn't asked to guess when it can't read the
+  photo's format. `PHOTO_AI_FIRST=claude` in .env asks Claude first for photos.
+* The warning now says what happened to each model, e.g. "gemini-3.8-flash: no answer within 40 s;
+  Claude: busy (HTTP 529)", and says so if no backup AI is set up (no ANTHROPIC_API_KEY).
+
 ## TEAM — still to decide
 
 - [ ] Demo items: fill in `backend/scrapers/cache_seed/demo_items.csv` with the things on the table.

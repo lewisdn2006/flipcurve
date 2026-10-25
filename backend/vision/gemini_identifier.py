@@ -2,7 +2,9 @@
 
 Gemini is asked for strict JSON (response schema) describing the item, its condition on our
 four tiers, visible flaws, and two search queries written the way people search each site.
-Google sometimes answers 503 "high demand"; we retry with backoff before giving up.
+Google sometimes answers 503 "high demand"; we retry with backoff, then try the backups (Claude,
+then other Gemini Flash models). An answer that can't be used (cut off, blocked, not JSON, no item
+named) also moves on to the next model rather than giving up (25 Oct: photo identify failed often).
 
 Owner: Person 2.
 """
@@ -25,6 +27,8 @@ BACKOFF_S = (1.0, 2.5, 5.0)     # per model; then the next model
 DEFAULT_BUDGET_S = 70.0          # whole identify for the old one-request endpoint (Cloudflare cuts at 100 s)
 JOB_BUDGET_S = 170.0             # identify run as a background job the page polls: no 100 s limit
 REQUEST_TIMEOUT_S = 75.0
+FIRST_MODEL_CAP_S = 40.0         # longest wait for the first model, so the backups always get a turn
+SMALL_RETRY_SIDE = 800           # one more go with smaller photos when the first round failed for non-busy reasons
 GEMINI_MAX_SIDE = 1280           # photos sent to Gemini: plenty to read a label, fewer image tiles = faster
 SKIP_IN_FALLBACK = ("image", "tts", "audio", "live", "embedding", "thinking-exp", "native")
 
@@ -73,7 +77,25 @@ SCHEMA = {
 
 
 class IdentifyError(RuntimeError):
-    pass
+    """Every model failed. .attempts = [(model, reason)] so the page can say what actually happened."""
+
+    def __init__(self, msg: str, attempts: list[tuple[str, str]] | None = None):
+        super().__init__(msg)
+        self.attempts = attempts or []
+
+    def reason(self) -> str:
+        """Short, readable summary for the user, e.g. "gemini-3.8-flash: no answer within 40 s;
+        Claude: busy (HTTP 529)"."""
+        if not self.attempts:
+            return str(self)
+        bits = [f"{pretty_model(m)}: {r[:90]}" for m, r in self.attempts]
+        if not claude_configured():
+            bits.append("no backup AI set up (add ANTHROPIC_API_KEY to .env)")
+        return "; ".join(bits)
+
+
+def pretty_model(model: str) -> str:
+    return "Claude" if model.startswith("claude:") else model
 
 
 CLAUDE_URL = "https://api.anthropic.com/v1/messages"
@@ -146,61 +168,190 @@ def _sniff_mime(data: bytes) -> str:
 
 def _terms(v, n: int) -> list[str]:
     out = []
-    for t in (v or [])[:n]:
+    for t in _strs(v)[:n]:
         t = " ".join(str(t).lower().split())
         if t and t not in out:
             out.append(t)
     return out
 
 
+# ---- tolerant cleanup: models sometimes write "7/10", "85%", "high", a string instead of a list...
+# (one of those used to raise a TypeError that ended the whole identify)
+
+CONF_WORDS = {"very high": 0.95, "high": 0.85, "medium": 0.6, "moderate": 0.6, "low": 0.3, "very low": 0.15}
+TIER_WORDS = {"very good": "very_good", "very-good": "very_good", "verygood": "very_good", "very_good": "very_good",
+              "new": "mint", "brand new": "mint", "new with tags": "mint", "bnwt": "mint", "mint": "mint",
+              "good": "good", "fair": "fair", "poor": "fair", "worn": "fair"}
+
+
+def _num(v) -> tuple[float | None, str]:
+    """(number, unit) from 7.5, "7.5", "7/10", "7.5 out of 10", "85%"; unit is "", "%" or "/10"."""
+    if isinstance(v, bool) or v is None:
+        return None, ""
+    if isinstance(v, (int, float)):
+        return float(v), ""
+    if isinstance(v, str):
+        s = v.strip().lower()
+        if s in CONF_WORDS:
+            return CONF_WORDS[s], "word"
+        m = re.search(r"-?\d+(?:\.\d+)?", s)
+        if not m:
+            return None, ""
+        unit = "%" if "%" in s else "/10" if re.search(r"/\s*10\b|out of 10", s) else ""
+        return float(m.group()), unit
+    return None, ""
+
+
+def _score(v) -> float:
+    x, unit = _num(v)
+    if x is None or unit == "word":
+        return 6.0
+    if unit == "%":
+        x = x / 10
+    return float(min(max(x, 0.0), 10.0))
+
+
+def _confidence(v) -> float | None:
+    x, unit = _num(v)
+    if x is None:
+        return None
+    if unit == "%":
+        x /= 100
+    elif unit == "/10":
+        x /= 10
+    return float(min(max(x, 0.0), 1.0))
+
+
+def _str(v) -> str | None:
+    if v is None or isinstance(v, (dict, bool)):
+        return None
+    if isinstance(v, (list, tuple)):
+        v = ", ".join(str(x) for x in v if x is not None)
+    s = str(v).strip()
+    return None if s.lower() in ("", "null", "none", "n/a", "unknown") else s
+
+
+def _strs(v) -> list[str]:
+    if v is None or isinstance(v, (bool, int, float, dict)):
+        return []
+    if isinstance(v, str):
+        return [t.strip() for t in re.split(r"[;,\n]", v) if t.strip()]
+    return [str(x).strip() for x in v if x is not None and str(x).strip()]
+
+
+def _tier(v) -> str:
+    s = " ".join(str(v or "").lower().replace("_", " ").split())
+    return TIER_WORDS.get(s, "good")
+
+
 def _clean(raw: dict) -> dict:
-    """Coerce Gemini's JSON into a valid ItemSpec dict (+ confidence)."""
-    tier = raw.get("condition_tier") if raw.get("condition_tier") in ("fair", "good", "very_good", "mint") else "good"
-    title = (raw.get("title") or "").strip() or "Unknown item"
-    q = raw.get("search_queries") or {}
-    ebay_q = (q.get("ebay") or title).strip().lower()
-    vinted_q = (q.get("vinted") or ebay_q).strip().lower()
-    nz = lambda v: (str(v).strip() or None) if v not in (None, "", "null") else None  # noqa: E731
+    """Coerce the model's JSON into a valid ItemSpec dict (+ confidence). Never raises on odd values."""
+    title = _str(raw.get("title")) or _str(" ".join(x for x in (_str(raw.get("brand")), _str(raw.get("model_name"))) if x)) \
+        or "Unknown item"
+    q = raw.get("search_queries")
+    if isinstance(q, str):
+        q = {"ebay": q, "vinted": q}
+    q = q if isinstance(q, dict) else {}
+    ebay_q = (_str(q.get("ebay")) or title).lower()
+    vinted_q = (_str(q.get("vinted")) or ebay_q).lower()
     item = {
-        "title": title, "brand": nz(raw.get("brand")), "model_name": nz(raw.get("model_name")),
-        "category": nz(raw.get("category")), "size_or_storage": nz(raw.get("size_or_storage")),
-        "era_or_year": nz(raw.get("era_or_year")), "condition_tier": tier,
-        "condition_score": float(min(max(float(raw.get("condition_score") or 6.0), 0.0), 10.0)),
-        "detected_flaws": [str(f) for f in (raw.get("detected_flaws") or [])][:6],
+        "title": title, "brand": _str(raw.get("brand")), "model_name": _str(raw.get("model_name")),
+        "category": _str(raw.get("category")), "size_or_storage": _str(raw.get("size_or_storage")),
+        "era_or_year": _str(raw.get("era_or_year")), "condition_tier": _tier(raw.get("condition_tier")),
+        "condition_score": _score(raw.get("condition_score")),
+        "detected_flaws": _strs(raw.get("detected_flaws"))[:6],
         "search_queries": {"ebay": ebay_q, "vinted": vinted_q},
-        "is_broken": bool(raw.get("is_broken", False)),
+        "is_broken": raw.get("is_broken") is True or str(raw.get("is_broken")).lower() == "true",
         "must_have": _terms(raw.get("must_have"), 4),
         "must_not_have": _terms(raw.get("must_not_have"), 15),
     }
-    conf = raw.get("confidence")
-    return {"item": item, "confidence": float(min(max(conf, 0.0), 1.0)) if isinstance(conf, (int, float)) else None}
+    return {"item": item, "confidence": _confidence(raw.get("confidence"))}
+
+
+class Unusable(Exception):
+    """The model answered, but not with something we can use."""
+
+    def __init__(self, reason: str, partial: dict | None = None):
+        super().__init__(reason)
+        self.partial = partial
+
+
+BLOCKED = {"SAFETY", "RECITATION", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII", "IMAGE_SAFETY", "OTHER"}
+
+
+def parse_answer(resp: dict) -> dict:
+    """Model reply (Gemini's response shape) -> cleaned item, or Unusable with a readable reason."""
+    if not isinstance(resp, dict):
+        raise Unusable("empty answer")
+    block = (resp.get("promptFeedback") or {}).get("blockReason")
+    if block:
+        raise Unusable(f"answer blocked ({block})")
+    cands = resp.get("candidates") or []
+    if not cands:
+        raise Unusable("empty answer")
+    cand = cands[0] or {}
+    finish = cand.get("finishReason") or ""
+    text = "".join(p.get("text", "") for p in (cand.get("content") or {}).get("parts") or [] if isinstance(p, dict))
+    if not text.strip():
+        if finish in BLOCKED:
+            raise Unusable(f"answer blocked ({finish})")
+        if finish == "MAX_TOKENS":
+            raise Unusable("ran out of room before answering")
+        raise Unusable("empty answer")
+    text = text.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+    if not text.startswith("{") and "{" in text:  # tolerate a sentence around the JSON
+        text = text[text.index("{"):text.rindex("}") + 1] if "}" in text else text[text.index("{"):]
+    try:
+        raw = json.loads(text)
+    except json.JSONDecodeError:
+        raise Unusable("answer was cut off" if finish == "MAX_TOKENS" else "answer wasn't valid JSON") from None
+    if isinstance(raw, list) and raw and isinstance(raw[0], dict):
+        raw = raw[0]
+    if not isinstance(raw, dict):
+        raise Unusable("answer wasn't a JSON object")
+    out = _clean(raw)
+    named = _str(raw.get("title")) or _str(raw.get("model_name")) or _str((raw.get("search_queries") or {}).get("ebay")
+                                                                          if isinstance(raw.get("search_queries"), dict) else raw.get("search_queries"))
+    if not named:
+        raise Unusable("couldn't name the item", partial=out)  # another model may do better; kept as a last resort
+    return out
+
+
+def _google_error(r: httpx.Response) -> str:
+    try:
+        return str(r.json()["error"]["message"])[:80]
+    except Exception:  # noqa: BLE001
+        return r.text[:80]
 
 
 class GeminiIdentifier:
     def __init__(self, api_key: str | None = None, model: str | None = None, client: httpx.Client | None = None,
                  sleep=time.sleep, budget_s: float = DEFAULT_BUDGET_S):
-        self.key = api_key or os.getenv("GEMINI_API_KEY", "")
+        self.key = api_key if api_key is not None else os.getenv("GEMINI_API_KEY", "")
         self.model = model or os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
         self.http = client or httpx.Client(timeout=REQUEST_TIMEOUT_S)
         self.sleep = sleep
-        # The whole identify, retries and fallbacks included, must finish well inside Cloudflare's
-        # 100 s limit on the tunnel (25 Oct: retries while Gemini was busy ran past it -> "failed to fetch").
+        # The whole identify, retries, backups and the smaller-photo retry included, has to fit the
+        # budget (the old one-request endpoint sits behind Cloudflare's 100 s limit).
         self.budget_s = budget_s
         self._deadline = None
         self.light_thinking = True
-        if not self.key:
+        self.used_model = None
+        if not self.key and not claude_configured():
             raise IdentifyError("GEMINI_API_KEY is not set")
 
     def fallback_models(self) -> list[str]:
         """Other Flash models to try when the main one is overloaded (503 "high demand", 25 Oct).
         GEMINI_FALLBACK_MODELS (comma-separated) if set; otherwise the newest Flash models this key
         can use, from the models list. Never raises."""
+        if not self.key:
+            return []
         env = os.getenv("GEMINI_FALLBACK_MODELS")
         if env is not None:
             return [m.strip() for m in env.split(",") if m.strip() and m.strip() != self.model][:3]
         try:
             r = self.http.get(f"{API}/models", headers={"x-goog-api-key": self.key}, params={"pageSize": 200},
-                              timeout=10)
+                              timeout=min(10, max(1, self._left() - 2)))
             if r.status_code != 200:
                 return []
             names = [m["name"].split("/", 1)[-1] for m in r.json().get("models", [])
@@ -213,66 +364,102 @@ class GeminiIdentifier:
     def _left(self) -> float:
         return self._deadline - time.monotonic() if self._deadline else self.budget_s
 
-    def _call(self, parts: list[dict], use_schema: bool = True) -> dict:
-        errors, fallbacks = [], None
-        model = self.model
-        self.used_model = None
+    def _start(self):
         self._deadline = time.monotonic() + self.budget_s
-        while model:
-            if self._left() < 5:
-                errors.append("out of time")
-                break
-            out, err, busy = self._call_model(model, parts, use_schema)
-            if out is not None:
-                self.used_model = model
-                return out
-            errors.append(f"{model}: {err}")
-            if not busy and not err.startswith("HTTP 404"):
-                break  # a real error (bad key, bad request): another model won't help
-            if fallbacks is None:
-                # a different provider first: when Gemini is overloaded, other Geminis often are too
-                fallbacks = ([f"claude:{os.getenv('CLAUDE_MODEL', CLAUDE_DEFAULT_MODEL)}"] if claude_configured() else [])
-                fallbacks += self.fallback_models()
-            model = fallbacks.pop(0) if fallbacks else None
-        raise IdentifyError("Gemini failed (" + "; ".join(errors) + ")")
 
-    def _call_claude(self, model: str, parts: list[dict]) -> tuple[dict | None, str, bool]:
+    def _call(self, parts: list[dict], use_schema: bool = True, claude_first: bool = False) -> dict:
+        """Try models in turn until one gives a usable answer -> cleaned item dict.
+        Order: the main Gemini model (or Claude first if asked), then Claude, then other Flash models."""
+        if self._deadline is None:
+            self._start()
+        claude = f"claude:{os.getenv('CLAUDE_MODEL', CLAUDE_DEFAULT_MODEL)}" if claude_configured() else None
+        queue = [m for m in ([claude, self.model if self.key else None] if claude_first and claude
+                             else [self.model if self.key else None]) if m]
+        attempts, tried, partial, gemini_ok, extended = [], [], None, bool(self.key), False
+        while True:
+            if not queue:
+                if extended:
+                    break
+                extended = True
+                queue = [m for m in [claude] + (self.fallback_models() if gemini_ok else []) if m and m not in tried]
+                if not queue:
+                    break
+                continue
+            model = queue.pop(0)
+            if self._left() < 5:
+                attempts.append((model, "out of time"))
+                break
+            tried.append(model)
+            # the first model can't use up the whole budget: the backups always get a turn
+            cap = FIRST_MODEL_CAP_S if len(tried) == 1 else None
+            resp, err, kind = self._call_model(model, parts, use_schema, cap)
+            if resp is not None:
+                try:
+                    out = parse_answer(resp)
+                    self.used_model = model
+                    return out
+                except Unusable as u:
+                    attempts.append((model, str(u)))
+                    partial = partial or u.partial
+                    continue
+            attempts.append((model, err))
+            if kind == "auth" and not model.startswith("claude:"):
+                gemini_ok = False  # a refused Gemini key won't work for other Gemini models either
+                queue = [m for m in queue if m.startswith("claude:")]
+        if partial:  # nobody named the item: keep the best half-answer rather than nothing
+            self.used_model = tried[0] if tried else None
+            return partial
+        log.warning("identify failed: %s", attempts)
+        raise IdentifyError("All models failed (" + "; ".join(f"{m}: {r}" for m, r in attempts) + ")", attempts)
+
+    def _call_claude(self, model: str, parts: list[dict], cap: float | None = None) -> tuple[dict | None, str, str]:
         """Same request to Anthropic's Messages API; the answer comes back in Gemini's response
         shape so the rest of the code doesn't care which AI answered."""
-        content = []
+        content, wanted = [], 0
         for p in parts:
             if "inline_data" in p:
+                wanted += 1
                 mime = p["inline_data"]["mime_type"]
                 if mime not in ("image/jpeg", "image/png", "image/gif", "image/webp"):
                     continue  # (photos are converted to JPEG before this point)
                 content.append({"type": "image", "source": {"type": "base64", "media_type": mime,
                                                              "data": p["inline_data"]["data"]}})
+        if wanted and not content:
+            return None, "couldn't read the photo format", "error"  # don't let it guess from the text alone
         text = " ".join(p["text"] for p in parts if "text" in p) + CLAUDE_JSON_NOTE
         content.append({"type": "text", "text": text})
         left = self._left()
         if left < 5:
-            return None, "out of time", True
+            return None, "out of time", "busy"
+        timeout = min(REQUEST_TIMEOUT_S, left - 2, cap or REQUEST_TIMEOUT_S)
         try:
             r = self.http.post(CLAUDE_URL, json={"model": model, "max_tokens": 1500,
                                                  "messages": [{"role": "user", "content": content}]},
                                headers={"x-api-key": os.getenv("ANTHROPIC_API_KEY", ""),
                                         "anthropic-version": os.getenv("ANTHROPIC_VERSION", "2023-06-01"),
                                         "content-type": "application/json"},
-                               timeout=min(REQUEST_TIMEOUT_S, left - 2))
-        except httpx.TimeoutException as e:
-            return None, f"no reply in time ({type(e).__name__})", True
+                               timeout=timeout)
+        except httpx.TimeoutException:
+            return None, f"no answer within {round(timeout)} s", "busy"
         except httpx.HTTPError as e:
-            return None, f"network error: {type(e).__name__}", True
+            return None, f"network error ({type(e).__name__})", "busy"
         if r.status_code != 200:
-            return None, f"HTTP {r.status_code}: {r.text[:200]}", r.status_code in RETRY_STATUS | {529}
-        out = "".join(b.get("text", "") for b in r.json().get("content", []) if b.get("type") == "text")
-        log.warning("Gemini %s was busy; used Claude %s", self.model, model)
-        return {"candidates": [{"content": {"parts": [{"text": out}]}}]}, "", False
+            kind = "busy" if r.status_code in RETRY_STATUS | {529} else "auth" if r.status_code in (401, 403) else "error"
+            label = {"busy": "busy", "auth": "API key refused"}.get(kind, "rejected the request")
+            return None, f"{label} (HTTP {r.status_code}: {_google_error(r)})" if kind == "error" else f"{label} (HTTP {r.status_code})", kind
+        body = r.json()
+        out = "".join(b.get("text", "") for b in body.get("content", []) if b.get("type") == "text")
+        if model != self.model:
+            log.warning("Gemini %s didn't answer; used Claude %s", self.model, model)
+        finish = "MAX_TOKENS" if body.get("stop_reason") == "max_tokens" else "STOP"
+        return {"candidates": [{"content": {"parts": [{"text": out}]}, "finishReason": finish}]}, "", "ok"
 
-    def _call_model(self, model: str, parts: list[dict], use_schema: bool) -> tuple[dict | None, str, bool]:
-        """(response, last error, was it 'busy') for one model, with retries and backoff."""
+    def _call_model(self, model: str, parts: list[dict], use_schema: bool,
+                    cap: float | None = None) -> tuple[dict | None, str, str]:
+        """(response, last error, kind) for one model, with retries and backoff.
+        kind: ok | busy (429/5xx/slow/network) | auth (key refused) | error (anything else)."""
         if model.startswith("claude:"):
-            return self._call_claude(model.split(":", 1)[1], parts)
+            return self._call_claude(model.split(":", 1)[1], parts, cap)
         cfg = {"responseMimeType": "application/json", "temperature": 0.2}
         if use_schema:
             cfg["responseSchema"] = SCHEMA
@@ -283,60 +470,81 @@ class GeminiIdentifier:
             cfg["thinkingConfig"] = think
         body = {"contents": [{"role": "user", "parts": parts}], "generationConfig": cfg}
         url = f"{API}/models/{model}:generateContent"
-        last, busy = None, False
+        last, kind = "", "error"
+        t_end = time.monotonic() + cap if cap else None  # the cap covers retries too
         for attempt in range(len(BACKOFF_S) + 1):
-            left = self._left()
+            left = self._left() if not t_end else min(self._left(), t_end - time.monotonic() + 2)
             if left < 5:
-                return None, (last or "") + " (out of time)", busy
+                return None, (last + " " if last else "") + ("(out of time)" if not t_end else "(gave up to try the backups)"), "busy"
+            timeout = min(REQUEST_TIMEOUT_S, left - 2)
             try:
-                r = self.http.post(url, json=body, headers={"x-goog-api-key": self.key},
-                                   timeout=min(REQUEST_TIMEOUT_S, left - 2))
-            except httpx.TimeoutException as e:
-                return None, f"no reply in time ({type(e).__name__})", True  # slow: try another model
+                r = self.http.post(url, json=body, headers={"x-goog-api-key": self.key}, timeout=timeout)
+            except httpx.TimeoutException:
+                return None, f"no answer within {round(timeout)} s", "busy"  # slow: try another model
             except httpx.HTTPError as e:
-                last, busy = f"network error: {type(e).__name__}", True
+                last, kind = f"network error ({type(e).__name__})", "busy"
             else:
                 if r.status_code == 200:
                     if model != self.model:
-                        log.warning("Gemini %s was busy; used %s", self.model, model)
-                    return r.json(), "", False
-                last = f"HTTP {r.status_code}: {r.text[:200]}"
+                        log.warning("Gemini %s didn't answer; used %s", self.model, model)
+                    return r.json(), "", "ok"
                 if r.status_code == 400 and self.light_thinking and "think" in r.text.lower():
                     self.light_thinking = False  # model without that setting: ask again without it
-                    return self._call_model(model, parts, use_schema)
+                    return self._call_model(model, parts, use_schema, cap)
                 if r.status_code == 400 and use_schema and "schema" in r.text.lower():
-                    return self._call_model(model, parts, use_schema=False)  # model without schema support
-                busy = r.status_code in RETRY_STATUS
-                if not busy:
-                    break
+                    return self._call_model(model, parts, False, cap)  # model without schema support
+                if r.status_code in RETRY_STATUS:
+                    last, kind = f"busy (HTTP {r.status_code})", "busy"
+                elif r.status_code in (401, 403):
+                    return None, f"API key refused (HTTP {r.status_code})", "auth"
+                else:
+                    return None, f"rejected the request (HTTP {r.status_code}: {_google_error(r)})", "error"
             if attempt < len(BACKOFF_S):
-                if self._left() - BACKOFF_S[attempt] < 8:
+                left = self._left() if not t_end else min(self._left(), t_end - time.monotonic())
+                if left - BACKOFF_S[attempt] < 8:
                     break  # not enough time for another go: try the next model instead
                 self.sleep(BACKOFF_S[attempt])
-        return None, last, busy
+        return None, last, kind
 
     def _parse(self, resp: dict) -> dict:
+        """Kept for older callers: one reply -> item, or IdentifyError."""
         try:
-            text = "".join(p.get("text", "") for p in resp["candidates"][0]["content"]["parts"])
-            text = text.strip().removeprefix("```json").removesuffix("```").strip()
-            if not text.startswith("{") and "{" in text:  # tolerate a sentence around the JSON
-                text = text[text.index("{"):text.rindex("}") + 1]
-            return _clean(json.loads(text))
-        except (KeyError, IndexError, json.JSONDecodeError) as e:
-            raise IdentifyError(f"Gemini returned something unexpected: {type(e).__name__}") from e
+            return parse_answer(resp)
+        except Unusable as u:
+            if u.partial:
+                return u.partial
+            raise IdentifyError(f"Gemini returned something unexpected: {u}") from u
 
-    def from_images(self, images: list[bytes], hint: str | None = None) -> dict:
+    def _photo_parts(self, images: list[bytes], hint: str | None, max_side: int) -> list[dict]:
         parts = [{"text": PROMPT + (f"\nThe seller adds: {hint}" if hint else "")}]
         for data in images[:4]:
-            small, mime = _shrink(data, max_side=GEMINI_MAX_SIDE)
+            small, mime = _shrink(data, max_side=max_side)
             parts.append({"inline_data": {"mime_type": mime, "data": base64.b64encode(small).decode()}})
-        out = self._parse(self._call(parts))
+        return parts
+
+    def from_images(self, images: list[bytes], hint: str | None = None) -> dict:
+        self._start()
+        claude_first = os.getenv("PHOTO_AI_FIRST", "gemini").strip().lower() == "claude"
+        try:
+            out = self._call(self._photo_parts(images, hint, GEMINI_MAX_SIDE), claude_first=claude_first)
+        except IdentifyError as e:
+            # One more round with smaller photos, unless every model was simply busy (smaller photos
+            # won't help that) or there isn't time left for it.
+            not_busy = any(not r.startswith("busy") for _, r in e.attempts)
+            if not (not_busy and self._left() >= 25 and images):
+                raise
+            log.warning("identify: retrying with %d px photos after: %s", SMALL_RETRY_SIDE, e.attempts)
+            try:
+                out = self._call(self._photo_parts(images, hint, SMALL_RETRY_SIDE), claude_first=claude_first)
+            except IdentifyError as e2:
+                raise IdentifyError(str(e2), e.attempts + [(m, r + " (smaller photos)") for m, r in e2.attempts]) from e2
         out.update(model=self.used_model, fallback=self.used_model != self.model)
         return out
 
     def from_text(self, query: str, condition_tier: str | None = None) -> dict:
+        self._start()
         extra = f"\nThe seller says the condition is: {condition_tier}." if condition_tier else ""
-        out = self._parse(self._call([{"text": PROMPT + f"\nDescription: {query}{extra}"}]))
+        out = self._call([{"text": PROMPT + f"\nDescription: {query}{extra}"}])
         out.update(model=self.used_model, fallback=self.used_model != self.model)
         if condition_tier:
             out["item"]["condition_tier"] = condition_tier

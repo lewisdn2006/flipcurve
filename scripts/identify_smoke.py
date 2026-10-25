@@ -30,7 +30,7 @@ if __name__ == "__main__":
         g = GeminiIdentifier()
         out = g.from_images([Path(p).read_bytes() for p in a.image], hint=a.text) if a.image else g.from_text(a.text or "")
     except IdentifyError as e:
-        print("FAILED:", e)
+        print("FAILED:", e.reason() if hasattr(e, "reason") else e)
         sys.exit(1)
     print(json.dumps(out, indent=2))
-    print(f"({time.time() - t:.1f}s with {g.model})")
+    print(f"({time.time() - t:.1f}s, answered by {g.used_model or g.model})")
