@@ -1,4 +1,5 @@
-# Deploy (from this folder, on the laptop):  npx wrangler login   (once)  then  npx wrangler deploy
+# Already deployed from the dashboard. Only needed if worker.js itself changes:
+#   npx wrangler@3 login (once), then npx wrangler@3 deploy
 name = "flipcurve-page"
 main = "worker.js"
 compatibility_date = "2026-10-01"
@@ -7,4 +8,3 @@ routes = [
   { pattern = "lewisdn.com/flipcurve*", zone_name = "lewisdn.com" },
   { pattern = "www.lewisdn.com/flipcurve*", zone_name = "lewisdn.com" },
 ]
-rules = [{ type = "Text", globs = ["**/*.html"], fallthrough = true }]

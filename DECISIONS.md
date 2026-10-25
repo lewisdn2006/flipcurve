@@ -133,8 +133,9 @@ We collect them politely, and we never try to get around a refusal.
 ## D11. Architecture: website + helper extension + laptop backend (25 Oct)
 
 * **Website** (`web/flipcurve/index.html`, one static page): text or photo in → confirm the
-  item → Scan → results. Served at `flipcurve.lewisdn.com/flipcurve/` (by the laptop through
-  the tunnel) and can also be copied onto lewisdn.com itself; it talks to `api.lewisdn.com`.
+  item → Scan → results. Live at `lewisdn.com/flipcurve/` via the "flipcurve-page" Worker
+  (route `lewisdn.com/flipcurve*`, runs before the site's own Worker), which serves the file from
+  GitHub main; it talks to `api.lewisdn.com`.
 * **Helper extension** (`extension/`, ID `fdibajhmjjbjcdfafdofkoedbkhbkfcb`): no screens. When
   the page asks, it loads ~2 eBay newest + ~2 eBay sold + 1 Vinted catalogue + a few Vinted item
   pages **in the user's own Chrome, signed in as them**, 1.5 s apart, and hands the HTML back.

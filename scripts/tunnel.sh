@@ -3,14 +3,14 @@
 #
 #   scripts/tunnel.sh quick   # test: random https://xxxx.trycloudflare.com address, no login needed
 #   scripts/tunnel.sh setup   # once: log in to Cloudflare (browser opens), create the "flipcurve"
-#                             #       tunnel, point api.lewisdn.com and flipcurve.lewisdn.com at it
+#                             #       tunnel, point api.lewisdn.com at it
 #   scripts/tunnel.sh run     # every time: start the backend and the named tunnel together
 #
 # Needs: brew install cloudflared
 set -euo pipefail
 cd "$(dirname "$0")/.."
 NAME=flipcurve
-HOSTS=(api.lewisdn.com flipcurve.lewisdn.com)
+HOSTS=(api.lewisdn.com)
 PORT=${PORT:-8000}
 CONF="$HOME/.cloudflared/$NAME.yml"
 
@@ -52,7 +52,7 @@ case "${1:-}" in
   run)
     [ -f "$CONF" ] || { echo "run 'scripts/tunnel.sh setup' first"; exit 1; }
     start_backend
-    echo "Live at https://flipcurve.lewisdn.com/flipcurve/  (API: https://api.lewisdn.com). Ctrl-C to stop."
+    echo "API live at https://api.lewisdn.com for https://lewisdn.com/flipcurve/. Ctrl-C to stop."
     cloudflared tunnel --config "$CONF" run "$NAME"
     ;;
   *) sed -n '2,10p' "$0"; exit 1 ;;
