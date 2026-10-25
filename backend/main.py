@@ -31,6 +31,7 @@ from backend.models.schemas import (
     IdentifyTextRequest,
     MarketScanRequest,
     MarketScanResponse,
+    RecheckResultsRequest,
     ScanPagesRequest,
 )
 from backend.scrapers.orchestrator import gather
@@ -139,18 +140,40 @@ def recheck_ids(vinted_query: str):
     return {"ids": _ids(vinted_query)}
 
 
+@app.get("/api/v1/recheck-due")
+def recheck_due(limit: int = 20):
+    """For the extension's background run: Vinted listings (from any earlier scan) to re-open now."""
+    from backend.scrapers.page_ingest import due_rechecks
+    return {"items": due_rechecks(limit=max(1, min(limit, 30)))}
+
+
+async def _json_body(request: Request, model):
+    body = await request.body()
+    if request.headers.get("content-encoding", "").lower() == "gzip":
+        body = gzip.decompress(body)
+    try:
+        return model.model_validate_json(body)
+    except ValidationError as e:
+        raise HTTPException(422, e.errors(include_url=False, include_context=False)) from None
+
+
+@app.post("/api/v1/recheck-results", openapi_extra={"requestBody": {
+    "required": True, "content": {"application/json": {"schema": RecheckResultsRequest.model_json_schema()}}}})
+async def recheck_results(request: Request):
+    """The extension's background re-checks: which listings sold, are still up, or were deleted."""
+    from backend.scrapers.page_ingest import apply_background_rechecks
+    req = await _json_body(request, RecheckResultsRequest)
+    out = await run_in_threadpool(apply_background_rechecks, [r.model_dump(mode="json") for r in req.results])
+    log.info("background re-checks: %s", out)
+    return out
+
+
 @app.post("/api/v1/scan-pages", response_model=MarketScanResponse, openapi_extra={"requestBody": {
     "required": True, "content": {"application/json": {"schema": ScanPagesRequest.model_json_schema()}}}})
 async def scan_pages(request: Request):
     """Scan using pages the helper extension collected in the user's own browser.
     The body is a ScanPagesRequest; send it gzipped with Content-Encoding: gzip (pages are big)."""
-    body = await request.body()
-    if request.headers.get("content-encoding", "").lower() == "gzip":
-        body = gzip.decompress(body)
-    try:
-        req = ScanPagesRequest.model_validate_json(body)
-    except ValidationError as e:
-        raise HTTPException(422, e.errors(include_url=False, include_context=False)) from None
+    req = await _json_body(request, ScanPagesRequest)
     return await run_in_threadpool(_scan_pages, req)
 
 
@@ -187,6 +210,10 @@ def _scan_pages(req: ScanPagesRequest):
         return data
     out["warnings"] = warnings + out["warnings"]
     log.info("scan-pages stats: %s", stats)
+    if queries.get("vinted"):  # background re-checks follow only the listings that matched this item
+        from backend.scrapers.page_ingest import mark_relevant
+        mark_relevant(queries["vinted"], [r["listing_id"] for r in out["comparable_listings"]
+                                          if r["platform"] == "vinted" and not r.get("is_outlier")])
     return out
 
 

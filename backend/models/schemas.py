@@ -188,6 +188,16 @@ class CollectedPage(_Model):
     fetched_at: datetime
 
 
+class RecheckResult(_Model):
+    query: str = Field(..., description="Vinted search the listing came from (as given by /recheck-due)")
+    page: CollectedPage
+
+
+class RecheckResultsRequest(_Model):
+    """The extension's background re-check run: listing pages it re-opened."""
+    results: list[RecheckResult] = Field(default_factory=list, max_length=30)
+
+
 class ScanPagesRequest(_Model):
     item: "ItemSpec"
     pages: list[CollectedPage] = Field(default_factory=list, max_length=40)

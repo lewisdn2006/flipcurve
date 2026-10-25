@@ -200,6 +200,21 @@ word-overlap test, so prices came out ~4x too high. Now:
 * The survivorship gap needs 5+ sold and 5+ unsold exact matches on one platform and compares
   condition-adjusted prices (brand-new asks next to used sales showed +154%).
 
+## D14. Vinted sales without waiting for the next scan (25 Oct)
+
+Checked first: Vinted search has no "sold" filter, and sellers' public profiles don't show sold
+items (a profile with 2 reviews listed only its 3 items for sale). A sold listing's own page
+stays up and says "Sold", so following listings we've already seen is the only source.
+* **Background re-checks** (the one exception to "only when you press Scan"; user-approved,
+  with an off switch in the extension popup): every 2 hours while Chrome is open the helper
+  takes up to 20 due listings from `GET /api/v1/recheck-due`, opens them 1.5 s apart, and posts
+  them to `POST /api/v1/recheck-results`. Due = matched the item in its scan, first seen 3 h+ ago,
+  not checked in the last 6 h, followed for 30 days. A refusal pauses it for 12 hours.
+* The history lives in each query's Vinted cache under `seen`; every scan (and "Use saved data")
+  turns it into rows: a sale between the last time it was still for sale and the check that found
+  it sold, or survival to the last check. Ages use the ID-interpolated start.
+* Vinted catalogue depth: up to 8 pages per scan (stops at the last page) for the stock estimate.
+
 ## TEAM — still to decide
 
 - [ ] Demo items: fill in `backend/scrapers/cache_seed/demo_items.csv` with the things on the table.

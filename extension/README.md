@@ -6,7 +6,13 @@ pages **in your own browser, signed in as you**, and hands them to the page:
 
 * eBay: up to 4 newest-listed pages + up to 4 recently-sold pages, 240 listings each, stopping
   early on the last page (sold results need you signed in to eBay)
-* Vinted: up to 4 newest catalogue pages + 8 item pages (to date listings) + any re-checks
+* Vinted: up to 8 newest catalogue pages (stops at the last) + 8 item pages (to date listings) + any re-checks
+
+**Background re-checks** (switch in the toolbar popup, on by default): every 2 hours while Chrome
+is open, the helper asks the FlipCurve server which Vinted listings from earlier scans are due
+(only ones that matched the item, first after 3 h, then at most every 6 h, for 30 days), re-opens
+up to 20 of them 1.5 s apart, and reports sold / still up / removed. If Vinted declines, it stops
+and waits 12 hours. The server address is the one the FlipCurve page last used.
 
 It pauses 1.5 s between pages, only runs when you press Scan, and stops on any sign-in or
 bot-check page (it never tries to get around one). Only lewisdn.com and localhost can talk to it.
@@ -21,6 +27,7 @@ Extension ID (fixed by the `key` in manifest.json): `fdibajhmjjbjcdfafdofkoedbkh
 4. Make sure you're signed in to eBay in this Chrome
 
 The toolbar icon shows the last eBay check: nothing = fine, `!` = sign in to eBay, `x` = eBay refused.
+Click it for the background re-check switch and the last run's results.
 
 ## Protocol (for the web page)
 
@@ -30,8 +37,8 @@ chrome.runtime.sendMessage(EXT, { type: "ping" }, (r) => { /* r = {ok, version, 
 
 const port = chrome.runtime.connect(EXT);
 port.onMessage.addListener((m) => { /* {type:"progress", done, total, label} ... then {type:"result", ok, pages, stopped} */ });
-port.postMessage({ type: "collect", queries: { ebay: "...", vinted: "..." }, ebayPages: 4, vintedPages: 4,
-                   vintedItemSamples: 8, recheckVintedIds: [] });
+port.postMessage({ type: "collect", queries: { ebay: "...", vinted: "..." }, ebayPages: 4, vintedPages: 8,
+                   vintedItemSamples: 8, recheckVintedIds: [], api: "https://api.lewisdn.com" });
 ```
 
 Then POST `{item, pages, stopped}` to the backend's `/api/v1/scan-pages` (gzip the body and send

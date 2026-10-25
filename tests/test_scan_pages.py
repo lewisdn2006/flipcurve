@@ -131,3 +131,32 @@ def test_related_versions_help_speed_but_not_price(client):
     assert version_mismatch("Nike Air Jordan 1 Low (GS) Triple Black", "air jordan 1 low triple black") == "kids"
     assert version_mismatch("iPhone 13 Pro Max 128GB", "iphone 13 pro") == "max"
     assert version_mismatch("Nike Air Jordan 1 Low Triple Black UK 10", "air jordan 1 low triple black") is None
+
+
+def test_background_rechecks_find_sales_without_a_new_scan(client):
+    from backend.scrapers import page_ingest as ing
+    pages, ids = first_scan(T0)
+    assert client.post("/api/v1/scan-pages", json={"item": ITEM, "pages": pages}).status_code == 200
+    # nothing is due straight away; 4 hours later the matching listings are
+    assert ing.due_rechecks(now=T0 + timedelta(hours=1)) == []
+    due = ing.due_rechecks(now=T0 + timedelta(hours=4))
+    assert due and all(d["query"] == "air force 1 white" for d in due)
+    assert set(d["id"] for d in due) <= set(map(str, ids))
+    assert client.get("/api/v1/recheck-due").status_code == 200
+
+    later = T0 + timedelta(hours=4)
+    sold_id, live_id = due[0]["id"], due[1]["id"]
+    res = [{"query": "air force 1 white", "page": page("vinted", "recheck", vinted_item("4 hours ago", sold=True), later,
+                                                        url=f"https://www.vinted.co.uk/items/{sold_id}")},
+           {"query": "air force 1 white", "page": page("vinted", "recheck", vinted_item("5 hours ago"), later,
+                                                        url=f"https://www.vinted.co.uk/items/{live_id}")}]
+    r = client.post("/api/v1/recheck-results", json={"results": res})
+    assert r.status_code == 200 and r.json()["sold"] == 1 and r.json()["active"] == 1, r.text
+    # the sale is in the saved rows at once, and that listing is no longer due
+    from backend.scrapers.orchestrator import load_cache
+    saved = load_cache("air force 1 white", "vinted")
+    assert any(x["listing_id"] == sold_id and x["obs_type"] == "sold_interval" for x in saved)
+    assert sold_id not in {d["id"] for d in ing.due_rechecks(now=later + timedelta(hours=7))}
+    # "Use saved data" now has a real Vinted sale
+    out = client.post("/api/v1/market-scan", json={"item": ITEM, "allow_live": False}).json()
+    assert out["platform_recommendations"]["vinted"]["n_sales"] >= 1

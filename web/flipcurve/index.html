@@ -345,7 +345,8 @@ function collect(queries, recheckIds) {
       }
     });
     port.onDisconnect.addListener(() => { void chrome.runtime.lastError; if (!done) reject(new Error("The helper disconnected mid-scan.")); });
-    port.postMessage({ type: "collect", queries, ebayPages: 4, vintedPages: 4, vintedItemSamples: 8, recheckVintedIds: recheckIds });
+    port.postMessage({ type: "collect", queries, ebayPages: 4, vintedPages: 8, vintedItemSamples: 8,
+                       recheckVintedIds: recheckIds, api: API });
   });
 }
 

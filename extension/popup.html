@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FlipCurve helper</title>
+<style>
+  :root { color-scheme: light dark; --ink: #1b1b1a; --muted: #6b6a66; --line: #e2e0da; --accent: #2a78d6; --bg: #fcfcfb; }
+  @media (prefers-color-scheme: dark) { :root { --ink: #f0efec; --muted: #a9a8a1; --line: #33322f; --accent: #3987e5; --bg: #1a1a19; } }
+  body { margin: 0; width: 300px; background: var(--bg); color: var(--ink); font: 13px/1.45 system-ui, -apple-system, sans-serif; }
+  main { padding: 14px; }
+  h1 { font-size: 15px; margin: 0 0 2px; }
+  p { margin: 0 0 10px; color: var(--muted); }
+  label.switch { display: flex; gap: 8px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); cursor: pointer; }
+  label.switch input { margin-top: 2px; }
+  .status { margin: 10px 0; }
+  .status div { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+  .status span:first-child { color: var(--muted); }
+  button { width: 100%; padding: 7px; border-radius: 7px; border: 1px solid var(--accent); background: transparent; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: default; }
+  .err { color: #c0392b; }
+</style>
+</head>
+<body>
+<main>
+  <h1>FlipCurve helper</h1>
+  <p>Scans run only when you press Scan on lewisdn.com/flipcurve.</p>
+  <label class="switch">
+    <input type="checkbox" id="enabled">
+    <span><b>Check earlier Vinted listings</b><br>
+      <span style="color:var(--muted)">Every 2 hours while Chrome is open, re-opens up to 20 Vinted listings from your past scans to see which have sold. Stops for 12 hours if Vinted declines.</span></span>
+  </label>
+  <div class="status" id="status"></div>
+  <button id="now">Check now</button>
+</main>
+<script src="popup.js"></script>
+</body>
+</html>
