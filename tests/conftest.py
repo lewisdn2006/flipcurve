@@ -6,7 +6,7 @@ os.environ["FLIPCURVE_OFFLINE"] = "1"
 os.environ["GEMINI_API_KEY"] = ""
 os.environ["ANTHROPIC_API_KEY"] = ""
 os.environ["FLIPCURVE_COOLDOWN_FILE"] = ""   # no cooldowns written to disk
-os.environ.pop("PHOTO_AI_FIRST", None)
+os.environ["PHOTO_AI_FIRST"] = "gemini"   # set, not removed: .env (PHOTO_AI_FIRST=gemma) would fill it back in
 os.environ["EBAY_CLIENT_ID"] = ""
 os.environ["EBAY_CLIENT_SECRET"] = ""
 

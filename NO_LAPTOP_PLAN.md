@@ -15,6 +15,12 @@ Written 26 Oct 2026 from the code as it stood at commit `7c619cb`.
 - **Still to do for step 0:** capture real scans. Start the server with
   `FLIPCURVE_SAVE_PAGES=tests/fixtures/pages uvicorn backend.main:app --port 8000`, scan 3–4
   different items from the page, then rerun `scripts/make_golden.py`.
+- **Step 3 done (26 Oct 2026).** `/api/v1/identify` and `/api/v1/identify-text` run on the
+  Worker (`web/api-worker/src/identify.js`, 50 tests ported from `tests/test_identifier.py`).
+  Checked live: a text identify answered in 8 s (Gemini) and a photo in 45 s (Gemma first, as
+  `PHOTO_AI_FIRST=gemma` asks). Model cooldowns live in D1. The page now shrinks photos to
+  1280 px and waits up to 200 s on the one-shot route with a seconds counter; that change only
+  goes live when this repo is pushed.
 - **The D1 copy is a snapshot.** Scans made through the laptop after 26 Oct only go to the
   local files. Rerun `scripts/export_to_d1.py` and load it again just before the cutover.
 

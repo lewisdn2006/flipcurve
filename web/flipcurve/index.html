@@ -594,27 +594,32 @@ $("identifyBtn").onclick = async () => {
   finally { btn.disabled = false; $("identifyMsg").textContent = ""; }
 };
 
-// Identify runs as a background job on the server: start it, then check every 2 s. No single
-// request lasts long, so Cloudflare's 100 s limit on the tunnel can't cut it off. (Older servers
-// without jobs: fall back to the one-shot endpoint.)
+// Identify runs as a background job on the laptop server: start it, then check every 2 s. No single
+// request lasts long, so Cloudflare's 100 s limit on the tunnel can't cut it off. Servers without
+// jobs (the Cloudflare Worker, which has no such limit) answer the one-shot endpoint instead; it
+// can take up to 3 minutes when the AI is busy, so count the seconds meanwhile.
 async function identifyJob(startPath, opts, oldPath) {
   let start;
   try {
     start = await api(startPath, opts(), 60000);
   } catch (e) {
-    if (/\(404\)|\(405\)/.test(e.message)) return api(oldPath, opts(), 95000);
-    throw e;
+    if (!/\(404\)|\(405\)/.test(e.message)) throw e;
+    const t0 = Date.now();
+    const tick = setInterval(() => showWait(Math.round((Date.now() - t0) / 1000)), 1000);
+    try { return await api(oldPath, opts(), 200000); } finally { clearInterval(tick); }
   }
   const t0 = Date.now();
   while (Date.now() - t0 < 240000) {
     await new Promise((r) => setTimeout(r, 2000));
     const j = await api(`/api/v1/identify/job/${start.job}`, {}, 20000);
     if (j.status === "done") return j.result;
-    const s = Math.round((Date.now() - t0) / 1000);
-    $("identifyMsg").textContent = (mode === "photo" ? "Looking at your photos" : "Working out what it is") +
-      `… ${s}s` + (s > 30 ? " (the AI is busy; trying other models if needed)" : "");
+    showWait(Math.round((Date.now() - t0) / 1000));
   }
   throw new Error("That took too long. Try again, or describe the item instead.");
+}
+function showWait(s) {
+  $("identifyMsg").textContent = (mode === "photo" ? "Looking at your photos" : "Working out what it is") +
+    `… ${s}s` + (s > 30 ? " (the AI is busy; trying other models if needed)" : "");
 }
 
 let identifiedFromPhoto = false, identifyWarnings = [];
@@ -659,7 +664,8 @@ function confirmedItem() {
 
 // Shrink photos before upload (phone photos are 3-5 MB; the server only needs ~1600 px).
 // Formats the browser can't decode (iPhone HEIC in Chrome) go up as they are; the server converts them.
-async function shrinkPhoto(file, maxSide = 1600) {
+// 1280 px is what the server sends to Gemini anyway; the Cloudflare server can't resize, so do it here
+async function shrinkPhoto(file, maxSide = 1280) {
   try {
     const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
     const s = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));

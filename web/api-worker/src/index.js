@@ -2,6 +2,11 @@
 // (NO_LAPTOP_PLAN.md). Same routes and JSON as backend/main.py, so neither the page nor the
 // helper extension has to change. Routes arrive step by step; anything not ported yet is a 404.
 
+import { D1Cooldowns, Identifier, IdentifyError, prettyModel } from './identify.js';
+
+const SCHEMA_VERSION = '1.1';  // backend/models/schemas.py
+const CONDITION_TIERS = ['fair', 'good', 'very_good', 'mint'];
+
 // Who may call this from a browser: lewisdn.com pages, localhost while developing, and the
 // helper extension (it needs CORS here until api.lewisdn.com points at this Worker, because its
 // host permissions don't cover workers.dev).
@@ -38,8 +43,74 @@ async function health(request, env) {
   return json({ ok: true, ebay_api: Boolean(env.EBAY_CLIENT_ID && env.EBAY_CLIENT_SECRET), runtime: 'worker', data });
 }
 
+// ---- identify (backend/main.py). The page tries /identify/start first; this Worker has no
+// background jobs (and needs none: no 100 s cut-off here), so that 404s and the page uses these.
+
+const identifyResponse = ({ item, source, confidence = null, warnings = [] }) =>
+  ({ schema_version: SCHEMA_VERSION, item, source, cleaned_image_url: null, confidence, warnings });
+
+/** Every model failed: an editable blank item so the user can type it in, and why. */
+function identifyFallback(source, why) {
+  const item = { title: '', brand: null, model_name: null, category: null, size_or_storage: null, era_or_year: null,
+    condition_tier: 'good', condition_score: 6.0, detected_flaws: [], search_queries: { ebay: '', vinted: '' },
+    is_broken: false, must_have: [], must_not_have: [] };
+  return identifyResponse({ item, source, confidence: 0.0, warnings: [`Couldn't identify the photo automatically (${why}). `
+    + 'Type what it is and the searches below, or try Identify again later (each model above says when it\'s tried again).'] });
+}
+
+const invalid = (field, msg) => json({ detail: [{ loc: ['body', field], msg }] }, 422);  // FastAPI's shape
+
+async function identifyPhotos(request, env) {
+  let form;
+  try {
+    form = await request.formData();
+  } catch {
+    return invalid('images', 'Expected multipart/form-data with 1-4 images');
+  }
+  const files = form.getAll('images').filter((f) => typeof f === 'object' && typeof f.arrayBuffer === 'function');
+  if (!files.length) return invalid('images', 'Field required');
+  const images = await Promise.all(files.slice(0, 4).map(async (f) => new Uint8Array(await f.arrayBuffer())));
+  const hint = typeof form.get('hint') === 'string' && form.get('hint').trim() ? form.get('hint') : null;
+  try {
+    const out = await new Identifier({ env, cooldowns: new D1Cooldowns(env.DB) }).fromImages(images, hint);
+    return json(identifyResponse({ item: out.item, source: 'vision', confidence: out.confidence,
+      warnings: out.fallback ? [`Identified by ${prettyModel(out.model || '')} (the main model didn't answer)`] : [] }));
+  } catch (e) {
+    if (e instanceof IdentifyError) return json(identifyFallback('vision', e.reason()));
+    console.error(e);
+    return json(identifyFallback('vision', `something went wrong: ${e.name}`));
+  }
+}
+
+async function identifyText(request, env) {
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return invalid('query', 'Expected a JSON body');
+  }
+  const { query, condition_tier: tier = null } = body || {};
+  if (typeof query !== 'string' || query.length < 2) return invalid('query', 'String should have at least 2 characters');
+  if (tier !== null && !CONDITION_TIERS.includes(tier)) return invalid('condition_tier', `Input should be ${CONDITION_TIERS.join(', ')}`);
+  try {
+    const out = await new Identifier({ env, cooldowns: new D1Cooldowns(env.DB) }).fromText(query, tier);
+    return json(identifyResponse({ item: out.item, source: 'text', confidence: out.confidence }));
+  } catch (e) {
+    if (!(e instanceof IdentifyError)) console.error(e);
+    // the description itself becomes the search, so the user can carry on
+    const data = identifyFallback('text', 'the model is busy or unavailable');
+    const q = query.trim().toLowerCase();
+    Object.assign(data.item, { title: query.trim(), search_queries: { ebay: q, vinted: q }, condition_tier: tier || 'good' });
+    const why = e instanceof IdentifyError ? e.reason() : 'the AI models are busy';
+    data.warnings = [`Couldn't look it up automatically (${why}). Your description is used as the search; check it below.`];
+    return json(data);
+  }
+}
+
 const ROUTES = {
   'GET /api/v1/health': health,
+  'POST /api/v1/identify': identifyPhotos,
+  'POST /api/v1/identify-text': identifyText,
 };
 
 async function route(request, env, ctx) {

@@ -11,6 +11,8 @@
   // Parsing several MB of pages and fitting the model can need more than the default CPU time
   "limits": { "cpu_ms": 60000 },
   "observability": { "enabled": true },
+  // Same meaning as in the laptop's .env (backend/vision/gemini_identifier.py)
+  "vars": { "GEMINI_MODEL": "gemini-3.8-flash", "PHOTO_AI_FIRST": "gemma" },
   "d1_databases": [
     {
       "binding": "DB",
@@ -19,5 +21,6 @@
       "migrations_dir": "migrations"
     }
   ]
-  // Secrets (npx wrangler secret put NAME): GEMINI_API_KEY, EBAY_CLIENT_ID, EBAY_CLIENT_SECRET
+  // Secrets (npx wrangler secret put NAME): GEMINI_API_KEY, EBAY_CLIENT_ID, EBAY_CLIENT_SECRET,
+  // and optionally ANTHROPIC_API_KEY (Claude as a backup for identify)
 }

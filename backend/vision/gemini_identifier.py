@@ -516,6 +516,7 @@ class GeminiIdentifier:
         self._deadline = None
         self.light_thinking = True
         self.used_model = None
+        self.lead = None               # the model asked first on purpose (PHOTO_AI_FIRST), not a backup
         self._names = None             # models list, fetched at most once
         self._no_json_mode = set()     # models that refused the JSON response setting
         if not self.key and not claude_configured():
@@ -599,6 +600,7 @@ class GeminiIdentifier:
         claude = f"claude:{os.getenv('CLAUDE_MODEL', CLAUDE_DEFAULT_MODEL)}" if claude_configured() else None
         main = self.model if self.key else None
         lead = claude if first == "claude" else (self.gemma_model() if first == "gemma" and self.key else None)
+        self.lead = lead
         queue = [m for m in dict.fromkeys([lead, main]) if m]
         attempts, tried, partial, gemini_ok, extended = [], [], None, bool(self.key), False
         while True:
@@ -785,7 +787,7 @@ class GeminiIdentifier:
                 out = self._call(self._photo_parts(images, hint, SMALL_RETRY_SIDE), first=first)
             except IdentifyError as e2:
                 raise IdentifyError(str(e2), e.attempts + [(m, r + " (smaller photos)") for m, r in e2.attempts]) from e2
-        out.update(model=self.used_model, fallback=self.used_model != self.model)
+        out.update(model=self.used_model, fallback=self.used_model not in (self.model, self.lead))
         return out
 
     def from_text(self, query: str, condition_tier: str | None = None) -> dict:

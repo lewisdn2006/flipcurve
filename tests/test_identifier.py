@@ -462,6 +462,7 @@ def test_gemma_gets_json_asked_for_in_the_prompt(monkeypatch):
     assert seen["model"] == "gemma-4-31b-it" and seen["image"] and out["item"]["brand"] == "Nike"
     assert "responseMimeType" not in seen["cfg"] and "responseSchema" not in seen["cfg"] and "thinkingConfig" not in seen["cfg"]
     assert "Reply with only one JSON object" in seen["text"]
+    assert not out["fallback"]   # asked first on purpose (PHOTO_AI_FIRST): not "the main model didn't answer"
 
 
 def test_model_that_refuses_json_mode_is_asked_in_the_prompt(monkeypatch):
