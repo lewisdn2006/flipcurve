@@ -9,6 +9,8 @@ Writes tests/golden/:
                           now), every survival-model fit it made, and the full response
   pages/<name>.json.gz    for each capture in tests/fixtures/pages/ (FLIPCURVE_SAVE_PAGES on the
                           server): the rows ingest made from the pages, the fits and the response
+  scenarios/vinted-history.json.gz  two scans with re-checks, background re-checks and what is due when
+                          (made-up pages from tests/test_scan_pages.py)
 
 Captures run in a throwaway copy of backend/ with empty caches and calibration, so the real
 files aren't touched and the result depends only on the capture. The captures themselves stay
@@ -163,10 +165,69 @@ def captures() -> None:
             subprocess.run([sys.executable, __file__, "--capture", str(f)], cwd=tmp, env=env, check=True)
 
 
+def history_inputs() -> dict:
+    """Pages for the Vinted history scenario, built with the scan tests' helpers (tests/test_scan_pages.py)."""
+    from datetime import timedelta
+    from tests.test_scan_pages import ITEM, T0, first_scan, page, vinted_item
+    pages1, ids = first_scan(T0)
+    later = T0 + timedelta(hours=8)
+    pages2, _ = first_scan(later)
+    pages2 += [page("vinted", "recheck", vinted_item("8 hours ago", sold=True), later, url=f"https://www.vinted.co.uk/items/{ids[2]}"),
+               page("vinted", "recheck", vinted_item("12 hours ago"), later, url=f"https://www.vinted.co.uk/items/{ids[5]}")]
+    bg = T0 + timedelta(hours=16)
+    background = [{"query": ITEM["search_queries"]["vinted"],
+                   "page": page("vinted", "recheck", vinted_item("16 hours ago", sold=True), bg, url=f"https://www.vinted.co.uk/items/{ids[7]}")},
+                  {"query": ITEM["search_queries"]["vinted"],
+                   "page": page("vinted", "recheck", vinted_item("17 hours ago"), bg, url=f"https://www.vinted.co.uk/items/{ids[8]}")}]
+    return {"item": ITEM, "t0": T0.isoformat(), "ids": [str(i) for i in ids], "scan1": pages1, "scan2": pages2,
+            "background": background}
+
+
+def one_history(path: Path) -> None:
+    """Runs inside the throwaway copy of backend/: every step of the scenario and what it returned."""
+    from datetime import datetime, timedelta
+    from backend.scrapers import page_ingest as ing
+    from backend.scrapers.orchestrator import load_cache
+    inp = json.loads(path.read_text())
+    t0 = datetime.fromisoformat(inp["t0"])
+    q = inp["item"]["search_queries"]
+    steps = []
+    rows, stats = ing.ingest(inp["scan1"], q)
+    steps.append({"step": "scan1", "rows": rows, "stats": stats})
+    ing.mark_relevant(q["vinted"], inp["ids"][:8])
+    steps.append({"step": "mark_relevant", "ids": inp["ids"][:8]})
+    for h in (1, 4):
+        steps.append({"step": "due", "hours": h, "out": ing.due_rechecks(now=t0 + timedelta(hours=h))})
+    steps.append({"step": "recheck_ids", "hours": 8, "out": ing.recheck_ids(q["vinted"], now=t0 + timedelta(hours=8))})
+    rows, stats = ing.ingest(inp["scan2"], q)
+    steps.append({"step": "scan2", "rows": rows, "stats": stats})
+    steps.append({"step": "background", "out": ing.apply_background_rechecks(inp["background"]),
+                  "saved": load_cache(q["vinted"], "vinted")})
+    for h in (16, 23, 30):
+        steps.append({"step": "due", "hours": h, "out": ing.due_rechecks(now=t0 + timedelta(hours=h))})
+    write(OUT / "scenarios" / "vinted-history.json.gz", {**inp, "steps": steps})
+
+
+def history() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        shutil.copytree(ROOT / "backend", Path(tmp) / "backend",
+                        ignore=shutil.ignore_patterns("__pycache__", "browser_profile", "cache_seed", "*.sqlite",
+                                                      "*.json", "server.log"))
+        (Path(tmp) / "backend" / "scrapers" / "cache_seed").mkdir()
+        f = Path(tmp) / "inputs.json"
+        f.write_text(json.dumps(history_inputs()))
+        env = {"PATH": "/usr/bin:/bin", "PYTHONPATH": tmp, "HOME": tmp}
+        subprocess.run([sys.executable, __file__, "--history", str(f)], cwd=tmp, env=env, check=True)
+
+
 if __name__ == "__main__":
     if sys.argv[1:2] == ["--capture"]:
         sys.path.insert(0, ".")
         one_capture(Path(sys.argv[2]))
+        sys.exit()
+    if sys.argv[1:2] == ["--history"]:
+        sys.path.insert(0, ".")
+        one_history(Path(sys.argv[2]))
         sys.exit()
     sys.path.insert(0, str(ROOT))
     print("maths")
@@ -175,3 +236,5 @@ if __name__ == "__main__":
     engine_cases()
     print("captures")
     captures()
+    print("Vinted history scenario")
+    history()
