@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -222,10 +224,29 @@ def recheck_due(limit: int = 20):
     return {"items": due_rechecks(limit=max(1, min(limit, 30)))}
 
 
-async def _json_body(request: Request, model):
+def _save_capture(kind: str, body: bytes) -> None:
+    """FLIPCURVE_SAVE_PAGES=<folder> keeps each request body (gzipped) as a test input for the
+    Worker port (NO_LAPTOP_PLAN.md, step 0). Off unless set; tests/fixtures/pages/ is gitignored
+    because signed-in eBay pages can carry your account name."""
+    folder = os.getenv("FLIPCURVE_SAVE_PAGES")
+    if not folder:
+        return
+    try:
+        path = Path(folder)
+        path.mkdir(parents=True, exist_ok=True)
+        name = f"{kind}-{datetime.now():%Y%m%d-%H%M%S}.json.gz"
+        (path / name).write_bytes(gzip.compress(body))
+        log.info("saved %s", path / name)
+    except OSError:
+        log.exception("couldn't save capture")
+
+
+async def _json_body(request: Request, model, capture: str | None = None):
     body = await request.body()
     if request.headers.get("content-encoding", "").lower() == "gzip":
         body = gzip.decompress(body)
+    if capture:
+        _save_capture(capture, body)
     try:
         return model.model_validate_json(body)
     except ValidationError as e:
@@ -237,7 +258,7 @@ async def _json_body(request: Request, model):
 async def recheck_results(request: Request):
     """The extension's background re-checks: which listings sold, are still up, or were deleted."""
     from backend.scrapers.page_ingest import apply_background_rechecks
-    req = await _json_body(request, RecheckResultsRequest)
+    req = await _json_body(request, RecheckResultsRequest, capture="recheck")
     out = await run_in_threadpool(apply_background_rechecks, [r.model_dump(mode="json") for r in req.results])
     log.info("background re-checks: %s", out)
     return out
@@ -248,7 +269,7 @@ async def recheck_results(request: Request):
 async def scan_pages(request: Request):
     """Scan using pages the helper extension collected in the user's own browser.
     The body is a ScanPagesRequest; send it gzipped with Content-Encoding: gzip (pages are big)."""
-    req = await _json_body(request, ScanPagesRequest)
+    req = await _json_body(request, ScanPagesRequest, capture="scan")
     return await run_in_threadpool(_scan_pages, req)
 
 

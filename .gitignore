@@ -14,3 +14,4 @@ backend/static/uploads/
 backend/db/browser_profile/
 backend/db/*.json
 .bin/
+tests/fixtures/pages/
