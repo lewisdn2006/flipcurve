@@ -17,7 +17,7 @@ pytest                             # contract tests, keep green
 
 The API currently serves **mock data** (`backend/mock/`, contract v1.1) so the frontend can build straight away.
 
-## Run it on a laptop (local development; the live site uses the Worker above)
+## Run it on a laptop (local development; the live site uses the Worker below)
 
 1. **Helper extension:** Chrome → `chrome://extensions` → Developer mode → Load unpacked →
    `extension/`. The ID must be `fdibajhmjjbjcdfafdofkoedbkhbkfcb`. Stay signed in to eBay.
@@ -36,7 +36,7 @@ The API currently serves **mock data** (`backend/mock/`, contract v1.1) so the f
 scans, saved data and the extension's re-checks, with data in the D1 database `flipcurve-db`.
 Since 26 Oct 2026 it answers at https://api.lewisdn.com (a route in its `wrangler.jsonc`), which
 the live page and the helper extension use, so nothing needs to run on a laptop. The laptop
-setup below still works for local development (http://localhost:8000/flipcurve/).
+setup above still works for local development (http://localhost:8000/flipcurve/).
 
 ```bash
 cd web/api-worker
