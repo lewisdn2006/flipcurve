@@ -29,8 +29,14 @@ Written 26 Oct 2026 from the code as it stood at commit `7c619cb`.
   through D1, and "Use saved data" on the live Worker matches the Python server field for field
   on four real items. A full scan takes about 0.9 s of CPU. 112 tests: `npm test` in
   `web/api-worker`.
-- **The D1 copy is a snapshot.** Scans made through the laptop after 26 Oct only go to the
-  local files. Rerun `scripts/export_to_d1.py` and load it again just before the cutover.
+- **Step 7 done (26 Oct 2026, ~03:50).** `api.lewisdn.com/*` is a route to the Worker
+  (`web/api-worker/wrangler.jsonc`); the tunnel's DNS record is still there but unused. Checked
+  with the laptop off: the live page connects ("eBay API on"), a text identify and "Use saved
+  data" work, and `/recheck-due` answers for the extension. To go back to the laptop, remove the
+  route and deploy. Not yet tried: a live scan with the helper in your Chrome.
+- **D1 is now the live data.** Every scan goes there; the laptop's files stopped at 26 Oct.
+  Don't load `scripts/export_to_d1.py` output again (it would replace newer data with the old
+  files) unless you mean to.
 
 ## Where things stand now
 
