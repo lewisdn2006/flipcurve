@@ -116,6 +116,9 @@ export function sniffMime(bytes) {
   return 'image/jpeg';
 }
 
+/** The first bytes of base64 data: enough to tell the image type. */
+const base64Head = (b64) => Uint8Array.from(atob(String(b64).slice(0, 24)), (ch) => ch.charCodeAt(0));
+
 function base64(bytes) {
   let s = '';
   for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
@@ -429,6 +432,11 @@ export function quotaDetails(r) {
   return out;
 }
 
+// Models this key can use, kept for an hour per Worker instance: Google's list is large, and parsing it
+// on every identify costs CPU the free plan doesn't have.
+const MODEL_LIST_TTL_MS = 3600000;
+let modelListCache = null;  // {key, names, at}
+
 /** One HTTP call; a timeout throws {name: "TimeoutError"}, other network failures throw too. */
 async function fetchTransport({ url, method, headers, body, timeoutS }) {
   return fetch(url, { method, headers, body, signal: AbortSignal.timeout(Math.max(1, timeoutS) * 1000) });
@@ -468,17 +476,22 @@ export class Identifier {
     return { status: r.status, text, json };
   }
 
-  /** Models this key can call generateContent on (asked once per identify). Never throws. */
+  /** Models this key can call generateContent on (asked at most once an hour). Never throws. */
   async listModels() {
     if (this.names !== null) return this.names;
     this.names = [];
     if (!this.key) return this.names;
+    if (modelListCache && modelListCache.key === this.key && Date.now() - modelListCache.at < MODEL_LIST_TTL_MS) {
+      this.names = modelListCache.names;
+      return this.names;
+    }
     try {
       const r = await this.request({ url: `${API}/models?pageSize=200`, method: 'GET',
         headers: { 'x-goog-api-key': this.key }, timeoutS: Math.min(10, Math.max(1, this.left() - 2)) });
       if (r.status === 200) {
         this.names = (r.json?.models || []).filter((m) => (m.supportedGenerationMethods || []).includes('generateContent'))
           .map((m) => m.name.split('/').slice(1).join('/') || m.name);
+        if (this.transport === fetchTransport) modelListCache = { key: this.key, names: this.names, at: Date.now() };
       }
     } catch { /* no list: just the main model */ }
     return this.names;
@@ -679,18 +692,16 @@ export class Identifier {
     // JSON in the prompt instead, as with Claude.
     const jsonMode = !model.startsWith('gemma') && !this.noJsonMode.has(model);
     const cfg = { temperature: 0.2 };
-    let sent = parts;
     if (jsonMode) {
       cfg.responseMimeType = 'application/json';
       if (useSchema) cfg.responseSchema = SCHEMA;
-    } else {
-      sent = parts.map((p, i) => (i === 0 && 'text' in p ? { ...p, text: p.text + CLAUDE_JSON_NOTE } : p));
-    }
+    }  // otherwise the prompt asks for JSON instead (partsJson's "noted" variant)
     const think = this.lightThinking ? thinkingConfig(model) : null;
     // Gemini 3 Flash thinks at "high" by default, which can take a long time before it answers;
     // naming a product doesn't need it.
     if (think) cfg.thinkingConfig = think;
-    const body = JSON.stringify({ contents: [{ role: 'user', parts: sent }], generationConfig: cfg });
+    // the photos are most of the request: their JSON is made once per identify and spliced in
+    const body = `{"contents":[{"role":"user","parts":${this.partsJson(parts, !jsonMode)}}],"generationConfig":${JSON.stringify(cfg)}}`;
     const url = `${API}/models/${model}:generateContent`;
     let last = '', kind = 'error';
     const tEnd = cap ? this.now() + cap : null;  // the cap covers retries too
@@ -751,12 +762,26 @@ export class Identifier {
     return [null, last, kind];
   }
 
-  /** images: [Uint8Array] (already shrunk by the page); hint: optional text from the seller. */
+  /** JSON text of the request parts, made once per parts list and prompt variant ("noted": the prompt
+   *  asks for JSON, for models without the JSON setting, as with Claude). */
+  partsJson(parts, noted) {
+    this.partsCache ||= new WeakMap();
+    let c = this.partsCache.get(parts);
+    if (!c) this.partsCache.set(parts, (c = {}));
+    const k = noted ? 'noted' : 'plain';
+    return (c[k] ??= JSON.stringify(noted ? parts.map((p, i) => (i === 0 && 'text' in p ? { ...p, text: p.text + CLAUDE_JSON_NOTE } : p)) : parts));
+  }
+
+  /** images: [Uint8Array], or [{data: base64, mime_type?}] as the page sends them (already shrunk);
+   *  hint: optional text from the seller. */
   async fromImages(images, hint = null) {
     await this.start();
     const first = (this.env.PHOTO_AI_FIRST || 'gemini').trim().toLowerCase();  // gemini | claude | gemma
     const parts = [{ text: PROMPT + (hint ? `\nThe seller adds: ${hint}` : '') }];
-    for (const data of images.slice(0, 4)) parts.push({ inline_data: { mime_type: sniffMime(data), data: base64(data) } });
+    for (const img of images.slice(0, 4)) {
+      if (img instanceof Uint8Array) parts.push({ inline_data: { mime_type: sniffMime(img), data: base64(img) } });
+      else parts.push({ inline_data: { mime_type: sniffMime(base64Head(img.data)), data: img.data } });
+    }
     const out = await this.call(parts, { first });
     return { ...out, model: this.usedModel, fallback: ![this.model, this.lead].includes(this.usedModel) };
   }

@@ -45,6 +45,11 @@ npm test              # Workers runtime tests, then checks against the Python's 
 npx wrangler deploy
 ```
 
+Scans and "Use saved data" run in the browser: the Worker serves the engine (`src/client.js`, built
+by `npm run build` into `/api/v2/core.js`) and only stores data, so it fits Cloudflare's free plan
+(10 ms of CPU per request). The heavy `/api/v1/scan-pages` and `/market-scan` routes are still there
+for older pages but need the paid plan's CPU.
+
 The Python server stays as the reference: after changing the maths or the page readers there,
 rerun `scripts/make_golden.py`, port the change, and `npm test` says whether the two still agree.
 

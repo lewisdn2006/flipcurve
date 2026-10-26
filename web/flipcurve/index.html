@@ -546,14 +546,30 @@ async function checkHelper() {
             || ["ok", "Helper ready"];
   setStatus("extDot", "extText", s[0], `${s[1]} <span style="color:var(--ink-3)">v${esc(helper.version)}</span>`);
 }
+// What the server can do. The Cloudflare one says where its browser engine is (client_engine): with
+// it, scans and "Use saved data" run here in the page and the server only stores data, which keeps
+// it inside Cloudflare's free plan. The laptop's server does that work itself (/api/v1).
+let serverInfo = null, enginePromise = null;
 async function checkApi() {
   try {
-    const h = await api("/api/v1/health");
-    setStatus("apiDot", "apiText", "ok", "Server connected" + (h.ebay_api ? " · eBay API on" : ""));
+    serverInfo = await api("/api/v1/health");
+    setStatus("apiDot", "apiText", "ok", "Server connected" + (serverInfo.ebay_api ? " · eBay API on" : ""));
   }
-  catch { setStatus("apiDot", "apiText", "bad", `Can't reach the server at ${esc(API)}`); }
+  catch { serverInfo = null; setStatus("apiDot", "apiText", "bad", `Can't reach the server at ${esc(API)}`); }
 }
-checkHelper(); checkApi();
+const apiReady = checkApi();
+checkHelper();
+async function engine() {
+  await apiReady;
+  if (!serverInfo?.client_engine) return null;
+  return (enginePromise ||= import(API + serverInfo.client_engine));
+}
+const toBase64 = (blob) => new Promise((resolve, reject) => {
+  const r = new FileReader();
+  r.onload = () => resolve(String(r.result).split(",")[1] || "");
+  r.onerror = () => reject(r.error);
+  r.readAsDataURL(blob);
+});
 
 // ---- step 1: identify
 let mode = "text";
@@ -580,10 +596,19 @@ $("identifyBtn").onclick = async () => {
       out = await identifyJob("/api/v1/identify-text/start", opts, "/api/v1/identify-text");
     } else {
       if (!photos.length) throw new Error("Choose a photo first.");
-      const fd = new FormData();
-      for (const f of photos) { const small = await shrinkPhoto(f); fd.append("images", small, small.name || f.name); }
-      if ($("hint").value.trim()) fd.append("hint", $("hint").value.trim());
-      out = await identifyJob("/api/v1/identify/start", () => ({ method: "POST", body: fd }), "/api/v1/identify");
+      await apiReady;
+      if (serverInfo?.runtime === "worker") {
+        // the Cloudflare server takes the photos base64-encoded (cheaper for it than a file upload)
+        const images = [];
+        for (const f of photos) { const small = await shrinkPhoto(f); images.push({ data: await toBase64(small), mime_type: small.type || f.type || null }); }
+        const body = JSON.stringify({ images, hint: $("hint").value.trim() || null });
+        out = await identifyJob("/api/v2/identify/start", () => ({ method: "POST", headers: { "Content-Type": "application/json" }, body }), "/api/v2/identify");
+      } else {
+        const fd = new FormData();
+        for (const f of photos) { const small = await shrinkPhoto(f); fd.append("images", small, small.name || f.name); }
+        if ($("hint").value.trim()) fd.append("hint", $("hint").value.trim());
+        out = await identifyJob("/api/v1/identify/start", () => ({ method: "POST", body: fd }), "/api/v1/identify");
+      }
     }
     item = out.item;
     // the photo route has no condition field, so a condition picked here overrides the AI's guess
@@ -776,14 +801,20 @@ async function scan(live) {
       try { if (it.search_queries.vinted) ids = (await api("/api/v1/recheck-ids?vinted_query=" + encodeURIComponent(it.search_queries.vinted))).ids || []; } catch {}
       const got = await collect(it.search_queries, ids);
       progress(0.9, "Working out prices and selling times…");
-      const json = JSON.stringify({ item: it, pages: got.pages, stopped: got.stopped || {} });
-      const headers = { "Content-Type": "application/json" };
-      let body = json;
-      if (window.CompressionStream) {  // pages are several MB of HTML; gzip shrinks them ~10x
-        body = await new Response(new Blob([json]).stream().pipeThrough(new CompressionStream("gzip"))).blob();
-        headers["Content-Encoding"] = "gzip";
+      const core = await engine();
+      if (core) {  // read the pages and fit the model here; the server just keeps the data
+        result = await core.scanInBrowser({ api: API, item: it, pages: got.pages, stopped: got.stopped || {},
+          ebayApiOn: Boolean(serverInfo.ebay_api), onProgress: (m) => progress(0.93, m) });
+      } else {
+        const json = JSON.stringify({ item: it, pages: got.pages, stopped: got.stopped || {} });
+        const headers = { "Content-Type": "application/json" };
+        let body = json;
+        if (window.CompressionStream) {  // pages are several MB of HTML; gzip shrinks them ~10x
+          body = await new Response(new Blob([json]).stream().pipeThrough(new CompressionStream("gzip"))).blob();
+          headers["Content-Encoding"] = "gzip";
+        }
+        result = await api("/api/v1/scan-pages", { method: "POST", headers, body });
       }
-      result = await api("/api/v1/scan-pages", { method: "POST", headers, body });
       if (got.partial) {
         const h = await pingHelper();
         const where = h?.lastScan?.label ? ` (last step: ${h.lastScan.label})` : "";
@@ -793,8 +824,10 @@ async function scan(live) {
       checkHelper();
     } else {
       progress(0.6, "Working out prices from saved listings…");
-      result = await api("/api/v1/market-scan", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ item: it, allow_live: false }) });
+      const core = await engine();
+      result = core ? await core.savedInBrowser({ api: API, item: it })
+        : await api("/api/v1/market-scan", { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ item: it, allow_live: false }) });
     }
     progress(1, null);
     $("scanStatus").textContent = "● Done"; $("scanStatus").className = "done";

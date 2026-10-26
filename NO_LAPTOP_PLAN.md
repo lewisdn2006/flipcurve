@@ -34,6 +34,12 @@ Written 26 Oct 2026 from the code as it stood at commit `7c619cb`.
   with the laptop off: the live page connects ("eBay API on"), a text identify and "Use saved
   data" work, and `/recheck-due` answers for the extension. To go back to the laptop, remove the
   route and deploy. Not yet tried: a live scan with the helper in your Chrome.
+- **Free-plan ready (26 Oct 2026).** Scans and "Use saved data" now run in the browser
+  (`web/api-worker/src/client.js`, served by the Worker as `/api/v2/core.js`); the Worker only moves
+  data between the page and D1 in small pieces (`src/v2.js`), does re-checks in SQL, and passes the
+  eBay API's results through. Measured on real data: every request uses 4 ms of CPU or less
+  (identify 7 ms), against the free plan's 10 ms. The page still uses `/api/v1` when talking to the
+  laptop server. Helper 0.6.0 sends background re-check results as statuses.
 - **D1 is now the live data.** Every scan goes there; the laptop's files stopped at 26 Oct.
   Don't load `scripts/export_to_d1.py` output again (it would replace newer data with the old
   files) unless you mean to.

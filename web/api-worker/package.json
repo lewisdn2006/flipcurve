@@ -4,11 +4,13 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
-    "test": "vitest run && vitest run -c vitest.node.config.js",
+    "build": "node scripts/build-client.mjs",
+    "test": "npm run build && vitest run && vitest run -c vitest.node.config.js",
     "deploy": "wrangler deploy"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "^1.4.7",
+    "esbuild": "^0.28.2",
     "vitest": "^5.0.5",
     "wrangler": "^4.152.0"
   },

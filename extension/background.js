@@ -6,7 +6,8 @@
 // we never try to get around it. The one thing we do fix is an expired Vinted session, the way
 // visiting the site would: see renewVintedSession.
 // Background re-checks (D14, can be switched off in the popup): every 2 hours while Chrome is
-// open, re-open up to 20 Vinted listings seen in earlier scans, so the server learns which sold.
+// open, re-open up to 20 Vinted listings seen in earlier scans, so the server learns which sold
+// (the Cloudflare server gets just each listing's status, worked out here: classifyItemPage).
 
 const PAUSE_MS = 1500;
 const EBAY = "https://www.ebay.co.uk/sch/i.html";
@@ -234,6 +235,29 @@ async function collect(req, progress) {
   return { type: "result", ok: true, pages: [], sent, stopped, version: chrome.runtime.getManifest().version };
 }
 
+// A listing page's status ('active', 'sold', 'deleted', 'unknown') without parsing the HTML: a copy of
+// web/api-worker/src/scrapers/classify.js (keep the two in step), which matches the server's reader.
+// Background re-checks send just this to the Cloudflare server, which has little CPU to spare.
+const LD_JSON = /<script\b[^>]*\btype\s*=\s*["']?application\/ld\+json["']?[^>]*>([\s\S]*?)<\/script\s*>/i;
+const BUY_BUTTON = /\bdata-testid\s*=\s*["']item-buy-button["']/i;
+const HIDDEN = /<(script|style|template)\b[^>]*>[\s\S]*?<\/\1\s*>/gi;
+const decodeEntities = (s) => s.replace(/&(amp|lt|gt|quot|#39|apos);/g, (_, e) => ({ amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'", apos: "'" }[e]));
+
+function classifyItemPage(html, httpStatus) {
+  if (httpStatus === 404 || html == null) return "deleted";
+  let avail = null;
+  const ld = html.match(LD_JSON);
+  if (ld) {
+    try {
+      const j = JSON.parse(decodeEntities(ld[1]));
+      if (j && typeof j === "object" && !Array.isArray(j) && j.offers && typeof j.offers === "object") avail = j.offers.availability ?? null;
+    } catch { /* not JSON */ }
+  }
+  if (avail === "InStock" && BUY_BUTTON.test(html)) return "active";
+  if (avail === null && /\bSold\b/.test(decodeEntities(html.replace(HIDDEN, " ").replace(/<[^>]*>/g, " ")))) return "sold";
+  return "unknown";
+}
+
 // ------------------------------------------------------------------ background Vinted re-checks
 const RECHECK_ALARM = "flipcurve-recheck";
 const RECHECK_EVERY_MIN = 120;
@@ -269,6 +293,8 @@ async function backgroundRecheck(force = false) {
   try {
     const r = await fetch(`${s.api}/api/v1/recheck-due?limit=${RECHECK_MAX}`);
     if (!r.ok) throw new Error(`server answered ${r.status}`);
+    // the Cloudflare server takes just each listing's status; the laptop's server reads the pages itself
+    const statusesOnly = await fetch(`${s.api}/api/v1/health`).then((h) => h.json()).then((h) => h.runtime === "worker").catch(() => false);
     const due = ((await r.json()).items || []).slice(0, RECHECK_MAX);
     const results = [];
     let stopped = null;
@@ -278,8 +304,11 @@ async function backgroundRecheck(force = false) {
       // (nothing is sent, so the listings stay due); the next scan renews it.
       const res = await load(url, 6000);
       if (res.stop && res.status !== 404) { stopped = res.stop; break; }
-      results.push({ query, page: { platform: "vinted", kind: "recheck", page: null, url, final_url: res.finalUrl,
-                                    status: res.status, html: slim(res.html), fetched_at: new Date().toISOString() } });
+      const fetchedAt = new Date().toISOString();
+      results.push(statusesOnly
+        ? { query, id, status: classifyItemPage(res.html, res.status), fetched_at: fetchedAt }
+        : { query, page: { platform: "vinted", kind: "recheck", page: null, url, final_url: res.finalUrl,
+                           status: res.status, html: slim(res.html), fetched_at: fetchedAt } });
       await chrome.storage.local.set({ recheckProgress: { done: results.length, total: due.length } });  // keeps the worker awake
     }
     let summary = { due: due.length, checked: results.length };

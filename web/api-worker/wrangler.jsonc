@@ -9,8 +9,11 @@
   // laptop, remove this and deploy. Also at https://flipcurve-api.lewisdn2006.workers.dev
   "routes": [{ "pattern": "api.lewisdn.com/*", "zone_name": "lewisdn.com" }],
   "workers_dev": true,
-  // Parsing several MB of pages and fitting the model can need more than the default CPU time
-  "limits": { "cpu_ms": 60000 },
+  // Builds the browser engine (dist/core-text.js) and the example payload before every deploy
+  "build": { "command": "npm run build", "watch_dir": "src" },
+  // No "limits": the page does the heavy work in the browser, so this fits the free plan (10 ms of CPU
+  // per request). On the free plan /api/v1/scan-pages and /market-scan would run out of CPU; the
+  // page doesn't use them any more.
   "observability": { "enabled": true },
   // Same meaning as in the laptop's .env (backend/vision/gemini_identifier.py)
   "vars": { "GEMINI_MODEL": "gemini-3.8-flash", "PHOTO_AI_FIRST": "gemma" },

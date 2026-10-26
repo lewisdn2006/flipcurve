@@ -223,14 +223,19 @@ export class BrowseAPI {
     return cachedToken.token;
   }
 
-  async search(q, { limit = 200, offset = 0, sort = 'newlyListed', ukOnly = true } = {}) {
+  async searchResponse(q, { limit = 200, offset = 0, sort = 'newlyListed', ukOnly = true } = {}) {
     const params = new URLSearchParams({ q, limit: String(limit), offset: String(offset), sort });
     if (ukOnly) params.set('filter', 'itemLocationCountry:GB');  // like the website search's "UK only"
     const r = await this.fetch(`${SEARCH_URL}?${params}`, { signal: AbortSignal.timeout(20000),
       headers: { Authorization: `Bearer ${await this.token()}`, 'X-EBAY-C-MARKETPLACE-ID': 'EBAY_GB' } });
     if (!r.ok) throw new Error(`eBay search: HTTP ${r.status}`);
-    return r.json();
+    return r;
   }
+
+  async search(q, opts = {}) { return (await this.searchResponse(q, opts)).json(); }
+
+  /** One page of results as the API's own JSON text, unparsed (the Worker passes it to the browser). */
+  async searchText(q, offset = 0) { return (await this.searchResponse(q, { offset })).text(); }
 
   async activeCards(q, pages = 5) {
     const out = [];

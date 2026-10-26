@@ -28,17 +28,42 @@ export async function loadCacheRows(store, query, platform) {
   return data && data.rows && data.rows.length ? data.rows : null;
 }
 
+/** A search's saved rows (or null), with Vinted listings re-checked since the save brought up to date.
+ *  The Python rebuilt the saved rows at each background re-check; the Worker only updates the history
+ *  there (it can't afford the CPU), so the rows are rebuilt here the same way when they're read. */
+export async function savedRows(store, query, platform) {
+  const data = await store.loadCache(slug(query), platform);
+  if (!data) return null;
+  let rows = data.rows || [];
+  if (platform === 'vinted' && data.seen) {
+    // re-checks after the scan these rows came from (searches saved by the laptop have no pages_at)
+    const savedAt = parseTime(data.pages_at ?? data.fetched_at) ?? 0;
+    const touched = new Set([...data.seen].filter(([, r]) => r.last_checked && parseTime(r.last_checked) > savedAt).map(([k]) => k));
+    if (touched.size) {
+      const cal = new VintedCalibration(await store.vintedCalibration());
+      const now = Math.max(...[...touched].map((k) => parseTime(data.seen.get(k).last_checked)));
+      rows = rows.filter((r) => !touched.has(r.listing_id)).concat(historyRows(data.seen, cal, now, touched));
+    }
+  }
+  return rows.length ? rows : null;
+}
+
 const saveCache = (store, query, platform, rows, extra = {}) =>
   store.saveCache(slug(query), platform, { query, fetched_at: isoformat(Date.now()), rows, ...extra });
 
 /** eBay rows from the helper's pages, plus (when EBAY_CLIENT_ID/SECRET are set) up to 1,000 active
- *  listings from the official Browse API, which also become calibration points. */
-export async function ebayRows(pages, query, { store, env = {}, fetchFn = fetch }) {
+ *  listings from the official Browse API, which also become calibration points. In the browser the
+ *  Worker fetches those (the keys stay there) and they arrive as `apiCards` / `apiError`. */
+export async function ebayRows(pages, query, { store, env = {}, fetchFn = fetch, apiCards: given = null, apiError: givenError = null }) {
   const cal = new EbayCalibration(store);
   let act = [], sold = [];
   const now = latest(pages);
   let actComplete = false, soldComplete = false, apiCards = [], apiError = null;
-  if (ebayApiConfigured(env)) {
+  if (given !== null || givenError !== null) {
+    apiCards = given || [];
+    apiError = givenError;
+    await cal.add(apiCards.filter((c) => c.created_time != null).map((c) => [c.item_id, c.created_time]), `api:${query}`);
+  } else if (ebayApiConfigured(env)) {
     try {
       apiCards = await new BrowseAPI(env, fetchFn).activeCards(query, API_PAGES);
       await cal.add(apiCards.filter((c) => c.created_time != null).map((c) => [c.item_id, c.created_time]), `api:${query}`);
@@ -192,7 +217,8 @@ export async function vintedRows(pages, query, { store }) {
   const stats = { catalog: cards.length, fresh_rows: fresh.length, rechecked_sold: outcome.sold,
     rechecked_active: outcome.active, history_sales: hist.filter((r) => r.obs_type === 'sold_interval').length,
     calibration_samples: cal.samples.size };
-  await saveCache(store, query, 'vinted', rows, { stats, source: 'extension', seen });
+  // pages_at: the scan pages' time, the clock re-checks are stamped with (savedRows uses it)
+  await saveCache(store, query, 'vinted', rows, { stats, source: 'extension', seen, pages_at: isoformat(now) });
   return [rows, stats];
 }
 
@@ -241,7 +267,8 @@ export async function ingest(pages, queries, ctx) {
   let rows = [];
   const stats = {};
   if (by.vinted.length < vinted.length) stats.vinted_session_refresh = vinted.length - by.vinted.length;
-  if (queries.ebay && (by.ebay.length || ebayApiConfigured(ctx.env || {}))) {
+  const apiOn = ctx.ebayApiOn ?? ebayApiConfigured(ctx.env || {});
+  if (queries.ebay && (by.ebay.length || apiOn)) {
     const [r, s] = await ebayRows(by.ebay, queries.ebay, ctx);
     rows = rows.concat(r);
     stats.ebay = s;

@@ -2,7 +2,8 @@
 // Python (scripts/make_golden.py) is replayed through D1 here, so every SQL statement is exercised.
 import { describe, expect, inject, it } from 'vitest';
 import { env, exports } from 'cloudflare:workers';
-import { applyBackgroundRechecks, dueRechecks, ingest, markRelevant, recheckIds, slug } from '../src/scrapers/ingest.js';
+import { ingest, markRelevant, savedRows } from '../src/scrapers/ingest.js';
+import { normaliseRecheckResults, sqlApplyRechecks, sqlDueRechecks, sqlRecheckIds } from '../src/v2.js';
 import { D1Store } from '../src/store.js';
 import { BrowseAPI } from '../src/scrapers/ebay.js';
 
@@ -14,7 +15,7 @@ const gzip = async (obj) => new Response(new Blob([JSON.stringify(obj)]).stream(
 const strip = (rows) => rows.map(({ observed_at, ...r }) => r);  // eslint-disable-line no-unused-vars
 
 describe('D1 storage', () => {
-  it('replays the Vinted history scenario like the Python', async () => {
+  it('replays the Vinted history scenario like the Python, with re-checks done in SQL', async () => {
     const store = new D1Store(env.DB);
     const q = g.item.search_queries;
     const steps = g.steps.slice();
@@ -23,18 +24,20 @@ describe('D1 storage', () => {
     expect(stats).toEqual(s.stats);
     expect(rows.length).toBe(s.rows.length);
     await markRelevant(store, q.vinted, steps.shift().ids);
-    for (const h of [1, 4]) expect(await dueRechecks(store, 20, t0 + h * H)).toEqual(steps.shift().out);
-    expect(await recheckIds(store, q.vinted, t0 + 8 * H)).toEqual(steps.shift().out);
+    for (const h of [1, 4]) expect(await sqlDueRechecks(env.DB, 20, t0 + h * H)).toEqual(steps.shift().out);
+    expect(await sqlRecheckIds(env.DB, q.vinted, t0 + 8 * H)).toEqual(steps.shift().out);
     [rows, stats] = await ingest(g.scan2, q, { store, env: {} });
     s = steps.shift();
     expect(stats).toEqual(s.stats);
     expect(rows.map((r) => [r.listing_id, r.obs_type])).toEqual(s.rows.map((r) => [r.listing_id, r.obs_type]));
+    // the background run: statuses applied in SQL, the saved rows rebuilt when read
     s = steps.shift();
-    expect(await applyBackgroundRechecks(g.background, { store })).toEqual(s.out);
-    const saved = await store.loadCache(slug(q.vinted), 'vinted');
-    expect(saved.rows.map((r) => [r.listing_id, r.obs_type])).toEqual(s.saved.map((r) => [r.listing_id, r.obs_type]));
-    // (D1Store only lists listings first seen in the last month: the scenario's dates are near enough)
-    for (const h of [16, 23, 30]) expect(await dueRechecks(store, 20, t0 + h * H)).toEqual(steps.shift().out);
+    const [results, refresh] = normaliseRecheckResults(g.background);
+    expect({ ...(await sqlApplyRechecks(env.DB, results)), session_refresh: refresh }).toEqual(s.out);
+    const saved = await savedRows(store, q.vinted, 'vinted');
+    expect(saved.map((r) => [r.listing_id, r.obs_type, r.t_days, r.t_upper_days])).toEqual(
+      s.saved.map((r) => [r.listing_id, r.obs_type, r.t_days, r.t_upper_days]));
+    for (const h of [16, 23, 30]) expect(await sqlDueRechecks(env.DB, 20, t0 + h * H)).toEqual(steps.shift().out);
   });
 
   it('keeps eBay calibration points once, however often they arrive', async () => {
