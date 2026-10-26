@@ -1,0 +1,23 @@
+// FlipCurve API Worker (NO_LAPTOP_PLAN.md). Deploy from this folder: npx wrangler deploy
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "flipcurve-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-01",
+  // Test address: https://flipcurve-api.lewisdn2006.workers.dev
+  // api.lewisdn.com stays on the laptop tunnel until the cutover (step 7), when it becomes:
+  //   "routes": [{ "pattern": "api.lewisdn.com", "custom_domain": true }]
+  "workers_dev": true,
+  // Parsing several MB of pages and fitting the model can need more than the default CPU time
+  "limits": { "cpu_ms": 60000 },
+  "observability": { "enabled": true },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "flipcurve-db",
+      "database_id": "3e57acd2-4a6c-4ef2-b8f3-a9826d37632c",
+      "migrations_dir": "migrations"
+    }
+  ]
+  // Secrets (npx wrangler secret put NAME): GEMINI_API_KEY, EBAY_CLIENT_ID, EBAY_CLIENT_SECRET
+}

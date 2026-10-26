@@ -5,6 +5,19 @@ The helper extension stays: it is the only reliable way to read eBay sold listin
 
 Written 26 Oct 2026 from the code as it stood at commit `7c619cb`.
 
+## Progress
+
+- **Steps 0–2 done (26 Oct 2026).** `tests/golden/` has reference outputs for six saved items
+  (`scripts/make_golden.py`). The Worker `flipcurve-api` is live at
+  https://flipcurve-api.lewisdn2006.workers.dev with only `/api/v1/health` so far. D1
+  `flipcurve-db` holds a copy of `backend/db/` and `cache_seed/` (`scripts/export_to_d1.py`).
+  The secrets `GEMINI_API_KEY`, `EBAY_CLIENT_ID` and `EBAY_CLIENT_SECRET` are set.
+- **Still to do for step 0:** capture real scans. Start the server with
+  `FLIPCURVE_SAVE_PAGES=tests/fixtures/pages uvicorn backend.main:app --port 8000`, scan 3–4
+  different items from the page, then rerun `scripts/make_golden.py`.
+- **The D1 copy is a snapshot.** Scans made through the laptop after 26 Oct only go to the
+  local files. Rerun `scripts/export_to_d1.py` and load it again just before the cutover.
+
 ## Where things stand now
 
 ```
