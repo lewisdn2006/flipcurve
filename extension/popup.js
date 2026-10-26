@@ -31,7 +31,7 @@ async function refresh() {
     else {
       box.append(row(`Last run (${ago(l.at)})`, l.checked ? `${l.checked} checked` : "nothing due yet"));
       if (l.checked) box.append(row("Found", `${l.sold || 0} sold · ${l.active || 0} still up · ${l.deleted || 0} removed`));
-      if (l.stopped) box.append(row("Vinted", l.stopped === "refused" ? "declined, pausing 12 h" : "slowed down, will try next run", "err"));
+      if (l.stopped) box.append(row("Vinted", { refused: "declined, pausing 12 h", session_expired: "session ran out: a scan or visiting vinted.co.uk renews it" }[l.stopped] || "slowed down, will try next run", "err"));
     }
   } else {
     box.append(row("Last run", "not yet"));

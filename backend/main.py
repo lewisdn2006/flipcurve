@@ -207,6 +207,8 @@ STOP_MESSAGES = {
     "refused": "{site} declined the request for now, so these results use saved data for it.",
     "slow": "{site} slowed right down part-way, so this uses the pages that arrived. Scanning again in a few minutes may get more.",
     "network_error": "{site} couldn't be reached, so these results use saved data for it.",
+    "session_expired": "Vinted's session had run out and the helper couldn't renew it, so these results use saved "
+                       "Vinted data. Open vinted.co.uk in this browser, then scan again.",
 }
 
 
@@ -287,6 +289,12 @@ def _scan_pages(req: ScanPagesRequest):
     for site, info in (req.stopped or {}).items():
         msg = STOP_MESSAGES.get((info or {}).get("reason"), "{site} stopped early.")
         warnings.append(msg.format(site="eBay" if site == "ebay" else "Vinted"))
+    if stats.get("vinted_session_refresh") and "vinted" not in (req.stopped or {}):
+        # helpers before 0.5.0 don't spot the placeholder, so they send it on as if it were listings
+        n = stats["vinted_session_refresh"]
+        warnings.append(f"{n} Vinted page{'s' if n != 1 else ''} came back as Vinted's \"session refresh\" page "
+                        "instead of listings (its session had run out), so they were left out. Helper 0.5.0 renews "
+                        "the session itself; until then, open vinted.co.uk in this browser and scan again.")
     for site in ("ebay", "vinted"):
         if site not in have:  # nothing fresh from this site: fall back to its saved data
             cached = load_cache(queries[site], site) or []

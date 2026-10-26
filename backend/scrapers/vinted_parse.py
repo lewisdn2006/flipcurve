@@ -10,6 +10,9 @@ Item pages: JSON-LD offers.availability is "InStock" for live items; sold items 
 with no availability and a "Sold" mark; deleted items return 404. The upload age is shown as
 relative text in [itemprop="upload_date"], e.g. "42 min ago", "a week ago", "3 weeks ago".
 
+When the session cookie has run out, every page redirects to /session-refresh: a placeholder
+titled "Session refresh" whose script renews the cookie. It holds no listings (26 Oct 2026).
+
 Owner: Person 2.
 """
 from __future__ import annotations
@@ -27,6 +30,18 @@ RE_ITEM_ID = re.compile(r"/items/(\d{8,12})")
 RE_AGE = re.compile(r"(?P<n>\d+|an?|a few)\s*(?P<unit>sec|second|min|minute|hour|day|week|month|year)s?\s+ago", re.I)
 UNIT_HOURS = {"sec": 1 / 3600, "second": 1 / 3600, "min": 1 / 60, "minute": 1 / 60, "hour": 1.0,
               "day": 24.0, "week": 168.0, "month": 720.0, "year": 8760.0}
+
+RE_SESSION_REFRESH = re.compile(r"/session-refresh(\?|$)", re.I)
+RE_TITLE = re.compile(r"<title[^>]*>\s*([^<]*?)\s*</title>", re.I)
+
+
+def is_session_refresh(page: dict) -> bool:
+    """A collected page that is Vinted's session-refresh placeholder, not the page asked for."""
+    if RE_SESSION_REFRESH.search(page.get("final_url") or ""):
+        return True
+    m = RE_TITLE.search((page.get("html") or "")[:20000])
+    return bool(m) and m.group(1).lower() == "session refresh"
+
 
 CONDITION_TIER = {"New with tags": "mint", "New without tags": "mint", "Very good": "very_good",
                   "Good": "good", "Satisfactory": "fair"}

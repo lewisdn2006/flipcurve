@@ -120,3 +120,14 @@ def test_bumped_listing_sample_is_ignored(tmp_path):
     age_lo = (seen - b.hi).total_seconds() / 86400
     age_hi = (seen - b.lo).total_seconds() / 86400
     assert 0.4 < age_lo < age_hi < 3.1
+
+
+def test_session_refresh_placeholder_is_recognised():
+    from backend.scrapers.vinted_parse import is_session_refresh
+    html = '<html><head><meta charSet="utf-8"/><title>Session refresh</title></head><body></body></html>'
+    assert is_session_refresh({"final_url": "https://www.vinted.co.uk/session-refresh?ref_url=%2Fitems%2F1", "html": ""})
+    assert is_session_refresh({"final_url": "https://www.vinted.co.uk/items/10524334280", "html": html})
+    assert not is_session_refresh({"final_url": "https://www.vinted.co.uk/items/10524334280",
+                                   "html": "<title>Nike Air Jordan 1 | Vinted</title>"})
+    assert not is_session_refresh({"final_url": "https://www.vinted.co.uk/catalog?search_text=session-refresh",
+                                   "html": "<title>session-refresh | Vinted</title>"})

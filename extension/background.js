@@ -3,7 +3,8 @@
 //
 // Rules (DECISIONS.md D10, D14): scans run only when the user presses Scan; one page at a time
 // per site with a pause (longer for Vinted); nothing disguised. On a sign-in or bot-check page we STOP that site and report it;
-// we never try to get around it.
+// we never try to get around it. The one thing we do fix is an expired Vinted session, the way
+// visiting the site would: see renewVintedSession.
 // Background re-checks (D14, can be switched off in the popup): every 2 hours while Chrome is
 // open, re-open up to 20 Vinted listings seen in earlier scans, so the server learns which sold.
 
@@ -12,6 +13,7 @@ const EBAY = "https://www.ebay.co.uk/sch/i.html";
 const VINTED = "https://www.vinted.co.uk";
 const SIGNIN = /\/\/signin\.ebay\.|\/signin\//i;
 const CHALLENGE = /splashui\/challenge|\/captcha|\/challenge/i;
+const SESSION_REFRESH = /\/session-refresh(\?|$)/i;
 const BLOCK_TITLES = ["pardon our interruption", "security measure", "captcha", "checking your browser",
                       "access denied", "just a moment"];
 
@@ -72,6 +74,7 @@ async function load(url, gapMs) {
     const title = titleOf(html).toLowerCase();
     let stop = null;
     if (SIGNIN.test(finalUrl)) stop = "sign_in_required";
+    else if (SESSION_REFRESH.test(finalUrl) || title === "session refresh") stop = "session_expired";
     else if (CHALLENGE.test(finalUrl) || BLOCK_TITLES.some((t) => title.includes(t)) || r.status === 403 || r.status === 429) stop = "refused";
     return { status: r.status, finalUrl, html, stop };
   } catch (e) {
@@ -81,6 +84,40 @@ async function load(url, gapMs) {
     clearTimeout(timer);
     lastHit[host] = Date.now();
   }
+}
+
+// Vinted's session cookie runs out now and then. Every page then redirects to /session-refresh,
+// a placeholder whose script renews the cookie, which fetch() never runs (26 Oct: three scans
+// got no Vinted listings this way). So open Vinted in a background tab for a moment, as visiting
+// the site would, and close it again. Only during a scan someone started; anything else Vinted
+// shows in that tab (a check, a sign-in) is left alone, and the retry then stops as usual.
+const RENEW_WAIT_MS = 20000;
+let renewing = null;
+
+function renewVintedSession() {
+  renewing ??= (async () => {
+    let tab = null;
+    try {
+      tab = await chrome.tabs.create({ url: `${VINTED}/`, active: false });
+      const until = Date.now() + RENEW_WAIT_MS;
+      while (Date.now() < until) {
+        await sleep(500);
+        const t = await chrome.tabs.get(tab.id);
+        const url = t.url || t.pendingUrl || "";
+        if (t.status === "complete" && !SESSION_REFRESH.test(url)) {
+          await sleep(1500);   // let the page's own requests finish setting the cookie
+          return true;
+        }
+      }
+      return false;
+    } catch {
+      return false;   // e.g. no Chrome window open
+    } finally {
+      if (tab) chrome.tabs.remove(tab.id).catch(() => {});
+      renewing = null;
+    }
+  })();
+  return renewing;
 }
 
 // Keep the worker awake during long runs: extension API calls reset Chrome's idle timer.
@@ -147,13 +184,26 @@ async function collect(req, progress) {
     await setBadge(stopped.ebay ? (stopped.ebay.reason === "sign_in_required" ? "signin" : "refused") : "ok");
   }
 
+  // Vinted pages, renewing an expired session once per scan and trying the page again
+  let renewed = false;
+  async function loadVinted(url) {
+    let res = await load(url);
+    if (res.stop === "session_expired" && !renewed) {
+      renewed = true;
+      progress({ type: "progress", done, total: steps, label: "Renewing the Vinted session" });
+      logScan({ label: "renewing the Vinted session" });
+      if (await renewVintedSession()) res = await load(url);
+    }
+    return res;
+  }
+
   // Vinted: newest catalogue pages, a few item pages to date listing IDs, and any re-checks
   async function vinted() {
     if (!queries.vinted) return;
     let ids = (req.vintedIds || []).map(String);
     for (let p = 1; p <= vintedPages; p++) {
       const url = vintedCatalogUrl(queries.vinted, p);
-      const res = await load(url);
+      const res = await loadVinted(url);
       step(`Vinted listings ${p}/${vintedPages}`);
       if (res.stop) { stopped.vinted = { reason: res.stop, url }; return; }
       keep("vinted", "catalog", p, url, res, trimAround(res.html, 'data-testid="grid-item"', 20000));
@@ -166,7 +216,7 @@ async function collect(req, progress) {
                   ...recheckVintedIds.map((id) => ["recheck", String(id)])];
     for (const [kind, id] of todo) {
       const url = `${VINTED}/items/${id}`;
-      const res = await load(url);
+      const res = await loadVinted(url);
       step(kind === "item" ? "Vinted listing ages" : "Re-checking earlier Vinted listings");
       if (res.stop && res.status !== 404) { stopped.vinted = { reason: res.stop, url }; return; }
       keep("vinted", kind, null, url, res, slim(res.html));
@@ -224,7 +274,9 @@ async function backgroundRecheck(force = false) {
     let stopped = null;
     for (const { id, query } of due) {
       const url = `${VINTED}/items/${id}`;
-      const res = await load(url, 6000);   // no one is waiting: go gently
+      // no one is waiting: go gently. An expired session stops the run without opening a tab
+      // (nothing is sent, so the listings stay due); the next scan renews it.
+      const res = await load(url, 6000);
       if (res.stop && res.status !== 404) { stopped = res.stop; break; }
       results.push({ query, page: { platform: "vinted", kind: "recheck", page: null, url, final_url: res.finalUrl,
                                     status: res.status, html: slim(res.html), fetched_at: new Date().toISOString() } });

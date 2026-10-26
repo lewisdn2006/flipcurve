@@ -24,7 +24,7 @@ from backend.scrapers.orchestrator import cache_path, save_cache
 from backend.scrapers.vinted_calibration import VintedCalibration
 from backend.scrapers.vinted_client import _row as vinted_row
 from backend.scrapers.vinted_client import active_rows as vinted_active_rows
-from backend.scrapers.vinted_parse import parse_catalog, parse_item_page
+from backend.scrapers.vinted_parse import is_session_refresh, parse_catalog, parse_item_page
 
 
 def _ts(p) -> datetime:
@@ -245,8 +245,14 @@ def apply_background_rechecks(results: list[dict], cal: VintedCalibration | None
     by_q: dict[str, list[dict]] = {}
     for r in results:
         by_q.setdefault(r["query"], []).append(r["page"])
-    out = {"active": 0, "sold": 0, "deleted": 0, "unknown": 0, "skipped": 0}
-    for q, pages in by_q.items():
+    out = {"active": 0, "sold": 0, "deleted": 0, "unknown": 0, "skipped": 0, "session_refresh": 0}
+    for q, pages in list(by_q.items()):
+        # placeholders say nothing about the listing: leave it due for the next run
+        kept = [pg for pg in pages if not is_session_refresh(pg)]
+        out["session_refresh"] += len(pages) - len(kept)
+        by_q[q] = pages = kept
+        if not pages:
+            continue
         p = cache_path(q, "vinted")
         if not p.exists():
             out["skipped"] += len(pages)
@@ -275,9 +281,12 @@ def CACHE_DIR():
 
 
 def ingest(pages: list[dict], queries: dict[str, str]) -> tuple[list[dict], dict]:
+    vinted = [p for p in pages if p["platform"] == "vinted"]
     by = {"ebay": [p for p in pages if p["platform"] == "ebay"],
-          "vinted": [p for p in pages if p["platform"] == "vinted"]}
+          "vinted": [p for p in vinted if not is_session_refresh(p)]}
     rows, stats = [], {}
+    if len(by["vinted"]) < len(vinted):
+        stats["vinted_session_refresh"] = len(vinted) - len(by["vinted"])
     from backend.scrapers import ebay_api
     if queries.get("ebay") and (by["ebay"] or ebay_api.configured()):
         r, stats["ebay"] = ebay_rows(by["ebay"], queries["ebay"])

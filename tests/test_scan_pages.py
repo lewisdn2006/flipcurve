@@ -198,3 +198,53 @@ def test_ebay_api_failure_falls_back_to_helper_pages(client, monkeypatch):
     out = client.post("/api/v1/scan-pages", json={"item": ITEM, "pages": pages}).json()
     assert any("eBay API" in w for w in out["warnings"])
     assert any(x["platform"] == "ebay" for x in out["comparable_listings"])
+
+
+SESSION_REFRESH_HTML = '<!DOCTYPE html><html lang="en"><head><title>Session refresh</title></head><body></body></html>'
+
+
+def session_refresh(kind, url, when):
+    p = page("vinted", kind, SESSION_REFRESH_HTML, when, url=url)
+    p["final_url"] = "https://www.vinted.co.uk/session-refresh?ref_url=" + url.split(".co.uk")[1].replace("/", "%2F")
+    return p
+
+
+def test_vinted_session_refresh_pages_are_left_out_with_a_warning(client):
+    """26 Oct: an expired Vinted session sent every page to /session-refresh. Older helpers pass the
+    placeholder on; it must not count as a listing, a sale or a re-check."""
+    pages, ids = first_scan(T0)
+    assert client.post("/api/v1/scan-pages", json={"item": ITEM, "pages": pages}).status_code == 200
+    later = T0 + timedelta(hours=8)
+    ebay_only = [p for p in first_scan(later)[0] if p["platform"] == "ebay"]
+    placeholders = [session_refresh("catalog", "https://www.vinted.co.uk/catalog?search_text=air+force+1+white", later),
+                    session_refresh("recheck", f"https://www.vinted.co.uk/items/{ids[2]}", later)]
+    r = client.post("/api/v1/scan-pages", json={"item": ITEM, "pages": ebay_only + placeholders})
+    assert r.status_code == 200, r.text
+    warnings = r.json()["warnings"]
+    assert any('2 Vinted pages came back as Vinted\'s "session refresh" page' in w for w in warnings), warnings
+    assert any("saved Vinted data" in w for w in warnings)   # the first scan's Vinted rows stand in
+    from backend.scrapers.page_ingest import _load_vinted_cache
+    rec = _load_vinted_cache("air force 1 white")["seen"][str(ids[2])]
+    assert "last_checked" not in rec and not rec.get("resolved")   # still due, not "checked"
+
+
+def test_new_helper_stop_reason_has_its_own_warning(client):
+    pages = [p for p in first_scan(T0)[0] if p["platform"] == "ebay"]
+    r = client.post("/api/v1/scan-pages", json={"item": ITEM, "pages": pages,
+                                                 "stopped": {"vinted": {"reason": "session_expired"}}})
+    assert r.status_code == 200
+    assert any("Open vinted.co.uk in this browser" in w for w in r.json()["warnings"])
+    assert not any("came back as" in w for w in r.json()["warnings"])
+
+
+def test_background_rechecks_skip_session_refresh_pages(client):
+    from backend.scrapers import page_ingest as ing
+    pages, ids = first_scan(T0)
+    assert client.post("/api/v1/scan-pages", json={"item": ITEM, "pages": pages}).status_code == 200
+    later = T0 + timedelta(hours=4)
+    due = ing.due_rechecks(now=later)
+    res = [{"query": "air force 1 white",
+            "page": session_refresh("recheck", f"https://www.vinted.co.uk/items/{d['id']}", later)} for d in due[:2]]
+    r = client.post("/api/v1/recheck-results", json={"results": res})
+    assert r.status_code == 200 and r.json()["session_refresh"] == 2 and r.json()["unknown"] == 0, r.text
+    assert {d["id"] for d in due[:2]} <= {d["id"] for d in ing.due_rechecks(now=later)}   # still due

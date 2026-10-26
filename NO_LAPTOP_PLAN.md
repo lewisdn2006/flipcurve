@@ -130,6 +130,8 @@ Write a one-off `scripts/export_to_d1.py` that produces SQL inserts, and load th
 - Use `linkedom` (a pure-JS DOM that runs in Workers) in place of BeautifulSoup, so
   selectors carry over almost line for line.
 - Accept gzip request bodies (`DecompressionStream`), as `/scan-pages` does now.
+- Leave out Vinted's session-refresh placeholder pages, as `vinted_parse.is_session_refresh` does,
+  in both `/scan-pages` and `/recheck-results`.
 - Test: parser output equals `tests/golden/` for every fixture.
 
 ### 5. The model and the pipeline (L)
