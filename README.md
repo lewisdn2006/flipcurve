@@ -30,6 +30,23 @@ The API currently serves **mock data** (`backend/mock/`, contract v1.1) so the f
    (`web/worker/worker.js`, "flipcurve-page") serves `web/flipcurve/index.html` from GitHub, so a
    push to main updates it within a minute. The rest of lewisdn.com is untouched.
 
+## Without the laptop: the Cloudflare Worker
+
+`web/api-worker` is the same API in JavaScript on Cloudflare (`NO_LAPTOP_PLAN.md`): identify,
+scans, saved data and the extension's re-checks, with data in the D1 database `flipcurve-db`.
+It runs at https://flipcurve-api.lewisdn2006.workers.dev until `api.lewisdn.com` is pointed at it
+(plan, step 7); try it with https://lewisdn.com/flipcurve/?api=https://flipcurve-api.lewisdn2006.workers.dev
+
+```bash
+cd web/api-worker
+npm install
+npm test              # Workers runtime tests, then checks against the Python's results (tests/golden)
+npx wrangler deploy
+```
+
+The Python server stays as the reference: after changing the maths or the page readers there,
+rerun `scripts/make_golden.py`, port the change, and `npm test` says whether the two still agree.
+
 ## Read first
 
 1. `DECISIONS.md` — the Phase 0 calls the contract is built on.

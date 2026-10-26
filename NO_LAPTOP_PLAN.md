@@ -21,6 +21,14 @@ Written 26 Oct 2026 from the code as it stood at commit `7c619cb`.
   `PHOTO_AI_FIRST=gemma` asks). Model cooldowns live in D1. The page now shrinks photos to
   1280 px and waits up to 200 s on the one-shot route with a seconds counter; that change only
   goes live when this repo is pushed.
+- **Steps 4-6 done (26 Oct 2026).** Page reading (`src/scrapers/`), the model and pipeline
+  (`src/engine/`), and every scan route (`/scan-pages`, `/market-scan`, `/recheck-ids`,
+  `/recheck-due`, `/recheck-results`) run on the Worker, with all data in D1 (`src/store.js`).
+  Checked against the Python: the six saved items and five real scans give the same fit and
+  response (`test/node`), a recorded Vinted history scenario replays identically in Node and
+  through D1, and "Use saved data" on the live Worker matches the Python server field for field
+  on four real items. A full scan takes about 0.9 s of CPU. 112 tests: `npm test` in
+  `web/api-worker`.
 - **The D1 copy is a snapshot.** Scans made through the laptop after 26 Oct only go to the
   local files. Rerun `scripts/export_to_d1.py` and load it again just before the cutover.
 
@@ -163,9 +171,15 @@ Write a one-off `scripts/export_to_d1.py` that produces SQL inserts, and load th
 
 ### 7. Cutover (S)
 
-1. Full scan from the live page with `?api=https://flipcurve-api.<account>.workers.dev`.
-2. In Cloudflare, remove the tunnel's `api.lewisdn.com` record. Add `api.lewisdn.com` as the
-   Worker's custom domain in `wrangler.jsonc` and deploy.
+1. Full scan from the live page with `?api=https://flipcurve-api.lewisdn2006.workers.dev` (in the
+   Chrome with the helper, so a live scan runs through the Worker).
+2. Rerun `scripts/export_to_d1.py` and load it (the D1 copy is a snapshot), unless every scan since
+   went through the Worker.
+3. Point `api.lewisdn.com` at the Worker with a route, which needs no DNS change and undoes with
+   one deploy: in `web/api-worker/wrangler.jsonc` add
+   `"routes": [{ "pattern": "api.lewisdn.com/*", "zone_name": "lewisdn.com" }]` and run
+   `npx wrangler deploy`. Requests then reach the Worker instead of the tunnel's DNS record (which
+   can stay, or be deleted later in the dashboard). To go back: remove the route and deploy.
 3. Turn the laptop off, then scan from another computer's Chrome with the extension, and
    identify a photo from your phone.
 4. Update `README.md` ("Run the whole thing"), and retire `scripts/tunnel.sh`.

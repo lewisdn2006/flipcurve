@@ -43,6 +43,13 @@ export class MemoryStore {
     this.caches.set(`${slug}|${platform}`, copy);
   }
 
+  async markRelevant(slug, ids) {
+    const c = this.caches.get(`${slug}|vinted`);
+    if (!c?.seen) return;
+    const want = new Set(ids);
+    for (const [iid, rec] of c.seen) if (want.has(iid)) rec.relevant = true;
+  }
+
   async vintedHistories() {
     return [...this.caches].filter(([k]) => k.endsWith('|vinted')).sort(([a], [b]) => (a < b ? -1 : 1))
       .map(([, c]) => ({ query: c.query, seen: new Map(c.seen || []) }));
@@ -120,6 +127,16 @@ export class D1Store {
           rec.relevant ? 1 : 0, JSON.stringify(rec), n])));
     }
     await this.db.batch(stmts);  // all or nothing
+  }
+
+  async markRelevant(slug, ids) {
+    const stmts = [];
+    for (let i = 0; i < ids.length; i += 98) {
+      const chunk = ids.slice(i, i + 98);
+      stmts.push(this.db.prepare(`UPDATE vinted_seen SET relevant = 1, rec_json = json_set(rec_json, '$.relevant', json('true'))
+        WHERE slug = ? AND item_id IN (${chunk.map(() => '?').join(', ')})`).bind(slug, ...chunk));
+    }
+    if (stmts.length) await this.db.batch(stmts);
   }
 
   async vintedHistories() {

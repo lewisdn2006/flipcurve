@@ -198,11 +198,7 @@ export async function vintedRows(pages, query, { store }) {
 
 /** After a scan: remember which Vinted listings matched the item, so background re-checks follow those. */
 export async function markRelevant(store, query, ids) {
-  if (!ids.length) return;
-  const data = await store.loadCache(slug(query), 'vinted');
-  if (!data) return;
-  for (const iid of ids) if (data.seen?.has(iid)) data.seen.get(iid).relevant = true;
-  await store.saveCache(slug(query), 'vinted', data);
+  if (ids.length) await store.markRelevant(slug(query), ids.map(String));
 }
 
 /** results: [{query, page}] from the extension's background run. Updates each search's history and its

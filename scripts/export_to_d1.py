@@ -4,7 +4,7 @@
     cd web/api-worker && npx wrangler d1 execute flipcurve-db --remote --file=seed/data.sql
 
 The SQL empties each table first, so running it again replaces the copy instead of adding to
-it. Tables are in web/api-worker/migrations/0001_init.sql. seed/ is gitignored: it's a copy
+it. Tables are in web/api-worker/migrations/. seed/ is gitignored: it's a copy
 of backend/db/ and cache_seed/, which aren't in git either.
 
 Left out: the old "cards" list in one Vinted cache file (nothing reads it back) and
@@ -75,7 +75,8 @@ def main() -> None:
         data["scan_cache"].append((s, platform, d["query"], d["fetched_at"], json.dumps(extra)))
         data["scan_cache_rows"] += [(s, platform, n, json.dumps(r)) for n, r in enumerate(d.get("rows", []))]
         data["vinted_seen"] += [(s, iid, rec["first_seen"], rec.get("last_checked"), rec.get("resolved"),
-                                 bool(rec.get("relevant")), json.dumps(rec)) for iid, rec in d.get("seen", {}).items()]
+                                 bool(rec.get("relevant")), json.dumps(rec), n)
+                                for n, (iid, rec) in enumerate(d.get("seen", {}).items())]
 
     cool = DB / "model_cooldowns.json"
     if cool.exists():
@@ -87,7 +88,7 @@ def main() -> None:
         "vinted_calibration": ["item_id", "lo_ts", "hi_ts"],
         "scan_cache": ["slug", "platform", "query", "fetched_at", "extra_json"],
         "scan_cache_rows": ["slug", "platform", "n", "row_json"],
-        "vinted_seen": ["slug", "item_id", "first_seen", "last_checked", "resolved", "relevant", "rec_json"],
+        "vinted_seen": ["slug", "item_id", "first_seen", "last_checked", "resolved", "relevant", "rec_json", "n"],
         "model_cooldowns": ["model", "until", "why", "since"],
     }
     lines = [f"DELETE FROM {t};" for t in TABLES]

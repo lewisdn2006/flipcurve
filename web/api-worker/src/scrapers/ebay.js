@@ -209,7 +209,7 @@ export class BrowseAPI {
   constructor(env, fetchFn = fetch) {
     this.id = env.EBAY_CLIENT_ID;
     this.secret = env.EBAY_CLIENT_SECRET;
-    this.fetch = fetchFn;
+    this.fetch = (url, init) => fetchFn(url, init);  // fetch must be called unbound in Workers ("Illegal invocation")
   }
 
   async token() {

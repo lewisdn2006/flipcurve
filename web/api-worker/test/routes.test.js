@@ -34,8 +34,8 @@ describe('CORS', () => {
 });
 
 describe('everything else', () => {
-  it('404s routes that are not ported yet, in FastAPI wording', async () => {
-    const res = await call('/api/v1/scan-pages', { method: 'POST', body: '{}' });
+  it('404s unknown routes, in FastAPI wording', async () => {
+    const res = await call('/api/v1/nothing-here', { method: 'POST', body: '{}' });
     expect(res.status).toBe(404);
     expect(await res.json()).toEqual({ detail: 'Not Found' });
   });
