@@ -9,5 +9,5 @@ export default defineConfig(async () => ({
       miniflare: { bindings: { TEST_MIGRATIONS: await readD1Migrations('./migrations') } },
     }),
   ],
-  test: { setupFiles: ['./test/apply-migrations.js'] },
+  test: { setupFiles: ['./test/apply-migrations.js'], exclude: ['test/node/**', 'node_modules/**'] },
 }));

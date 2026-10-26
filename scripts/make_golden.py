@@ -143,7 +143,7 @@ def one_capture(path: Path) -> None:
               default=datetime.now(timezone.utc))
     fits = recording_fits()
     out = run(item, rows, now=now, data_source="live") if rows else None
-    write(OUT / "pages" / path.name, {"capture": path.name, "now": now.isoformat(), "rows": rows,
+    write(OUT / "pages" / path.name, {"capture": path.name, "item": item, "now": now.isoformat(), "rows": rows,
                                       "stats": stats, "fits": fits, "response": out})
 
 

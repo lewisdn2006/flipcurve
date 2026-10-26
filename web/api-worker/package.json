@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
-    "test": "vitest run",
+    "test": "vitest run && vitest run -c vitest.node.config.js",
     "deploy": "wrangler deploy"
   },
   "devDependencies": {
