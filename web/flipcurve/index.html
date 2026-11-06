@@ -7,7 +7,7 @@
 <meta name="description" content="Price something you want to sell: what similar items sold for on eBay and Vinted, and how long they took.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
   color-scheme: dark;
@@ -16,11 +16,11 @@
   --ink: #eeece6; --ink-soft: #cfcdc6; --ink-2: #a8a69e; --ink-3: #77756f; --ph: #5f5d58;
   --ebay: #4f8fe8; --vinted: #ec7a45; --sold: #4fb7a8; --link: #9cc0f3;
   --ok: #5cc98a; --warn: #f0cf86; --low: #f2a57f; --bad: #f08a83;
-  --mono: "Geist Mono", ui-monospace, monospace;
+  --mono: "Schibsted Grotesk", system-ui, sans-serif;
 }
 * { box-sizing: border-box; }
 html { color-scheme: dark; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 Geist, system-ui, -apple-system, "Segoe UI", sans-serif;
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 'Schibsted Grotesk', system-ui, -apple-system, "Segoe UI", sans-serif;
        -webkit-font-smoothing: antialiased; }
 a { color: var(--link); text-decoration: none; }
 a:hover { color: var(--ink); text-decoration: underline; }
@@ -30,53 +30,52 @@ button { cursor: pointer; }
 button:disabled { opacity: .45; cursor: default; }
 .hidden { display: none !important; }
 .mono { font-family: var(--mono); }
-.eyebrow { font: 500 10.5px/1.3 var(--mono); letter-spacing: .1em; color: var(--ink-3); text-transform: uppercase; }
+.eyebrow { font: 500 13px/1.3 var(--mono); color: var(--ink-3);  }
 .muted { color: var(--ink-2); }
 
 /* top bar */
-.top { position: sticky; top: 0; z-index: 30; background: rgba(13,14,16,0.84); backdrop-filter: blur(14px);
-       -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid rgba(255,255,255,0.06); }
+.top { position: sticky; top: 0; z-index: 30; background: var(--bg); border-bottom: 1px solid rgba(255,255,255,0.06); }
 .top-in { max-width: 1320px; margin: 0 auto; padding: 12px 32px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .brand { display: flex; align-items: center; gap: 10px; }
-.brand-mark { width: 24px; height: 24px; border-radius: 7px; background: var(--ink); display: grid; place-items: center; }
+.brand-mark { width: 24px; height: 24px; border-radius: 8px; background: var(--ink); display: grid; place-items: center; }
 .brand-mark i { width: 8px; height: 8px; border-radius: 50%; background: var(--bg); }
-.brand b { font-weight: 600; font-size: 16px; letter-spacing: -0.02em; }
+.brand b { font-weight: 600; font-size: 16px; letter-spacing: -0.01em; }
 .top-r { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.pill { display: flex; align-items: center; gap: 8px; padding: 6px 11px; border: 1px solid rgba(255,255,255,0.08); border-radius: 99px;
-        font-size: 12px; color: var(--ink-2); }
+.pill { display: flex; align-items: center; gap: 8px; padding: 6px 11px; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+        font-size: 13px; color: var(--ink-2); }
 .dot { flex: 0 0 7px; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); }
 .dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }
-.data-pill { white-space: nowrap; padding: 6px 11px; border-radius: 99px; font: 500 11px/1.3 var(--mono); letter-spacing: .04em;
+.data-pill { white-space: nowrap; padding: 6px 11px; border-radius: 8px; font: 500 13px/1.3 var(--mono); 
              color: var(--warn); background: rgba(240,207,134,0.1); }
-.btn-pill { padding: 6px 12px; border-radius: 99px; border: 1px solid var(--line-2); background: transparent; font-size: 12px; color: var(--ink-soft); }
+.btn-pill { padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line-2); background: transparent; font-size: 13px; color: var(--ink-soft); }
 .btn-pill:hover { background: var(--chip); }
 .server-row { max-width: 1320px; margin: 0 auto; padding: 0 32px 12px; display: flex; gap: 8px; justify-content: flex-end; }
-.server-row input { width: 320px; max-width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
-                    background: var(--panel); font: 12px var(--mono); outline: none; }
+.server-row input { width: 320px; max-width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+                    background: var(--panel); font: 13px var(--mono); outline: none; }
 
 /* layout */
 .wrap { max-width: 1320px; margin: 0 auto; padding: 40px 32px 96px; display: flex; flex-direction: column; gap: 28px; }
 .intro { display: flex; flex-direction: column; gap: 8px; max-width: 760px; }
-h1 { margin: 0; font-size: 40px; line-height: 1.05; font-weight: 600; letter-spacing: -0.035em; text-wrap: balance; }
+h1 { margin: 0; font-size: 40px; line-height: 1.05; font-weight: 600; letter-spacing: -0.01em; text-wrap: balance; }
 .lede { margin: 0; font-size: 16px; color: var(--ink-2); text-wrap: pretty; }
 .sec { display: flex; flex-direction: column; gap: 14px; margin-top: 20px; }
 .sec-h { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
 .sec-h > div:first-child { display: flex; flex-direction: column; gap: 6px; }
-.sec-h h2 { margin: 0; font-size: 30px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.15; }
+.sec-h h2 { margin: 0; font-size: 30px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.15; }
 .sec-h .right { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
 
 /* segmented controls */
 .seg { display: flex; padding: 4px; gap: 2px; background: var(--bg); border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); }
 .seg.on-panel { background: var(--panel); border-color: rgba(255,255,255,0.08); }
-.seg.sm { padding: 3px; border-radius: 10px; }
-.seg button { padding: 8px 14px; border-radius: 9px; border: none; background: transparent; color: var(--ink-2); font-size: 13px; font-weight: 500; }
-.seg.sm button { padding: 6px 11px; border-radius: 8px; font-size: 12px; }
+.seg.sm { padding: 3px; border-radius: 8px; }
+.seg button { padding: 8px 14px; border-radius: 8px; border: none; background: transparent; color: var(--ink-2); font-size: 13px; font-weight: 500; }
+.seg.sm button { padding: 6px 11px; border-radius: 8px; font-size: 13px; }
 .seg button:hover { color: var(--ink); }
 .seg button.on { background: var(--ink); color: var(--bg); }
 
 /* search panel */
-.search { background: var(--panel); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+.search { background: var(--panel); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
 .search-row { display: flex; gap: 8px; align-items: stretch; flex-wrap: wrap; }
 .field { padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: var(--bg); font-size: 15px; outline: none; min-width: 0; }
 .field:focus { border-color: var(--line-3); }
@@ -88,21 +87,21 @@ select.field { padding: 12px; font-size: 14px; }
 .drop { flex: 1 1 200px; display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; border: 1px dashed var(--line-3);
         background: var(--bg); font-size: 13px; color: var(--ink-2); cursor: pointer; min-height: 48px; }
 .drop:hover, .drop.over { border-color: rgba(255,255,255,0.35); color: var(--ink-soft); }
-.count { font: 500 11px var(--mono); padding: 3px 7px; border-radius: 6px; background: var(--chip); color: var(--ink-soft); white-space: nowrap; }
+.count { font: 500 13px var(--mono); padding: 3px 7px; border-radius: 6px; background: var(--chip); color: var(--ink-soft); white-space: nowrap; }
 .photo-row .field { flex: 1 1 200px; font-size: 14px; }
 .thumbs { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.thumb { position: relative; width: 64px; height: 64px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line-2); }
+.thumb { position: relative; width: 64px; height: 64px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line-2); }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .thumb button { position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; padding: 0; border-radius: 50%; border: none;
                 background: rgba(0,0,0,.7); color: #fff; font-size: 13px; line-height: 20px; }
 #qTier { flex: 0 0 190px; }
 .btn-primary { padding: 12px 22px; border-radius: 12px; border: none; background: var(--ink); color: var(--bg); font-size: 14px; font-weight: 600; }
 .btn-primary:hover:not(:disabled) { background: #fff; }
-.btn-blue { padding: 8px 16px; border-radius: 10px; border: none; background: var(--ebay); color: #fff; font-size: 13px; font-weight: 600; }
+.btn-blue { padding: 8px 16px; border-radius: 8px; border: none; background: var(--ebay); color: #fff; font-size: 13px; font-weight: 600; }
 .btn-blue:hover:not(:disabled) { background: #6aa2ee; }
-.btn-ghost { padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14); background: transparent; font-size: 13px; font-weight: 500; }
+.btn-ghost { padding: 8px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.14); background: transparent; font-size: 13px; font-weight: 500; }
 .btn-ghost:hover:not(:disabled) { background: var(--chip); }
-.btn-mini { padding: 4px 10px; border-radius: 8px; border: 1px solid var(--line-2); background: transparent; font-size: 12px; color: var(--ink-soft); }
+.btn-mini { padding: 4px 10px; border-radius: 8px; border: 1px solid var(--line-2); background: transparent; font-size: 13px; color: var(--ink-soft); }
 .btn-mini:hover { background: var(--chip); }
 .msgline { padding: 2px 10px 4px; font-size: 13px; color: var(--ink-2); }
 .msgline:empty { display: none; }
@@ -111,21 +110,21 @@ select.field { padding: 12px; font-size: 14px; }
 
 .ident { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 10px 6px; border-top: 1px solid rgba(255,255,255,0.06); }
 .ident-title { font-size: 14px; font-weight: 600; }
-.chip { font-size: 12px; padding: 3px 9px; border-radius: 99px; background: var(--chip); color: var(--ink-soft); }
-.q-ebay { font: 12px var(--mono); color: var(--link); }
-.q-vinted { font: 12px var(--mono); color: var(--low); }
+.chip { font-size: 13px; padding: 3px 9px; border-radius: 8px; background: var(--chip); color: var(--ink-soft); }
+.q-ebay { font: 13px var(--mono); color: var(--link); }
+.q-vinted { font: 13px var(--mono); color: var(--low); }
 .ident-r { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-#scanStatus { font: 11px var(--mono); color: var(--ink-2); }
+#scanStatus { font: 13px var(--mono); color: var(--ink-2); }
 #scanStatus.done { color: var(--ok); }
 .progress { height: 3px; margin: 0 10px 6px; border-radius: 2px; background: var(--chip); overflow: hidden; }
 .progress > div { height: 100%; width: 0; background: var(--ebay); transition: width .3s; }
 .refine { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; padding: 6px 10px 12px; }
-.refine label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--ink-2); }
-.refine .field { padding: 10px 12px; border-radius: 10px; font-size: 14px; color: var(--ink); }
+.refine label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--ink-2); }
+.refine .field { padding: 10px 12px; border-radius: 8px; font-size: 14px; color: var(--ink); }
 
 .note { display: flex; gap: 10px; align-items: baseline; padding: 10px 14px; border-radius: 12px; background: rgba(240,207,134,0.08);
         border: 1px solid rgba(240,207,134,0.18); color: var(--warn); font-size: 13px; }
-.note b { font: 600 10.5px var(--mono); letter-spacing: .08em; flex: 0 0 auto; }
+.note b { font: 600 13px var(--mono); flex: 0 0 auto; }
 #warnings { display: flex; flex-direction: column; gap: 8px; }
 #warnings:empty { display: none; }
 
@@ -135,29 +134,29 @@ select.field { padding: 12px; font-size: 14px; }
 .item-photo { aspect-ratio: 4/3; border-radius: 12px; overflow: hidden; background: repeating-linear-gradient(135deg,rgba(255,255,255,0.035) 0 10px,transparent 10px 20px),#101114; }
 .item-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .item-body { padding: 0 6px 6px; display: flex; flex-direction: column; gap: 12px; }
-.item-name { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin-top: 6px; line-height: 1.25; }
+.item-name { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; margin-top: 6px; line-height: 1.25; }
 .kv2 { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; font-size: 13px; }
 .kv2 > span:nth-child(odd) { color: var(--ink-2); }
 .meter { height: 6px; border-radius: 3px; background: var(--chip); overflow: hidden; }
 .meter > div { height: 100%; background: var(--ink); border-radius: 3px; }
 .tags { display: flex; gap: 6px; flex-wrap: wrap; }
-.tag { font-size: 12px; padding: 4px 10px; border-radius: 99px; border: 1px solid rgba(255,255,255,0.1); color: var(--ink-soft); }
+.tag { font-size: 13px; padding: 4px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); color: var(--ink-soft); }
 .rec-card { flex: 999 1 520px; min-width: 0; padding: 30px 32px; display: flex; flex-direction: column; gap: 26px; }
-.rec-card h2 { margin: 0; font-size: clamp(34px, 5.2vw, 54px); line-height: 1.02; font-weight: 600; letter-spacing: -0.045em; text-wrap: balance; }
+.rec-card h2 { margin: 0; font-size: clamp(34px, 5.2vw, 54px); line-height: 1.02; font-weight: 600; letter-spacing: -0.01em; text-wrap: balance; }
 .rec-card p { margin: 0; font-size: 15px; color: var(--ink-2); max-width: 640px; text-wrap: pretty; }
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--line); border-radius: 14px;
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--line); border-radius: 12px;
          overflow: hidden; border: 1px solid var(--line); }
 .stats > div { background: var(--panel); padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
-.stats .k { font-size: 12px; color: var(--ink-2); }
-.stats .v { font-size: 26px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.1; }
-.stats .s { font: 11px var(--mono); color: var(--ink-3); }
+.stats .k { font-size: 13px; color: var(--ink-2); }
+.stats .v { font-size: 26px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.1; }
+.stats .s { font: 13px var(--mono); color: var(--ink-3); }
 .markers { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
-.markers > div { padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 4px; }
+.markers > div { padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 4px; }
 .markers > div.best { background: rgba(238,236,230,0.05); border-color: rgba(238,236,230,0.28); }
-.markers .k { font-size: 12px; color: var(--ink-2); }
-.markers .v { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
-.markers .d { font-size: 12px; color: var(--ink-soft); }
-.marker-note { font-size: 12.5px; color: var(--warn); }
+.markers .k { font-size: 13px; color: var(--ink-2); }
+.markers .v { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+.markers .d { font-size: 13px; color: var(--ink-soft); }
+.marker-note { font-size: 13px; color: var(--warn); }
 .marker-note:empty { display: none; }
 
 /* 3D */
@@ -170,28 +169,28 @@ select.field { padding: 12px; font-size: 14px; }
 .modes button.on { background: var(--chip); border-color: rgba(255,255,255,0.16); }
 .modes b { font-size: 14px; font-weight: 600; color: var(--ink-soft); }
 .modes button.on b { color: var(--ink); }
-.modes span { font-size: 12px; color: var(--ink-2); line-height: 1.4; }
+.modes span { font-size: 13px; color: var(--ink-2); line-height: 1.4; }
 .howto { display: flex; flex-direction: column; gap: 9px; padding: 4px 4px 0; }
-.howto div { display: flex; gap: 10px; font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); }
+.howto div { display: flex; gap: 10px; font-size: 13px; line-height: 1.45; color: var(--ink-soft); }
 .howto i { flex: 0 0 10px; height: 10px; margin-top: 4px; border-radius: 3px; border: 1px solid transparent; }
 .readout { margin-top: auto; padding: 14px; border-radius: 12px; background: var(--bg); border: 1px solid rgba(255,255,255,0.06);
            display: flex; flex-direction: column; gap: 6px; min-height: 118px; }
 #readout { font-size: 13px; line-height: 1.45; }
-.stage { flex: 999 1 560px; min-width: 0; position: relative; height: 660px; background: radial-gradient(ellipse at 50% 45%,#17191d 0%,#111215 70%); }
+.stage { flex: 999 1 560px; min-width: 0; position: relative; height: 660px; background: var(--panel-2); }
 .stage-abs { position: absolute; inset: 0; }
 #labels3d { pointer-events: none; overflow: hidden; }
 .stage-tools { position: absolute; top: 14px; right: 14px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-.stage-tools .seg { background: rgba(13,14,16,0.8); backdrop-filter: blur(8px); border-color: rgba(255,255,255,0.08); }
-#rotateBtn { padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); background: rgba(13,14,16,0.8);
-             backdrop-filter: blur(8px); font-size: 12px; font-weight: 500; color: var(--ink); }
+.stage-tools .seg { background: rgba(13,14,16,0.8); border-color: rgba(255,255,255,0.08); }
+#rotateBtn { padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(13,14,16,0.8);
+             font-size: 13px; font-weight: 500; color: var(--ink); }
 #rotateBtn.off { color: var(--ink-3); }
-.stage-hint { position: absolute; left: 16px; bottom: 14px; font: 11px var(--mono); color: var(--ink-3); pointer-events: none; }
-#legend3d { position: absolute; right: 16px; bottom: 14px; display: flex; align-items: center; gap: 14px; font: 11px var(--mono);
+.stage-hint { position: absolute; left: 16px; bottom: 14px; font: 13px var(--mono); color: var(--ink-3); pointer-events: none; }
+#legend3d { position: absolute; right: 16px; bottom: 14px; display: flex; align-items: center; gap: 14px; font: 13px var(--mono);
             color: var(--ink-2); pointer-events: none; flex-wrap: wrap; justify-content: flex-end; }
 #legend3d span { display: flex; align-items: center; gap: 6px; }
 #legend3d i { display: inline-block; }
 .ramp { width: 140px; height: 8px; border-radius: 4px; background: linear-gradient(90deg,#1b1e3d,#27467f,#2f7fa6,#4fb7a8,#a6e0a0,#f2f5c8); }
-#loading3d { display: grid; place-items: center; font: 12px var(--mono); color: var(--ink-3); text-align: center; padding: 20px; }
+#loading3d { display: grid; place-items: center; font: 13px var(--mono); color: var(--ink-3); text-align: center; padding: 20px; }
 
 /* platforms */
 .plats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; }
@@ -200,51 +199,51 @@ select.field { padding: 12px; font-size: 14px; }
 .plat-h { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .plat-h .sw { width: 12px; height: 12px; border-radius: 4px; }
 .plat-h b { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
-.best-tag { font: 600 10.5px var(--mono); letter-spacing: .08em; padding: 4px 8px; border-radius: 6px; background: var(--ink); color: var(--bg); }
-.conf { margin-left: auto; white-space: nowrap; flex-shrink: 0; font-size: 12px; padding: 4px 10px; border-radius: 99px; border: 1px solid var(--line-2); }
+.best-tag { font: 600 13px var(--mono); padding: 4px 8px; border-radius: 6px; background: var(--ink); color: var(--bg); }
+.conf { margin-left: auto; white-space: nowrap; flex-shrink: 0; font-size: 13px; padding: 4px 10px; border-radius: 8px; border: 1px solid var(--line-2); }
 .net { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.net b { font-size: 44px; font-weight: 600; letter-spacing: -0.04em; line-height: 1; }
+.net b { font-size: 44px; font-weight: 600; letter-spacing: -0.01em; line-height: 1; }
 .net span { font-size: 14px; color: var(--ink-2); }
 .p7 { display: flex; flex-direction: column; gap: 6px; }
-.p7-h { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-2); }
+.p7-h { display: flex; justify-content: space-between; font-size: 13px; color: var(--ink-2); }
 .p7-h span:last-child { font-family: var(--mono); color: var(--ink); }
 .p7-bar { height: 8px; border-radius: 4px; background: var(--chip); overflow: hidden; }
 .p7-bar > div { height: 100%; border-radius: 4px; }
 .rows { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; font-size: 13.5px; }
 .rows > span:nth-child(odd) { color: var(--ink-2); }
 .rows > span:nth-child(even) { font-family: var(--mono); font-size: 13px; text-align: right; }
-.daypick { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); }
-.daypick input { width: 76px; padding: 6px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: var(--panel);
-                 font: 12px var(--mono); color: var(--ink); outline: none; }
+.daypick { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); }
+.daypick input { width: 76px; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--panel);
+                 font: 13px var(--mono); color: var(--ink); outline: none; }
 .daypick input:focus { border-color: var(--line-3); }
-.plat-note { font-size: 12.5px; color: var(--warn); padding: 9px 12px; border-radius: 10px; background: rgba(240,207,134,0.07); }
+.plat-note { font-size: 13px; color: var(--warn); padding: 9px 12px; border-radius: 8px; background: rgba(240,207,134,0.07); }
 
 /* charts */
 .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 540px), 1fr)); gap: 16px; }
 .chart-card { padding: 22px 24px 18px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .chart-h { display: flex; gap: 12px; align-items: flex-start; }
-.chart-h .num { font: 500 11px var(--mono); color: var(--ink-3); padding-top: 3px; }
+.chart-h .num { font: 500 13px var(--mono); color: var(--ink-3); padding-top: 3px; }
 .chart-h > div { display: flex; flex-direction: column; gap: 4px; }
 .chart-h b { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
 .chart-h span { font-size: 13px; color: var(--ink-2); text-wrap: pretty; }
 .chart-body { min-height: 120px; }
-.chart-empty { min-height: 120px; display: grid; place-items: center; font: 12px var(--mono); color: var(--ink-3); text-align: center; }
+.chart-empty { min-height: 120px; display: grid; place-items: center; font: 13px var(--mono); color: var(--ink-3); text-align: center; }
 .chart-take { margin-top: auto; font-size: 13px; color: var(--ink-soft); border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px; text-wrap: pretty; }
 .chart-take:empty { display: none; }
 .params { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: rgba(255,255,255,0.06); border-radius: 12px; overflow: hidden; }
 .params > div { background: var(--panel); padding: 12px 14px; display: flex; flex-direction: column; gap: 3px; }
-.params .k { font-size: 11.5px; color: var(--ink-2); }
-.params .v { font: 500 17px var(--mono); letter-spacing: -0.02em; }
-.params .d { font-size: 11.5px; color: var(--ink-3); text-wrap: pretty; }
+.params .k { font-size: 13px; color: var(--ink-2); }
+.params .v { font: 500 17px var(--mono); letter-spacing: -0.01em; }
+.params .d { font-size: 13px; color: var(--ink-3); text-wrap: pretty; }
 
 /* plan */
 .plan { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
 .plan > b { font-size: 16px; font-weight: 600; }
 .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
-.steps > div { display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 14px; background: var(--bg); border: 1px solid rgba(255,255,255,0.06); }
+.steps > div { display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 12px; background: var(--bg); border: 1px solid rgba(255,255,255,0.06); }
 .steps .h { display: flex; justify-content: space-between; align-items: center; }
-.steps .day { font: 600 11px var(--mono); letter-spacing: .08em; color: var(--ink-2); }
-.steps .pr { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+.steps .day { font: 600 13px var(--mono); color: var(--ink-2); }
+.steps .pr { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
 .steps .a { font-size: 13px; color: var(--ink-soft); text-wrap: pretty; }
 
 /* evidence */
@@ -255,7 +254,7 @@ select.field { padding: 12px; font-size: 14px; }
 .ev-row { display: grid; grid-template-columns: 96px minmax(0,1fr) 100px 90px 120px 110px 60px; gap: 12px; padding: 10px 20px; font-size: 13px;
           border-bottom: 1px solid rgba(255,255,255,0.04); align-items: center; }
 .ev-row:hover { background: rgba(255,255,255,0.025); }
-.ev-head { font: 500 10.5px var(--mono); letter-spacing: .08em; color: var(--ink-3); border-bottom: 1px solid var(--line); position: sticky; top: 0;
+.ev-head { font: 500 13px var(--mono); color: var(--ink-3); border-bottom: 1px solid var(--line); position: sticky; top: 0;
            background: var(--panel); padding: 12px 20px; z-index: 1; }
 .ev-head:hover { background: var(--panel); }
 .ev-row .r { text-align: right; }
@@ -264,18 +263,18 @@ select.field { padding: 12px; font-size: 14px; }
 .ev-row .t { min-width: 0; display: flex; align-items: center; gap: 8px; }
 .ev-row .t a, .ev-row .t > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
 .ev-row.rel .t a { color: var(--ink-2); }
-.sim { flex: 0 0 auto; font: 500 10px var(--mono); padding: 2px 6px; border-radius: 5px; background: var(--chip); color: var(--ink-2); }
+.sim { flex: 0 0 auto; font: 500 13px var(--mono); padding: 2px 6px; border-radius: 5px; background: var(--chip); color: var(--ink-2); }
 .ev-row .st { display: flex; align-items: center; gap: 6px; }
 .ev-row .st i { width: 6px; height: 6px; border-radius: 50%; border: 1px solid; }
 
 .foot { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.06);
-        font-size: 12px; color: var(--ink-3); }
+        font-size: 13px; color: var(--ink-3); }
 
 @media (max-width: 720px) {
   .top { position: static; }
   .top-in { padding: 10px 16px; gap: 10px; }
   .top-r { margin-left: 0; gap: 6px; }
-  .pill { font-size: 11px; padding: 5px 9px; }
+  .pill { font-size: 13px; padding: 5px 9px; }
   .ident-r { margin-left: 0; width: 100%; }
   .ident-r button { flex: 1 1 auto; }
   #scanStatus { flex-basis: 100%; }
@@ -294,22 +293,53 @@ select.field { padding: 12px; font-size: 14px; }
   #qTier { flex: 1 1 160px; }
   .btn-primary { flex: 1 1 auto; }
 }
+.top .homelink { color: var(--ink-2); font-size: 14px; }
+.top .homelink:hover { color: var(--ink); text-decoration: none; }
+.top-r { gap: 16px; }
+/* Fewer boxes: surfaces and spacing do the grouping. */
+.card { border: none; }
+.stats { background: none; border: none; gap: 24px; border-radius: 0; overflow: visible; }
+.stats > div { background: none; padding: 0; }
+.markers > div { border: none; background: var(--panel-2); }
+.markers > div.best { background: var(--chip); }
+.steps > div { border: none; }
+.readout { border: none; }
+.params { background: none; gap: 16px; }
+.params > div { background: none; padding: 0; }
+.note { background: none; border: none; padding: 0; }
+.conf { border: none; padding: 0; }
+.tag, .chip { border: none; }
+.foot-tools { display: flex; gap: 8px 16px; flex-wrap: wrap; align-items: center; width: 100%; }
+.foot-tools .pill { border: none; padding: 0; }
+.foot-tools .server-row { margin: 0; padding: 0; justify-content: flex-start; width: 100%; }
+.data-pill { background: none; padding: 0; color: var(--ink-3); }
+.btn-pill { border: none; padding: 0; background: none; color: var(--ink-2); }
+.btn-pill:hover { background: none; color: var(--ink); }
+.example { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 32px; align-items: center; width: 100%; padding: 16px;
+           background: var(--panel); border: none; border-radius: 12px; text-align: left; color: var(--ink); transition: background-color .15s; }
+.example:hover { background: #1a1b1f; }
+.example img { width: 100%; height: auto; display: block; border-radius: 8px; aspect-ratio: 16 / 9; object-fit: cover; }
+.example b { display: block; font-size: 20px; font-weight: 600; }
+.example small { display: block; margin-top: 4px; font-size: 15px; color: var(--ink-2); }
+.full { display: flex; flex-direction: column; gap: 28px; }
+.full > summary { cursor: pointer; list-style: none; align-self: flex-start; display: inline-block; font-size: 15px; font-weight: 600; padding: 12px 20px;
+                  border-radius: 8px; background: var(--chip); transition: background-color .15s, transform .1s; }
+.full > summary::-webkit-details-marker { display: none; }
+.full > summary:hover { background: rgba(255,255,255,0.1); }
+.full > summary:active { transform: scale(.97); }
+.full[open] > summary { margin-bottom: 28px; }
+.full-body { display: flex; flex-direction: column; gap: 28px; }
+.est { font-size: 28px !important; color: var(--ink-2); }
+button:not(:disabled):active { transform: scale(.97); }
+@media (max-width: 720px) { .example { grid-template-columns: 1fr; gap: 12px; } }
+@media (prefers-reduced-motion: reduce) { button:not(:disabled):active, .full > summary:active { transform: none; } }
 </style>
 </head>
 <body>
 <div class="top">
   <div class="top-in">
     <div class="brand"><div class="brand-mark"><i></i></div><b>FlipCurve</b></div>
-    <div class="top-r">
-      <span class="pill"><span class="dot" id="extDot"></span><span id="extText">Checking the helper extension…</span></span>
-      <span class="pill"><span class="dot" id="apiDot"></span><span id="apiText">Checking the FlipCurve server…</span></span>
-      <span class="data-pill hidden" id="dataPill"></span>
-      <button class="btn-pill" id="serverBtn" aria-expanded="false">Server address</button>
-    </div>
-  </div>
-  <div class="server-row hidden" id="serverRow">
-    <input type="text" id="apiInput" aria-label="Server address" spellcheck="false">
-    <button class="btn-ghost" id="apiSave">Save</button>
+    <div class="top-r"><a class="homelink" href="https://www.lewisdn.com/">lewisdn</a></div>
   </div>
 </div>
 
@@ -317,7 +347,7 @@ select.field { padding: 12px; font-size: 14px; }
   <!-- intro + search -->
   <div style="display:flex;flex-direction:column;gap:18px">
     <div class="intro">
-      <h1>What will it sell for, and how fast?</h1>
+      <h1>What's it worth secondhand?</h1>
       <p class="lede">Estimates from sold and unsold eBay and Vinted listings.</p>
     </div>
 
@@ -345,7 +375,6 @@ select.field { padding: 12px; font-size: 14px; }
       <!-- identified -->
       <div id="stepConfirm" class="hidden">
         <div class="ident">
-          <span class="eyebrow">Identified</span>
           <span class="ident-title" id="idTitle"></span>
           <span class="chip" id="idCond"></span>
           <span class="q-ebay" id="idEbay"></span>
@@ -368,10 +397,15 @@ select.field { padding: 12px; font-size: 14px; }
           <label>Listing titles must include (a|b = either)<input type="text" class="field" id="mustHave" placeholder="e.g. jordan, low"></label>
           <label>Leave out listings mentioning<input type="text" class="field" id="mustNot" placeholder="e.g. white, travis, replica"></label>
         </div>
+        <div class="msgline" id="helperHint"></div>
         <div class="err" id="scanErr"></div>
       </div>
     </div>
     <div id="warnings"></div>
+    <button type="button" class="example" id="exampleBtn">
+      <img src="https://www.lewisdn.com/home/media/img/fc2_result.jpg" alt="" width="1920" height="1080" loading="lazy">
+      <span><b>See an example</b><small>An iPhone 15 Pro, priced from saved eBay listings</small></span>
+    </button>
   </div>
 
   <div id="results" class="hidden" style="display:flex;flex-direction:column;gap:28px">
@@ -394,7 +428,6 @@ select.field { padding: 12px; font-size: 14px; }
       </div>
       <div class="card rec-card">
         <div style="display:flex;flex-direction:column;gap:12px">
-          <span class="eyebrow" id="recLabel"></span>
           <h2 id="headline"></h2>
           <p id="summary"></p>
         </div>
@@ -410,14 +443,14 @@ select.field { padding: 12px; font-size: 14px; }
     <!-- 3D explorer -->
     <div class="sec">
       <div class="sec-h">
-        <div><span class="eyebrow">Explore in 3D</span><h2>Price, time and chance of selling, all at once</h2></div>
+        <div><h2>Price, time and chance of selling</h2></div>
         <div class="right"><span style="font-size:12px;color:var(--ink-2)">Condition (changes every chart)</span><div class="seg on-panel" id="tierTabs"></div></div>
       </div>
       <div class="card explorer">
         <div class="side">
           <div class="modes" id="modes"></div>
-          <div class="howto"><span class="eyebrow">How to read it</span><div id="modeNotes" style="display:flex;flex-direction:column;gap:9px"></div></div>
-          <div class="readout"><span class="eyebrow">Readout</span><div id="readout"></div></div>
+          <div class="howto"><b style="font-size:13px;font-weight:600">How to read it</b><div id="modeNotes" style="display:flex;flex-direction:column;gap:9px"></div></div>
+          <div class="readout"><b style="font-size:13px;font-weight:600">Readout</b><div id="readout"></div></div>
         </div>
         <div class="stage">
           <div class="stage-abs" id="canvas3d"></div>
@@ -433,9 +466,12 @@ select.field { padding: 12px; font-size: 14px; }
       </div>
     </div>
 
+    <details class="full" id="fullAnalysis">
+    <summary>See the full analysis</summary>
+    <div class="full-body">
     <!-- platforms -->
     <div class="sec">
-      <div class="sec-h"><div><span class="eyebrow">Head to head</span><h2 id="platHead">eBay vs Vinted at the suggested price</h2></div>
+      <div class="sec-h"><div><h2 id="platHead">eBay vs Vinted at the suggested price</h2></div>
         <div class="right daypick hidden" id="dayPick"><span>Chance sold within</span><div class="seg sm on-panel" id="daySeg"></div>
           <label style="display:flex;align-items:center;gap:6px">or<input type="number" id="dayInput" min="1" max="365" step="1" inputmode="numeric" aria-label="Number of days"> days</label></div>
       </div>
@@ -445,7 +481,7 @@ select.field { padding: 12px; font-size: 14px; }
     <!-- charts -->
     <div class="sec">
       <div class="sec-h">
-        <div><span class="eyebrow">Everything the scan found</span><h2>The numbers behind the price</h2></div>
+        <div><h2>The numbers behind the price</h2></div>
         <span class="right" style="font-size:12px;color:var(--ink-2)">Showing&nbsp;<b style="color:var(--ink)" id="tierLabel"></b>&nbsp;condition · hover any chart</span>
       </div>
       <div class="charts" id="charts"></div>
@@ -460,21 +496,33 @@ select.field { padding: 12px; font-size: 14px; }
     <!-- evidence -->
     <div class="sec">
       <div class="sec-h">
-        <div><span class="eyebrow">Evidence</span><h2>Listings this is based on</h2><span style="font-size:13px;color:var(--ink-2)" id="evNote"></span></div>
+        <div><h2>Listings this is based on</h2><span style="font-size:13px;color:var(--ink-2)" id="evNote"></span></div>
         <div class="right" id="evFilters"></div>
       </div>
       <div class="card ev">
         <div class="ev-scroll"><div class="ev-table">
-          <div class="ev-row ev-head"><span>SITE</span><span>LISTING</span><span>CONDITION</span><span class="r">PRICE</span><span>STATUS</span><span class="r">DAYS LISTED</span><span class="r">FAVS</span></div>
+          <div class="ev-row ev-head"><span>Site</span><span>Listing</span><span>Condition</span><span class="r">Price</span><span>Status</span><span class="r">Days listed</span><span class="r">Favs</span></div>
           <div id="evRows"></div>
         </div></div>
       </div>
     </div>
+    </div>
+    </details>
   </div>
 
   <div class="foot">
-    <span>FlipCurve · survival-corrected pricing from eBay and Vinted · built at OxHack 2026</span>
-    <span class="mono" id="fetchedAt"></span>
+    <span>Built at OxHack 2026</span>
+    <span id="fetchedAt"></span>
+    <div class="foot-tools">
+      <span class="pill"><span class="dot" id="extDot"></span><span id="extText">Checking the helper extension…</span></span>
+      <span class="pill"><span class="dot" id="apiDot"></span><span id="apiText">Checking the FlipCurve server…</span></span>
+      <span class="data-pill hidden" id="dataPill"></span>
+      <button class="btn-pill" id="serverBtn" aria-expanded="false">Server address</button>
+      <div class="server-row hidden" id="serverRow">
+        <input type="text" id="apiInput" aria-label="Server address" spellcheck="false">
+        <button class="btn-ghost" id="apiSave">Save</button>
+      </div>
+    </div>
   </div>
 </main>
 
@@ -555,7 +603,10 @@ async function checkApi() {
     serverInfo = await api("/api/v1/health");
     setStatus("apiDot", "apiText", "ok", "Server connected" + (serverInfo.ebay_api ? " · eBay API on" : ""));
   }
-  catch { serverInfo = null; setStatus("apiDot", "apiText", "bad", `Can't reach the server at ${esc(API)}`); }
+  catch {
+    serverInfo = null; setStatus("apiDot", "apiText", "bad", `Can't reach the server at ${esc(API)}`);
+    $("identifyErr").textContent = "Can't reach the FlipCurve server right now.";
+  }
 }
 const apiReady = checkApi();
 checkHelper();
@@ -648,7 +699,24 @@ function showWait(s) {
 }
 
 let identifiedFromPhoto = false, identifyWarnings = [];
+// Shown beside the scan buttons, because that's the only time the helper matters.
+function syncScanHint() {
+  const needsAction = !helper || helper.ebayState === "signin" || helper.ebayState === "refused";
+  $("helperHint").textContent = !helper ? "Live scans need the Chrome helper extension. Saved listings work without it."
+    : needsAction ? $("extText").textContent : "";
+  $("savedBtn").className = helper ? "btn-ghost" : "btn-blue";
+  $("scanBtn").className = helper ? "btn-blue" : "btn-ghost";
+}
+// A real result with no AI lookup: goes straight to the saved listings.
+const EXAMPLE_ITEM = { title: "Apple iPhone 15 Pro 256GB Black", condition_tier: "good", condition_score: 6,
+  search_queries: { ebay: "apple iphone 15 pro 256gb black", vinted: "iphone 15 pro 256gb black" }, must_have: [], must_not_have: [] };
+$("exampleBtn").onclick = () => {
+  item = { ...EXAMPLE_ITEM }; identifiedFromPhoto = false;
+  showConfirm({ item, warnings: [] }); scan(false);
+};
 function showConfirm(out) {
+  $("exampleBtn").classList.add("hidden");
+  syncScanHint(); checkHelper().then(syncScanHint);
   $("title").value = item.title || "";
   $("tier").value = item.condition_tier || "good";
   $("qEbay").value = item.search_queries?.ebay || "";
@@ -677,7 +745,7 @@ $("refineBtn").onclick = () => {
   $("refineBtn").setAttribute("aria-expanded", open);
 };
 function drawWarnings(list) {
-  $("warnings").innerHTML = (list || []).map((w) => `<div class="note"><b>NOTE</b><span>${esc(w)}</span></div>`).join("");
+  $("warnings").innerHTML = (list || []).map((w) => `<div class="note"><span>${esc(w)}</span></div>`).join("");
 }
 
 const terms = (v) => v.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
@@ -743,6 +811,7 @@ $("resetBtn").onclick = () => {
   drawWarnings([]);
   $("stepConfirm").classList.add("hidden"); $("results").classList.add("hidden"); $("progress").classList.add("hidden");
   $("dataPill").classList.add("hidden"); $("fetchedAt").textContent = "";
+  $("exampleBtn").classList.remove("hidden"); $("fullAnalysis").open = false;
   if (viz) { viz.dispose(); viz = null; }
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
@@ -867,7 +936,7 @@ const Charts = (() => {
   const NS = "http://www.w3.org/2000/svg";
   const C = { ebay: "#4f8fe8", vinted: "#ec7a45", ink: "#eeece6", ink2: "#a8a69e", ink3: "#77756f",
     grid: "rgba(255,255,255,0.06)", axis: "rgba(255,255,255,0.16)", panel: "#1b1d22", sold: "#4fb7a8", listed: "#77756f" };
-  const MONO = "'Geist Mono', ui-monospace, monospace";
+  const MONO = "'Schibsted Grotesk', system-ui, sans-serif";
   const pc = (k) => C[k] || C.ink;
   const dshort = (d) => d < 1 ? (Math.round(d * 10) / 10) + "d" : Math.round(d) + "d";
   class NoData extends Error {}
@@ -894,13 +963,13 @@ const Charts = (() => {
   function svg(el, W, H) {
     el.innerHTML = ""; const s = document.createElementNS(NS, "svg");
     s.setAttribute("viewBox", `0 0 ${W} ${H}`); s.setAttribute("role", "img");
-    s.style.cssText = "width:100%;height:auto;display:block;overflow:visible;font-family:Geist,system-ui,sans-serif";
+    s.style.cssText = "width:100%;height:auto;display:block;overflow:visible;font-family:'Schibsted Grotesk',system-ui,sans-serif";
     el.appendChild(s); return s;
   }
   function add(p, tag, a, text) { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (text != null) e.textContent = text; p.appendChild(e); return e; }
   function txt(p, x, y, s, o = {}) {
     return add(p, "text", { x, y, "font-size": o.size || 10.5, fill: o.fill || C.ink3, "text-anchor": o.anchor || "start",
-      "font-family": o.sans ? "Geist, system-ui, sans-serif" : MONO, "font-weight": o.weight || 400, "letter-spacing": o.ls || 0 }, s);
+      "font-family": o.sans ? "'Schibsted Grotesk', system-ui, sans-serif" : MONO, "font-weight": o.weight || 400, "letter-spacing": o.ls || 0 }, s);
   }
   const lin = (d0, d1, r0, r1) => (v) => r0 + (v - d0) / ((d1 - d0) || 1) * (r1 - r0);
   const logs = (d0, d1, r0, r1) => { const a = Math.log(d0), b = Math.log(d1); return (v) => r0 + (Math.log(Math.max(v, d0)) - a) / ((b - a) || 1) * (r1 - r0); };
@@ -922,7 +991,7 @@ const Charts = (() => {
   function showTip(html, cx, cy) {
     if (!tipEl) {
       tipEl = document.createElement("div");
-      tipEl.style.cssText = "position:fixed;z-index:60;pointer-events:none;background:rgba(22,23,27,0.97);border:1px solid rgba(255,255,255,0.14);border-radius:10px;padding:9px 11px;font:12px/1.5 Geist,system-ui,sans-serif;color:#eeece6;box-shadow:0 12px 32px rgba(0,0,0,.45);white-space:nowrap;max-width:calc(100vw - 16px);overflow:hidden;text-overflow:ellipsis";
+      tipEl.style.cssText = "position:fixed;z-index:60;pointer-events:none;background:rgba(22,23,27,0.97);border:1px solid rgba(255,255,255,0.14);border-radius:10px;padding:9px 11px;font:12px/1.5 'Schibsted Grotesk',system-ui,sans-serif;color:#eeece6;box-shadow:0 12px 32px rgba(0,0,0,.45);white-space:nowrap;max-width:calc(100vw - 16px);overflow:hidden;text-overflow:ellipsis";
       document.body.appendChild(tipEl);
     }
     tipEl.innerHTML = html; tipEl.style.display = "block";
@@ -1223,11 +1292,11 @@ const Viz3D = (() => {
   const TIERCOL = { fair: "#2f7fa6", good: "#4fb7a8", very_good: "#a6e0a0", mint: "#f2f5c8" };
   const W3 = 10, D3 = 7, H3 = 3.2;
   const LS = {
-    tick: "position:absolute;left:0;top:0;font:10.5px/1 'Geist Mono',monospace;color:#8a8880;white-space:nowrap;pointer-events:none;will-change:transform",
-    axis: "position:absolute;left:0;top:0;font:600 10px/1 Geist,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#bdbbb3;white-space:nowrap;pointer-events:none",
-    tag: "position:absolute;left:0;top:0;font:500 11px/1 Geist,sans-serif;color:#0d0e10;background:#eeece6;border-radius:99px;padding:4px 8px;white-space:nowrap;pointer-events:none",
-    lane: "position:absolute;left:0;top:0;font:500 12px/1.2 Geist,sans-serif;color:#d8d6cf;white-space:nowrap;pointer-events:none;text-align:right",
-    callout: "position:absolute;left:0;top:0;background:rgba(16,17,20,.9);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:7px 10px;font:12px/1.4 Geist,sans-serif;color:#eeece6;white-space:nowrap;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.35)",
+    tick: "position:absolute;left:0;top:0;font:10.5px/1 'Schibsted Grotesk',sans-serif;color:#8a8880;white-space:nowrap;pointer-events:none;will-change:transform",
+    axis: "position:absolute;left:0;top:0;font:600 10px/1 'Schibsted Grotesk',sans-serif;color:#bdbbb3;white-space:nowrap;pointer-events:none",
+    tag: "position:absolute;left:0;top:0;font:500 11px/1 'Schibsted Grotesk',sans-serif;color:#0d0e10;background:#eeece6;border-radius:99px;padding:4px 8px;white-space:nowrap;pointer-events:none",
+    lane: "position:absolute;left:0;top:0;font:500 12px/1.2 'Schibsted Grotesk',sans-serif;color:#d8d6cf;white-space:nowrap;pointer-events:none;text-align:right",
+    callout: "position:absolute;left:0;top:0;background:rgba(16,17,20,.9);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:7px 10px;font:12px/1.4 'Schibsted Grotesk',sans-serif;color:#eeece6;white-space:nowrap;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.35)",
   };
   const { markerList } = Charts;
   function interp(g, price, get) {
@@ -1353,7 +1422,7 @@ const Viz3D = (() => {
         const dz = Math.exp((D3 / 2 - hit.point.z) / D3 * Math.log(Math.max(dMax, 2)));
         const i = Math.max(0, Math.min(ni - 1, Math.round((hit.point.x + W3 / 2) / W3 * (ni - 1)))), j = S.days.reduce((b, d, k) => Math.abs(Math.log(d / dz)) < Math.abs(Math.log(S.days[b] / dz)) ? k : b, 0);
         const v = S.prob[i][j]; place(V(Xi(i), Y(v), Zj(j)));
-        return `<div style="font:600 22px/1.1 Geist;letter-spacing:-.02em">${pct(v)}</div><div style="margin-top:4px">chance sold within <b>${S.days[j]} day${S.days[j] > 1 ? "s" : ""}</b></div><div style="color:#a8a69e">if listed at <b style="color:#eeece6">${gbp(g[i].price_gbp)}</b> · ${TIERS[st.tier]}</div>`;
+        return `<div style="font:600 22px/1.1 'Schibsted Grotesk';letter-spacing:-.02em">${pct(v)}</div><div style="margin-top:4px">chance sold within <b>${S.days[j]} day${S.days[j] > 1 ? "s" : ""}</b></div><div style="color:#a8a69e">if listed at <b style="color:#eeece6">${gbp(g[i].price_gbp)}</b> · ${TIERS[st.tier]}</div>`;
       };
     }
 
@@ -1388,7 +1457,7 @@ const Viz3D = (() => {
       ORDER.forEach((t, k) => {
         if (t === st.tier) { const pl = new THREE.Mesh(new THREE.PlaneGeometry(W3, D3 / ORDER.length), mat(0xffffff, .035)); pl.rotation.x = -Math.PI / 2; pl.position.set(0, 0.002, Zl(k)); group.add(pl); }
         const n = (ms.condition_buckets?.[t] || {}).n;
-        label(`${TIERS[t]}${n ? `<br><span style="font:10px 'Geist Mono';color:#8a8880">${n} sold</span>` : ""}`, V(W3 / 2 + 0.6, 0, Zl(k)), "lane", "l");
+        label(`${TIERS[t]}${n ? `<br><span style="font:10px 'Schibsted Grotesk';color:#8a8880">${n} sold</span>` : ""}`, V(W3 / 2 + 0.6, 0, Zl(k)), "lane", "l");
       });
       const plane = (price, color, op) => { const x = Xp(price), p = new THREE.Mesh(new THREE.PlaneGeometry(D3, H3), mat(color, op)); p.material.side = THREE.DoubleSide; p.rotation.y = Math.PI / 2; p.position.set(x, H3 / 2, 0); group.add(p);
         line([V(x, 0, -D3 / 2), V(x, H3, -D3 / 2), V(x, H3, D3 / 2), V(x, 0, D3 / 2)], color, .6); return x; };
@@ -1450,7 +1519,7 @@ const Viz3D = (() => {
         const t = hit.object.userData.tier; if (!t) return null;
         const g = R.price_curve_grid[t], price = p0 + (hit.point.x + W3 / 2) / W3 * (p1 - p0), i = Math.round(Math.max(0, Math.min(g.length - 1, fracIdx(g, price)))), q = g[i];
         place(V(Xp(q.price_gbp), Y(q.prob_sell_7d), Zl(tiers.indexOf(t))));
-        return `<div style="font:600 22px/1.1 Geist;letter-spacing:-.02em">${pct(q.prob_sell_7d)}</div><div style="margin-top:4px">chance sold within 7 days</div><div style="color:#a8a69e"><b style="color:#eeece6">${TIERS[t]}</b> at ${gbp(q.price_gbp)} · 30 days ${pct(q.prob_sell_30d)} · ${days(q.expected_days_to_sell)} on average</div>`;
+        return `<div style="font:600 22px/1.1 'Schibsted Grotesk';letter-spacing:-.02em">${pct(q.prob_sell_7d)}</div><div style="margin-top:4px">chance sold within 7 days</div><div style="color:#a8a69e"><b style="color:#eeece6">${TIERS[t]}</b> at ${gbp(q.price_gbp)} · 30 days ${pct(q.prob_sell_30d)} · ${days(q.expected_days_to_sell)} on average</div>`;
       };
     }
 
@@ -1517,13 +1586,27 @@ const Viz3D = (() => {
 
     const v = new THREE.Vector3();
     function positionLabels() {
+      const callouts = [];
       labels.forEach((l) => {
         v.copy(l.pos).project(camera);
         if (v.z > 1) { l.el.style.display = "none"; return; }
         l.el.style.display = "";
         const x = (v.x + 1) / 2 * w, y = (1 - v.y) / 2 * h;
         const tr = l.anchor === "b" ? "translate(-50%,calc(-100% - 6px))" : l.anchor === "bl" ? "translate(calc(-100% + 12px),calc(-100% - 6px))" : l.anchor === "br" ? "translate(-12px,calc(-100% - 6px))" : l.anchor === "l" ? "translate(0,-50%)" : l.anchor === "r" ? "translate(-100%,-50%)" : "translate(-50%,-50%)";
+        if (l.kind === "callout") { l.sx = x; l.sy = y; l.tr = tr; callouts.push(l); return; }
         l.el.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) ${tr}`;
+      });
+      // Stack callouts that would overlap, working up from the lowest on screen.
+      callouts.sort((a, b) => b.sy - a.sy);
+      const placed = [];
+      callouts.forEach((l) => {
+        for (let n = 0; n < 4; n++) {
+          const hit = placed.find((o) => Math.abs(o.sx - l.sx) < 190 && Math.abs(o.sy - l.sy) < 50);
+          if (!hit) break;
+          l.sy = hit.sy - 50;
+        }
+        placed.push(l);
+        l.el.style.transform = `translate(${l.sx.toFixed(1)}px,${l.sy.toFixed(1)}px) ${l.tr}`;
       });
     }
     function resize() { w = host.clientWidth || 1; h = host.clientHeight || 1; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
@@ -1629,8 +1712,8 @@ function render(r) {
   $("results").classList.remove("hidden");
   drawWarnings([...identifyWarnings, ...(r.warnings || [])]);
   const ms = r.market_summary || {};
-  if (ms.data_source) { $("dataPill").textContent = "DATA: " + String(ms.data_source).toUpperCase(); $("dataPill").classList.remove("hidden"); }
-  $("fetchedAt").textContent = ms.fetched_at ? "fetched " + String(ms.fetched_at).replace("T", " ").slice(0, 16) + " UTC" : "";
+  if (ms.data_source) { $("dataPill").textContent = "Data source: " + String(ms.data_source); $("dataPill").classList.remove("hidden"); }
+  $("fetchedAt").textContent = ms.fetched_at ? "Fetched " + String(ms.fetched_at).replace("T", " ").slice(0, 16) + " UTC" : "";
   drawItem();
   drawHeadline();
   drawPlatforms();
@@ -1669,11 +1752,10 @@ function drawItem() {
 function drawHeadline() {
   const ms = R.market_summary || {}, rec = R.platform_recommendations || {}, bp = R.best_platform, b = rec[bp];
   const myTier = R.item_metadata?.condition_tier;
-  $("recLabel").textContent = "Recommendation" + (myTier ? " · " + TIERS[myTier] + " condition" : "");
   $("headline").innerHTML = b ? `List on <span style="color:${PCOL[bp] || "var(--ink)"}">${esc(PLAT[bp] || bp)}</span> at ${gbp(b.recommended_list_gbp)}` : "Not enough data for a recommendation";
   const gap = ms.survivorship_bias_pct;
   $("summary").textContent = `Based on ${ms.sample_size_sold ?? 0} sold and ${ms.sample_size_active ?? 0} unsold listings of this exact item` +
-    (gap >= 5 ? `. Unsold listings are priced about ${Math.round(gap)}% higher than what actually sells, so asking prices alone would mislead you.`
+    (gap >= 5 ? `. Unsold listings ask about ${Math.round(gap)}% more than what sells.`
      : gap <= -5 ? `. Listings still up are priced about ${Math.round(-gap)}% below recent sales: there's competition at lower prices.` : ".");
   const range = (x) => x.expected_days_low != null && x.expected_days_high != null ? `range ${Math.round(x.expected_days_low)}–${Math.round(x.expected_days_high)} days` : "";
   $("heroStats").innerHTML = b ? [["In your pocket", gbp(b.net_payout_gbp), b.expected_sale_price_gbp != null ? `sale ~${gbp(b.expected_sale_price_gbp)}` : ""],
@@ -1690,25 +1772,34 @@ function drawTier() {
   $("tierLabel").textContent = TIERS[t];
   const g = R.price_curve_grid?.[t] || [], m = R.price_markers?.[t] || {};
   const myTier = R.item_metadata?.condition_tier;
-  $("markersHead").textContent = "Three ways to price it" + (t !== myTier ? ` · if it were ${TIERS[t].toLowerCase()}` : "");
   const p7 = (v) => Charts.interpGrid(g, v, (p) => p.prob_sell_7d);
-  $("markers").innerHTML = [["Quick sale", m.fast_sale_gbp, "Price for a fast sale"], ["Best value", m.best_value_gbp, "Best balance of price and time"],
-    ["Patient", m.patient_gbp, "Higher price if you can wait"]].map(([k, v, d]) => {
-      const p = v != null ? p7(v) : null;
-      return `<div class="${k === "Best value" ? "best" : ""}"><span class="k">${k}</span><span class="v">${gbp(v)}</span><span class="d">${d}${p != null ? ` · ${pct(p)} in 7 days` : ""}</span></div>`;
-    }).join("");
+  // When two suggestions land on the same price they're one option, not two.
+  const options = [];
+  [["Quick sale", m.fast_sale_gbp, "Price for a fast sale"], ["Best value", m.best_value_gbp, "Best balance of price and time"],
+    ["Patient", m.patient_gbp, "Higher price if you can wait"]].forEach(([k, v, d]) => {
+    if (v == null) return;
+    const same = options.find((o) => Math.abs(o.v - v) < 0.01);
+    if (same) { same.k += " and " + k.toLowerCase(); same.d = "Fast, and the best balance of price and time"; same.best = same.best || k === "Best value"; }
+    else options.push({ k, v, d, best: k === "Best value" });
+  });
+  const count = ["No", "One", "Two", "Three"][options.length];
+  $("markersHead").textContent = `${count} way${options.length === 1 ? "" : "s"} to price it` + (t !== myTier ? `, if it were ${TIERS[t].toLowerCase()}` : "");
+  $("markers").innerHTML = options.map(({ k, v, d, best }) => {
+    const p = p7(v);
+    return `<div class="${best ? "best" : ""}"><span class="k">${k}</span><span class="v">${gbp(v)}</span><span class="d">${d}${p != null ? ` · ${pct(p)} in 7 days` : ""}</span></div>`;
+  }).join("");
   $("markerNote").textContent = m.note || "";
   drawCharts();
 }
 
 // ---- chart cards
-const CHART_FNS = ["drawProb", "drawPayout", "drawBias", "drawScatter", "drawSurvival", "drawCondition", "drawPlan", "drawMix"];
+const CHART_FNS = ["drawProb", "drawPayout", "drawBias", "drawScatter", "drawSurvival", "drawCondition", "drawMix"];
 function buildChartCards() {
   if ($("charts").children.length) return;
   $("charts").innerHTML = CHART_FNS.map((_, i) => `<div class="card chart-card">
-      <div class="chart-h"><span class="num">${String(i + 1).padStart(2, "0")}</span><div><b id="chT${i}"></b><span id="chS${i}"></span></div></div>
+      <div class="chart-h"><div><b id="chT${i}"></b><span id="chS${i}"></span></div></div>
       <div class="chart-body" id="ch${i}"></div>
-      ${i === 7 ? `<div class="params" id="params"></div>` : ""}
+      ${i === CHART_FNS.length - 1 ? `<div class="params" id="params"></div>` : ""}
       <div class="chart-take" id="chK${i}"></div></div>`).join("");
 }
 function drawCharts() {
@@ -1754,8 +1845,6 @@ function drawCharts() {
     ["What each condition sells for", "Middle half of sold prices for each condition, with the median and FlipCurve's suggested list price.",
       cb.n > 0 && cb.median != null ? `${TIERS[t]} items sold for ${gbp(cb.p25)}–${gbp(cb.p75)} (middle half of ${cb.n} sales), median ${gbp(cb.median)}.`
         : `No ${TIERS[t].toLowerCase()} sales of this exact item seen yet, so there's no sold price range for that condition.`],
-    ["Plan if it doesn't sell", "Price steps over time, with the chance of selling within a week at each step.",
-      sch.length ? `Start at ${gbp(sch[0].list_price_gbp)}; don't go below ${gbp(sch[sch.length - 1].list_price_gbp)}.` : ""],
     ["How the model was fitted", "A censored Weibull survival model: unsold listings count as 'hasn't sold yet', not as missing.",
       mf.n_obs != null ? `${mf.n_obs} listings: ${mf.n_interval ?? 0} sold within a known window, ${mf.n_censored ?? 0} still listed` +
         (mf.n_obs - (mf.n_interval ?? 0) - (mf.n_censored ?? 0) > 0 ? `, ${mf.n_obs - (mf.n_interval ?? 0) - (mf.n_censored ?? 0)} counted from how long listings in Vinted's catalogue have been up` : "") +
@@ -1809,9 +1898,17 @@ function drawPlatforms() {
     const rows = [["List at", gbp(x.recommended_list_gbp)], ["Likely sale price", gbp(x.expected_sale_price_gbp)],
       ["Offer buffer", x.offer_buffer_pct != null ? x.offer_buffer_pct + "%" : "–"], ["Half sell within", days(x.median_days ?? x.expected_days)],
       ["Average wait", avg], ["Listings / sales seen", `${x.n_listings ?? 0} / ${x.n_sales ?? 0}` + (salesSeen(k).rel ? ` (${salesSeen(k).exact} exact)` : "")]];
+    const ss = salesSeen(k);
+    if (!(x.n_sales || 0) && !ss.exact && !ss.rel) {
+      return `<div class="card plat">
+        <div class="plat-h"><span class="sw" style="background:${col}"></span><b>${esc(PLAT[k] || k)}</b><span class="conf" style="color:var(--low)">No sales seen</span></div>
+        <div class="net"><b class="est">About ${gbp(x.net_payout_gbp)}</b><span>rough estimate, not from sales here</span></div>
+        <div class="rows"><span>List at</span><span>${gbp(x.recommended_list_gbp)}</span><span>Listings seen</span><span>${x.n_listings ?? 0}</span></div>
+      </div>`;
+    }
     return `<div class="card plat${k === bp ? " best" : ""}">
-      <div class="plat-h"><span class="sw" style="background:${col}"></span><b>${esc(PLAT[k] || k)}</b>${k === bp ? `<span class="best-tag">BEST</span>` : ""}
-        <span class="conf" style="color:${CONF[x.confidence] || "var(--ink-2)"}" title="${esc((x.n_sales ?? 0) + " sales seen")}">${esc(x.confidence || "–")} confidence</span></div>
+      <div class="plat-h"><span class="sw" style="background:${col}"></span><b>${esc(PLAT[k] || k)}</b>${k === bp ? `<span class="best-tag">Recommended</span>` : ""}
+        <span class="conf" style="color:${CONF[x.confidence] || "var(--ink-2)"}" title="${esc((x.n_sales ?? 0) + " sales seen")}">${esc(x.confidence ? x.confidence[0].toUpperCase() + x.confidence.slice(1) : "Unknown")} confidence</span></div>
       <div class="net"><b>${gbp(x.net_payout_gbp)}</b><span>in your pocket</span></div>
       <div class="p7"><div class="p7-h"><span>Chance sold within ${nd} day${nd === 1 ? "" : "s"}</span><span>${pctCap(pN(k, x))}</span></div>
         <div class="p7-bar"><div style="width:${Math.round((pN(k, x) || 0) * 100)}%;background:${col}"></div></div></div>
@@ -1824,7 +1921,7 @@ function drawPlatforms() {
 function drawSchedule() {
   const sch = R.markdown_schedule || [];
   $("planCard").classList.toggle("hidden", !sch.length);
-  $("schedule").innerHTML = sch.map((x) => `<div><div class="h"><span class="day">DAY ${x.day}</span><span class="pr">${gbp(x.list_price_gbp)}</span></div>
+  $("schedule").innerHTML = sch.map((x) => `<div><div class="h"><span class="day">Day ${x.day}</span><span class="pr">${gbp(x.list_price_gbp)}</span></div>
     <span class="a">${esc(x.action)}</span></div>`).join("");
 }
 
